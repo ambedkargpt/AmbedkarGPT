@@ -67,7 +67,7 @@ const SHARE_PAGES = [
     title: 'भीम रेडियो · Bhim Radio - AmbedkarGPT',
     description: 'आज का राजनीतिक बुलेटिन, हिंदी में - बिना लॉगिन के सुनिए। '
       + "Today's political bulletin in Hindi. No login needed.",
-    image: '/og/bhimradio-v2.jpg',
+    image: '/og/bhimradio-v3.jpg',
     imageAlt: 'भीम रेडियो - Bhim Radio, AmbedkarGPT का हिंदी राजनीतिक बुलेटिन',
   },
 ]
