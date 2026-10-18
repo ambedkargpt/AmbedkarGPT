@@ -15,7 +15,7 @@ export function clearTokens() {
   removeSession('user');
 }
 
-export function saveUser(user) {
+function saveUser(user) {
   writeSession('user', JSON.stringify(user));
 }
 

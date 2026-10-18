@@ -142,7 +142,10 @@ def posts_dashboard(
     return service.dashboard(user_id=(user_id or current_user_id), limit=limit)
 
 @router.get("/semrag/grounding")
-def get_semrag_grounding(query: str = Query(..., min_length=2)) -> dict:
+def get_semrag_grounding(
+    query: str = Query(..., min_length=2),
+    current_user_id: str = Depends(get_current_user_id),
+) -> dict:
     """Query Memgraph Cloud Knowledge Graph for authentic Ambedkar writings, entities, and citations."""
     from backend.semrag.memgraph_retriever import query_semrag
 

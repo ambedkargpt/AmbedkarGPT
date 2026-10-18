@@ -48,7 +48,7 @@ import { I18nProvider }    from './i18n/index.jsx';
 import TransitionCurtain   from './components/TransitionCurtain';
 import ErrorBoundary       from './components/ErrorBoundary';
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'dummy-client-id.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 // Wraps <Routes> and re-keys on every pathname change so the CSS
 // pageEnter animation replays on each navigation.

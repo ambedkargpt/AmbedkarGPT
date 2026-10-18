@@ -21,10 +21,7 @@ class StreakRepository:
         self.collection = db["user_streaks"]
 
     def get(self, user_id: str) -> Optional[dict]:
-        try:
-            return self.collection.find_one({"user_id": ObjectId(user_id)})
-        except Exception:
-            return None
+        return self.collection.find_one({"user_id": ObjectId(user_id)})
 
     def on_publish(self, user_id: str) -> dict:
         """
