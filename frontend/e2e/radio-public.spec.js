@@ -167,11 +167,11 @@ test.describe('sharing the link', () => {
     // Absolute: a preview image given as a relative path is ignored by every
     // platform, because the crawler has no page to resolve it against.
     const image = html.match(/property="og:image" content="([^"]+)"/)?.[1];
-    expect(image).toMatch(/^https:\/\/.+\/og\/bhimradio-v2\.jpg$/);
+    expect(image).toMatch(/^https:\/\/.+\/og\/bhimradio-v3\.jpg$/);
   });
 
   test('and the image it names exists, at the size the card is built for', async ({ request }) => {
-    const res = await request.get('/og/bhimradio-v2.jpg');
+    const res = await request.get('/og/bhimradio-v3.jpg');
     expect(res.ok()).toBe(true);
     expect(res.headers()['content-type']).toMatch(/image\/jpeg/);
 

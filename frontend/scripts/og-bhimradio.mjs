@@ -3,7 +3,7 @@
  *
  *     node scripts/og-bhimradio.mjs
  *
- * Writes public/og/bhimradio-v2.jpg - 1200x630, the size every platform's
+ * Writes public/og/bhimradio-v3.jpg - 1200x630, the size every platform's
  * large-card preview is built around. It is kept as a script rather than a
  * bare image so the wording can be changed and the card redrawn instead of
  * being re-made in an editor from memory.
@@ -86,13 +86,13 @@ const html = `<!doctype html>
     <div class="live"><i></i>ON AIR</div>
     <h1>भीम रेडियो</h1>
     <div class="wave">${BARS.map((h) => `<b style="height:${h}%"></b>`).join('')}</div>
-    <div class="tag">आवाज़ बहुजन की</div>
+    <div class="tag">दैनिक मध्य भारत समाचार</div>
     <div class="en">BHIM RADIO · HINDI NEWS</div>
   </div>
   <div class="brand"><img src="${logo}" alt=""><span>Ambedkar<span>GPT</span></span></div>
 </body></html>`;
 
-const out = resolve(root, 'public/og/bhimradio-v2.jpg');
+const out = resolve(root, 'public/og/bhimradio-v3.jpg');
 mkdirSync(dirname(out), { recursive: true });
 
 const browser = await chromium.launch();
