@@ -129,8 +129,8 @@ class NewsService:
             content_type=str(doc.get("content_type") or "news"),
             legacy_source=doc.get("legacy_source"),
             original_sort_timestamp=doc.get("original_sort_timestamp"),
-            created_at=doc.get("created_at") or datetime.now(timezone.utc),
-            updated_at=doc.get("updated_at") or datetime.now(timezone.utc),
+            created_at=doc["created_at"],
+            updated_at=doc["updated_at"],
         )
 
     def _next_news_id(self) -> str:

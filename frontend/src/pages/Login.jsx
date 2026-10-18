@@ -32,7 +32,7 @@ export default function Login() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { go: curtainGo } = useCurtain();
-  const { loginWithEmail, loginWithPhone, loginWithGoogle, loginAsGuest } = useAuth();
+  const { loginWithEmail, loginWithPhone, loginWithGoogle } = useAuth();
 
   const [mode, setMode]         = useState('email');
   const [email, setEmail]       = useState('');
@@ -212,17 +212,6 @@ export default function Login() {
           onError={() => setAuthError(t('auth.googleFailed'))}
           disabled={loading}
         />
-
-        <button
-          type="button"
-          onClick={() => {
-            loginAsGuest();
-            navigate('/dashboard');
-          }}
-          className="w-full flex items-center justify-center gap-2 rounded-xl border border-[#3f9fff]/40 bg-[#16274e]/60 px-4 py-2.5 text-xs font-semibold text-[#8ebaff] transition hover:border-[#3f9fff] hover:bg-[#1a3266] shadow-sm"
-        >
-          <span>⚡ Instant Demo Access (Explore AmbedkarGPT)</span>
-        </button>
 
         <p className="text-center text-sm" style={{ color: '#8b94b8' }}>
           {t('auth.noAccount')}{' '}

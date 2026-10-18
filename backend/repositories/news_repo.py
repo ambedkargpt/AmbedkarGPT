@@ -25,50 +25,6 @@ FRESH_WINDOW = timedelta(days=3)
 FRESH_WINDOW_TENANTS = ("congress", "samajwadi", "bjp")
 
 
-import json
-from pathlib import Path
-
-_STATIC_NEWS: list[dict] = []
-
-
-def _load_static_news() -> list[dict]:
-    global _STATIC_NEWS
-    if _STATIC_NEWS:
-        return _STATIC_NEWS
-    ctx_path = Path(__file__).resolve().parents[1] / "data" / "video_context.json"
-    if not ctx_path.is_file():
-        return []
-    try:
-        raw = json.loads(ctx_path.read_text(encoding="utf-8"))
-        items = []
-        for i, item in enumerate(raw[:50], start=1):
-            title = (item.get("video_title") or "").strip()
-            text = (item.get("full_text") or "").strip()
-            link = (item.get("video_link") or "").strip()
-            oid = ObjectId(f"6600000000000000000000{i:02d}")
-            items.append({
-                "_id": oid,
-                "news_id": f"news_static_{i}",
-                "headline": title,
-                "description": title,
-                "summary": text[:250] + "..." if len(text) > 250 else text,
-                "content": text[:800],
-                "source_name": "Ravish Kumar",
-                "source_url": link,
-                "published_at": datetime.now(timezone.utc) - timedelta(hours=i * 2),
-                "created_at": datetime.now(timezone.utc),
-                "updated_at": datetime.now(timezone.utc),
-                "language": "hi",
-                "tenant_slug": "general",
-                "tenant_id": 0,
-                "tags": ["social", "rights", "judiciary"],
-            })
-        _STATIC_NEWS = items
-        return _STATIC_NEWS
-    except Exception:
-        return []
-
-
 class NewsRepository:
     def __init__(self) -> None:
         self.collection = db["news"]
@@ -150,16 +106,12 @@ class NewsRepository:
         # row was written — a bulk import gives every row the same created_at,
         # which would leave the feed in arbitrary order. created_at is the
         # tiebreaker for the few documents with no published_at.
-        try:
-            return list(
-                self.collection.find(query)
-                .sort([("published_at", -1), ("created_at", -1)])
-                .skip(skip)
-                .limit(limit)
-            )
-        except Exception:
-            items = _load_static_news()
-            return items[skip : skip + limit]
+        return list(
+            self.collection.find(query)
+            .sort([("published_at", -1), ("created_at", -1)])
+            .skip(skip)
+            .limit(limit)
+        )
 
     def count(self, language: str | None = None, tenant_ids: list[int] | None = None) -> int:
         """Total matching documents — used for paginated listings."""
@@ -172,34 +124,13 @@ class NewsRepository:
                 tenant_clause = {"$or": [tenant_clause, {"tenant_id": {"$exists": False}}]}
             clauses.append(tenant_clause)
         query: dict = {"$and": clauses} if len(clauses) > 1 else (clauses[0] if clauses else {})
-        try:
-            return self.collection.count_documents(query)
-        except Exception:
-            return len(_load_static_news())
+        return self.collection.count_documents(query)
 
     def get_by_id(self, news_id: str) -> Optional[dict]:
-        try:
-            res = self.collection.find_one({"_id": ObjectId(news_id)})
-            if res:
-                return res
-        except Exception:
-            pass
-        for item in _load_static_news():
-            if str(item["_id"]) == str(news_id):
-                return item
-        return None
+        return self.collection.find_one({"_id": ObjectId(news_id)})
 
     def get_by_custom_news_id(self, news_id: str) -> Optional[dict]:
-        try:
-            res = self.collection.find_one({"news_id": news_id})
-            if res:
-                return res
-        except Exception:
-            pass
-        for item in _load_static_news():
-            if item.get("news_id") == news_id:
-                return item
-        return None
+        return self.collection.find_one({"news_id": news_id})
 
     def get_by_source_url(self, source_url: str) -> Optional[dict]:
         return self.collection.find_one({"source_url": source_url})

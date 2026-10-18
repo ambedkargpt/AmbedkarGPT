@@ -197,11 +197,8 @@ class PostsRepository:
             query["news_id"] = ObjectId(news_id)
         if status:
             query["status"] = status
-        try:
-            cursor = self.collection.find(query, projection=self._list_projection(include_meta))
-            return list(cursor.sort("created_at", -1).skip(skip).limit(limit))
-        except Exception:
-            return []
+        cursor = self.collection.find(query, projection=self._list_projection(include_meta))
+        return list(cursor.sort("created_at", -1).skip(skip).limit(limit))
 
     @staticmethod
     def _list_projection(include_meta: bool) -> dict[str, int] | None:
@@ -225,32 +222,23 @@ class PostsRepository:
         if not updates:
             return self.get_by_id(post_id)
         updates["updated_at"] = datetime.now(timezone.utc)
-        try:
-            self.collection.update_one({"_id": ObjectId(post_id)}, {"$set": updates})
-        except Exception:
-            pass
+        self.collection.update_one({"_id": ObjectId(post_id)}, {"$set": updates})
         return self.get_by_id(post_id)
 
     def count_today(self, user_id: str) -> int:
         """Count posts created by user since midnight UTC today."""
-        try:
-            return self.collection.count_documents({
-                "user_id": ObjectId(user_id),
-                "created_at": {"$gte": _today_midnight_utc()},
-            })
-        except Exception:
-            return 0
+        return self.collection.count_documents({
+            "user_id": ObjectId(user_id),
+            "created_at": {"$gte": _today_midnight_utc()},
+        })
 
     def count_published_today(self, user_id: str) -> int:
         """Count posts published by user since midnight UTC today."""
-        try:
-            return self.collection.count_documents({
-                "user_id": ObjectId(user_id),
-                "status": "published",
-                "published_at": {"$gte": _today_midnight_utc()},
-            })
-        except Exception:
-            return 0
+        return self.collection.count_documents({
+            "user_id": ObjectId(user_id),
+            "status": "published",
+            "published_at": {"$gte": _today_midnight_utc()},
+        })
 
     def set_published_at(self, post_id: str) -> None:
         """Stamp published_at on the post (called exactly once when status → published)."""
@@ -317,51 +305,39 @@ class PostsRepository:
 
     def count_all_time(self, user_id: str) -> int:
         """Total posts ever created by user (for milestone tracking)."""
-        try:
-            return self.collection.count_documents({"user_id": ObjectId(user_id)})
-        except Exception:
-            return 0
+        return self.collection.count_documents({"user_id": ObjectId(user_id)})
 
     def save_translation(self, post_id: str, language: str, content: str) -> None:
         """Store a translation under translations.{language} on the post document."""
-        try:
-            self.collection.update_one(
-                {"_id": ObjectId(post_id)},
-                {"$set": {f"translations.{language}": content, "updated_at": datetime.now(timezone.utc)}},
-            )
-        except Exception:
-            pass
+        self.collection.update_one(
+            {"_id": ObjectId(post_id)},
+            {"$set": {f"translations.{language}": content, "updated_at": datetime.now(timezone.utc)}},
+        )
 
     def archive(self, post_id: str) -> bool:
-        try:
-            result = self.collection.update_one(
-                {"_id": ObjectId(post_id)},
-                {"$set": {"status": "archived", "updated_at": datetime.now(timezone.utc)}},
-            )
-            return result.modified_count > 0
-        except Exception:
-            return False
+        result = self.collection.update_one(
+            {"_id": ObjectId(post_id)},
+            {"$set": {"status": "archived", "updated_at": datetime.now(timezone.utc)}},
+        )
+        return result.modified_count > 0
 
     def dashboard_list(self, user_id: str | None = None, limit: int = 50) -> list[dict]:
         query: dict[str, Any] = {}
         if user_id:
             query["user_id"] = ObjectId(user_id)
-        try:
-            return list(
-                self.collection.find(
-                    query,
-                    {
-                        "_id": 1,
-                        "user_id": 1,
-                        "news_id": 1,
-                        "content": 1,
-                        "hashtags": 1,
-                        "status": 1,
-                        "created_at": 1,
-                    },
-                )
-                .sort("created_at", -1)
-                .limit(limit)
+        return list(
+            self.collection.find(
+                query,
+                {
+                    "_id": 1,
+                    "user_id": 1,
+                    "news_id": 1,
+                    "content": 1,
+                    "hashtags": 1,
+                    "status": 1,
+                    "created_at": 1,
+                },
             )
-        except Exception:
-            return []
+            .sort("created_at", -1)
+            .limit(limit)
+        )

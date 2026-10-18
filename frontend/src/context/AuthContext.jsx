@@ -138,22 +138,6 @@ export function AuthProvider({ children }) {
     return user;
   }
 
-  function loginAsGuest() {
-    const guestUser = {
-      id: '660000000000000000000001',
-      username: 'guest_scholar',
-      email: 'guest@ambedkargpt.test',
-      political_party: 'Independent',
-      party_position: 'Citizen / Scholar',
-      is_test_account: true,
-      role: 'user',
-    };
-    authApi.saveTokens({ access_token: 'dev_guest_token_123', refresh_token: 'dev_guest_refresh_123' });
-    authApi.saveUser(guestUser);
-    setCurrentUser(guestUser);
-    return guestUser;
-  }
-
   async function logout() {
     await authApi.logout();
     setCurrentUser(null);
@@ -169,7 +153,6 @@ export function AuthProvider({ children }) {
       verifyOtp,
       loginWithEmail,
       loginWithGoogle,
-      loginAsGuest,
       updateProfile,
       logout,
     }}>
