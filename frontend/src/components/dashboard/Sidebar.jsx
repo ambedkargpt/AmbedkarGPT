@@ -53,6 +53,16 @@ function readCollapsed() {
   try { return localStorage.getItem(COLLAPSED_KEY) === '1'; } catch { return false; }
 }
 
+// Every label stays in the row while the rail narrows: the width clips it and
+// it fades, the way the panel in the reference recording closes. Removing it
+// from the DOM made each row re-centre its icon on the first frame, so the
+// whole rail jumped before the width had started to move.
+function fadeCls(collapsed) {
+  return `whitespace-nowrap transition-opacity duration-200 ease-out motion-reduce:transition-none ${
+    collapsed ? 'pointer-events-none opacity-0' : 'opacity-100 delay-75'
+  }`;
+}
+
 function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false, onToggleCollapse }) {
   // Read, never controlled: the rail reports the broadcast, it does not drive
   // it. Both copies of the rail - the desktop column and the mobile drawer -
@@ -86,21 +96,25 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
   const tip = (label) => (collapsed ? label : undefined);
 
   const navigate = useNavigate();
+  const fade = fadeCls(collapsed);
   return (
     <>
       {/* The masthead. It used to say "Dashboard" — a wordmark for the page
           you were already on, above a nav item of the same name. This is the
           product's own mark, and it is the one place the brand is stated on a
           signed-in screen. Collapsed, the mark stands in for the whole thing. */}
-      <div className={`flex items-center pt-5 pb-5 lg:pt-6 ${collapsed ? 'flex-col gap-2 px-2' : 'gap-2.5 px-5'}`}>
+      <div className="relative flex items-center gap-2.5 px-5 pt-5 pb-5 lg:pt-6">
+        {/* Collapsed, the toggle has nowhere to sit, so the mark opens the
+            rail again (it shows the arrow on hover); open, it goes home. */}
         <button
           type="button"
-          onClick={() => { navigate('/dashboard'); onClose?.(); }}
-          className={`flex items-center text-left transition-opacity hover:opacity-85 ${
-            collapsed ? 'justify-center' : 'min-w-0 flex-1 gap-2.5'
-          }`}
-          aria-label={t('nav.dashboard')}
-          title={tip(t('nav.dashboard'))}
+          onClick={() => {
+            if (collapsed && onToggleCollapse) { onToggleCollapse(); return; }
+            navigate('/dashboard'); onClose?.();
+          }}
+          className="group/mark flex min-w-0 flex-1 items-center gap-2.5 text-left transition-opacity hover:opacity-85"
+          aria-label={collapsed && onToggleCollapse ? t('side.expand') : t('nav.dashboard')}
+          title={collapsed && onToggleCollapse ? t('side.expand') : undefined}
         >
           <span
             className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#3f7fd8]/45"
@@ -115,9 +129,13 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
               className="h-[27px] w-[27px] object-contain"
               style={{ filter: 'brightness(1.7) saturate(1.25)' }}
             />
+            {collapsed && onToggleCollapse && (
+              <span className="absolute inset-0 flex items-center justify-center rounded-full bg-[#0c1330]/90 text-white opacity-0 transition-opacity duration-150 group-hover/mark:opacity-100">
+                <ChevronRight size={16} strokeWidth={2.2} />
+              </span>
+            )}
           </span>
-          {!collapsed && (
-            <span className="min-w-0">
+          <span className={`min-w-0 ${onToggleCollapse ? 'pr-8' : ''} ${fade}`}>
               {/* 14px rather than 16. With the line underneath it the two read
                   as one mark; at 16 the name was a few pixels from losing its
                   GPT to the truncation whenever the toggle sat beside it. */}
@@ -128,8 +146,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
               <span className="mt-[3px] block truncate text-[10.5px] font-medium leading-none text-[#5f7099]">
                 {t('splash.tagline')}
               </span>
-            </span>
-          )}
+          </span>
         </button>
 
         {/* An outlined square rather than a bare icon, so it reads as a control
@@ -142,14 +159,16 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-[#22315c] bg-[#0c1330] text-[#6b83ab] transition hover:border-[#3f6bd4]/70 hover:bg-[#101a3c] hover:text-white"
-            aria-label={collapsed ? t('side.expand') : t('side.collapse')}
+            className={`absolute right-4 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg border border-[#22315c] bg-[#0c1330] text-[#6b83ab] transition hover:border-[#3f6bd4]/70 hover:bg-[#101a3c] hover:text-white lg:mt-0.5 ${
+              collapsed ? 'pointer-events-none opacity-0' : 'opacity-100'
+            }`}
+            aria-label={t('side.collapse')}
             aria-expanded={!collapsed}
-            title={collapsed ? t('side.expand') : t('side.collapse')}
+            aria-hidden={collapsed || undefined}
+            tabIndex={collapsed ? -1 : undefined}
+            title={t('side.collapse')}
           >
-            {collapsed
-              ? <ChevronRight size={16} strokeWidth={2.2} />
-              : <ChevronLeft size={16} strokeWidth={2.2} />}
+            <ChevronLeft size={16} strokeWidth={2.2} />
           </button>
         )}
 
@@ -166,14 +185,12 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
       </div>
 
       {/* nav */}
-      <nav className={`flex-1 space-y-1.5 ${collapsed ? 'px-2' : 'px-4'}`}>
+      <nav className="flex-1 space-y-1.5 px-4">
         {/* Primary action */}
         <button
           type="button"
           onClick={() => { navigate(PRIMARY.route); onClose?.(); }}
-          className={`group mb-3 flex w-full items-center rounded-xl py-3 text-[14px] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 ${
-            collapsed ? 'justify-center px-0' : 'gap-2.5 px-3.5'
-          }`}
+          className="group mb-3 flex w-full items-center gap-2.5 overflow-hidden rounded-xl px-3.5 py-3 text-[14px] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110"
           style={{
             background: 'linear-gradient(135deg, #1a5fff 0%, #3f9fff 100%)',
             // On the services page this button is where you already are, so it
@@ -185,17 +202,13 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
           aria-current={active === PRIMARY.id ? 'page' : undefined}
           title={tip(t(PRIMARY.labelKey))}
         >
-          <PRIMARY.Icon size={17} strokeWidth={2} />
-          {!collapsed && (
-            <>
-              <span>{t(PRIMARY.labelKey)}</span>
-              <ChevronRight
-                size={15}
-                strokeWidth={2}
-                className="ml-auto transition-transform duration-200 group-hover:translate-x-0.5"
-              />
-            </>
-          )}
+          <PRIMARY.Icon size={17} strokeWidth={2} className="shrink-0" />
+          <span className={fade}>{t(PRIMARY.labelKey)}</span>
+          <ChevronRight
+            size={15}
+            strokeWidth={2}
+            className={`ml-auto shrink-0 transition-[transform,opacity] duration-200 group-hover:translate-x-0.5 ${collapsed ? 'opacity-0' : 'opacity-100'}`}
+          />
         </button>
 
         {NAV.map((item) => {
@@ -208,19 +221,13 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
                 key={item.id}
                 title={`${t(item.labelKey)} — ${t('nav.comingSoonSuffix')}`}
                 aria-disabled="true"
-                className={`flex w-full cursor-not-allowed items-center rounded-xl py-2.5 text-[13.5px] font-medium text-[#4d587a] ${
-                  collapsed ? 'justify-center px-0' : 'gap-3 px-3.5'
-                }`}
+                className="flex w-full cursor-not-allowed items-center gap-3 overflow-hidden rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium text-[#4d587a]"
               >
-                <IconComp size={17} strokeWidth={1.8} />
-                {!collapsed && (
-                  <>
-                    <span>{t(item.labelKey)}</span>
-                    <span className="ml-auto rounded-full bg-[#141d3a] px-1.5 py-0.5 font-count text-[11px] uppercase tracking-wider text-[#5a6e9a]">
-                      {t('nav.soonBadge')}
-                    </span>
-                  </>
-                )}
+                <IconComp size={17} strokeWidth={1.8} className="shrink-0" />
+                <span className={fade}>{t(item.labelKey)}</span>
+                <span className={`ml-auto rounded-full bg-[#141d3a] px-1.5 py-0.5 font-count text-[11px] uppercase tracking-wider text-[#5a6e9a] ${fade}`}>
+                  {t('nav.soonBadge')}
+                </span>
               </div>
             );
           }
@@ -235,8 +242,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
               }}
               title={tip(t(item.labelKey))}
               className={[
-                'group relative flex w-full items-center rounded-xl py-2.5 text-[13.5px] font-medium transition-all duration-200',
-                collapsed ? 'justify-center px-0' : 'gap-3 px-3.5',
+                'group relative flex w-full items-center gap-3 overflow-hidden rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium transition-all duration-200',
                 isActive
                   ? 'text-white'
                   : 'text-[#7b88ad] hover:text-[#c7d1eb] hover:bg-[#0f173a]/70',
@@ -255,14 +261,14 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
               {isActive && (
                 <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#3f9fff] to-[#7b5cff]" />
               )}
-              <IconComp size={17} strokeWidth={1.8} />
-              {!collapsed && <span>{t(item.labelKey)}</span>}
+              <IconComp size={17} strokeWidth={1.8} className="shrink-0" />
+              <span className={fade}>{t(item.labelKey)}</span>
               {/* The station runs whether or not anyone has it open, so the
                   rail says so: ON AIR when it is broadcasting, TUNED IN when
                   this listener is the one hearing it. */}
-              {item.id === 'radio' && !collapsed && radioState && (
+              {item.id === 'radio' && radioState && (
                 <span
-                  className="ml-auto flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.12em]"
+                  className={`ml-auto flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.12em] ${fade}`}
                   style={{ color: radioState === 'tuned' ? '#3f9fff' : '#ff6b5a' }}
                 >
                   <span
@@ -277,36 +283,32 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
         })}
       </nav>
 
-      <div className={`pb-4 pt-2 ${collapsed ? 'px-2' : 'px-4'}`}>
+      <div className="px-4 pb-4 pt-2">
         {onLogout && (
           <button
             type="button"
             onClick={handleLogout}
             disabled={loggingOut}
             title={tip(t('auth.logout'))}
-            className={`flex w-full items-center rounded-xl border-t border-[#141d3a]/70 py-3 text-[13.5px] font-medium text-[#7b88ad] transition hover:bg-[#0f173a]/70 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-transparent disabled:hover:text-[#7b88ad] ${
-              collapsed ? 'justify-center px-0' : 'gap-3 px-3.5'
-            }`}
+            className="flex w-full items-center gap-3 overflow-hidden rounded-xl border-t border-[#141d3a]/70 px-3.5 py-3 text-[13.5px] font-medium text-[#7b88ad] transition hover:bg-[#0f173a]/70 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-transparent disabled:hover:text-[#7b88ad]"
           >
             {loggingOut ? (
               <>
-                <span className="spinner-ring" style={{ width: 17, height: 17, borderWidth: 2 }} />
-                {!collapsed && <span>{t('auth.signingOut')}</span>}
+                <span className="spinner-ring shrink-0" style={{ width: 17, height: 17, borderWidth: 2 }} />
+                <span className={fade}>{t('auth.signingOut')}</span>
               </>
             ) : (
               <>
-                <LogOut size={17} strokeWidth={1.8} />
-                {!collapsed && <span>{t('auth.logout')}</span>}
+                <LogOut size={17} strokeWidth={1.8} className="shrink-0" />
+                <span className={fade}>{t('auth.logout')}</span>
               </>
             )}
           </button>
         )}
-        {/* The version line has no short form, so collapsed it simply goes. */}
-        {!collapsed && (
-          <div className="px-2 pt-2 text-[11px] font-count text-[#4e5a80] tracking-wide">
-            v1.0 · AmbedkarGPT
-          </div>
-        )}
+        {/* The version line has no short form, so collapsed it fades out. */}
+        <div className={`px-2 pt-2 text-[11px] font-count text-[#4e5a80] tracking-wide ${fade}`}>
+          v1.0 · AmbedkarGPT
+        </div>
       </div>
     </>
   );
@@ -340,11 +342,12 @@ export default function Sidebar({ active = 'dashboard', onSelect, mobileOpen = f
 
   return (
     <>
-      {/* Desktop sidebar. Only the width animates: the labels are removed from
-          the DOM rather than hidden, so there is nothing mid-transition for
-          them to wrap onto a second line inside. */}
+      {/* Desktop sidebar. The width eases while every icon keeps its place
+          (76px is exactly the nav's padding plus a row's, so the icons already
+          sit centred in it) and the labels are clipped and faded rather than
+          removed. They never wrap mid-way: each one is whitespace-nowrap. */}
       <aside
-        className={`hidden lg:flex flex-col shrink-0 border-r border-[#141d3a]/70 transition-[width] duration-300 ease-out ${
+        className={`hidden lg:flex flex-col shrink-0 overflow-hidden border-r border-[#141d3a]/70 transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
           collapsed ? 'w-[76px]' : 'w-[252px]'
         }`}
         style={{ background: 'linear-gradient(180deg,#0a1024 0%,#070b1c 100%)' }}
