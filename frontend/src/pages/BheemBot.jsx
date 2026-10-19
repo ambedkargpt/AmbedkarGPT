@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import {
   Scale, BookOpen, Heart, HelpCircle,
   Send, Mic, MicOff, Plus, ArrowRight, Copy, Check,
-  Volume2, Square, ExternalLink, LayoutGrid, X, ArrowLeft, Menu,
+  Volume2, Square, ExternalLink, X, ArrowLeft, Menu, History, Trash2, Loader2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { sendChatMessage } from '../api/chat';
+import { sendChatMessage, transcribeAudio } from '../api/chat';
 import { useI18n } from '../i18n/index.jsx';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import FormattedReply, { parseReply, visibleBlockCount } from '../components/FormattedReply';
@@ -42,10 +42,44 @@ const welcomeMessage = (t) => ({
 });
 
 const sessionKey = (userId) => `bheembot_history_${userId || 'anon'}`;
+const chatsKey = (userId) => `bheembot_chats_${userId || 'anon'}`;
 const CHAT_TIMEOUT_MS = 45_000;
+const MAX_CHATS = 30;
+const MAX_RECORDING_MS = 60_000;
 
-const SpeechRecognitionImpl =
-  typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+const canRecord =
+  typeof window !== 'undefined' && !!window.MediaRecorder && !!navigator.mediaDevices?.getUserMedia;
+
+const newChatId = () => `c${Date.now().toString(36)}`;
+
+/**
+ * Past conversations, kept in this browser. "New chat" used to replace the
+ * one conversation there was, so whatever had been asked was gone. Each chat
+ * is now its own entry, newest first, and the last one is reopened on return.
+ * The old single-chat session copy is brought in once so nothing is lost.
+ */
+function loadChats(userId) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(chatsKey(userId)) || 'null');
+    if (Array.isArray(saved)) return saved;
+  } catch { /* unreadable: start fresh */ }
+  try {
+    const legacy = JSON.parse(sessionStorage.getItem(sessionKey(userId)) || 'null');
+    if (Array.isArray(legacy) && legacy.some((m) => m.role === 'user')) {
+      return [{ id: newChatId(), updatedAt: Date.now(), messages: legacy }];
+    }
+  } catch { /* ignore */ }
+  return [];
+}
+
+function saveChats(userId, chats) {
+  try { localStorage.setItem(chatsKey(userId), JSON.stringify(chats.slice(0, MAX_CHATS))); } catch { /* storage full */ }
+}
+
+function chatTitle(chat) {
+  const first = chat.messages?.find((m) => m.role === 'user')?.content || '';
+  return first.length > 60 ? `${first.slice(0, 60)}…` : first;
+}
 
 function clock(ts) {
   if (!ts) return '';
@@ -264,6 +298,49 @@ function AppMenuButton() {
   );
 }
 
+// ── Past chats ─────────────────────────────────────────────────────────────────
+
+function RecentChats({ chats, currentId, onOpen, onDelete }) {
+  const { t, lang } = useI18n();
+  if (!chats.length) return null;
+  const when = (ts) => new Date(ts).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short' });
+  return (
+    <div className="mb-6">
+      <h2 className="mb-2 flex items-center gap-2 font-display text-[15px] font-semibold text-white">
+        <History size={15} strokeWidth={2} className="text-[#7fb5ff]" /> {t('bot.recent')}
+      </h2>
+      <ul className="space-y-1">
+        {chats.map((c) => (
+          <li key={c.id} className="group relative">
+            <button
+              type="button"
+              onClick={() => onOpen(c.id)}
+              className={[
+                'w-full rounded-xl border px-3 py-2 pr-8 text-left transition',
+                c.id === currentId
+                  ? 'border-[#3f6bd4]/70 bg-[#0d1838]'
+                  : 'border-transparent hover:border-[#1e3260]/70 hover:bg-[#0d1531]/60',
+              ].join(' ')}
+            >
+              <span className="line-clamp-2 block text-[12.5px] leading-snug text-[#d6e2f5]">{chatTitle(c)}</span>
+              <span className="mt-0.5 block text-[10.5px] text-[#6f86ad]">{when(c.updatedAt)}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(c.id)}
+              aria-label={t('bot.deleteChat')}
+              title={t('bot.deleteChat')}
+              className="absolute right-2 top-2 rounded-md p-1 text-[#6f86ad] opacity-0 transition hover:text-[#ff8a8a] focus:opacity-100 group-hover:opacity-100"
+            >
+              <Trash2 size={13} strokeWidth={2} />
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // ── Categories ─────────────────────────────────────────────────────────────────
 
 function CategoryList({ onPick }) {
@@ -303,42 +380,47 @@ export default function BheemBot() {
   const navigate = useNavigate();
 
   // ── Chat state ──
-  const [messages, setMessages] = useState(() => {
-    try {
-      const stored = sessionStorage.getItem(sessionKey(currentUser?.id));
-      if (stored) return JSON.parse(stored);
-    } catch { /* ignore */ }
-    return [welcomeMessage(t)];
-  });
+  const [chats, setChats] = useState(() => loadChats(currentUser?.id));
+  const [chatId, setChatId] = useState(() => chats[0]?.id ?? newChatId());
+  const [messages, setMessages] = useState(() => chats[0]?.messages ?? [welcomeMessage(t)]);
   const [input, setInput]       = useState('');
   const [sending, setSending]   = useState(false);
   const [catsOpen, setCatsOpen] = useState(false);
-  const [listening, setListening] = useState(false);
+  const [mic, setMic]           = useState('idle'); // 'idle' | 'recording' | 'transcribing'
+  const [micError, setMicError] = useState('');
 
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
-  const recognitionRef = useRef(null);
+  const recorderRef    = useRef(null);
 
   // ── Remove legacy shared key on first mount ──
   useEffect(() => {
     sessionStorage.removeItem('bheembot_history');
   }, []);
 
-  // ── Persist chat (per-user) ──
-  useEffect(() => {
-    try {
-      const toStore = messages.filter((m) => !m.typing);
-      sessionStorage.setItem(sessionKey(currentUser?.id), JSON.stringify(toStore));
-    } catch { /* storage full */ }
-  }, [messages, currentUser?.id]);
+  // ── Keep this conversation in the list of chats ──
+  // Only once something has been asked: an empty "new chat" is not worth a row.
+  const [lastSaved, setLastSaved] = useState(messages);
+  if (lastSaved !== messages) {
+    setLastSaved(messages);
+    const settled = messages.filter((m) => !m.typing);
+    if (settled.some((m) => m.role === 'user')) {
+      setChats([
+        { id: chatId, updatedAt: settled[settled.length - 1]?.timestamp ?? 0, messages: settled },
+        ...chats.filter((c) => c.id !== chatId),
+      ].slice(0, MAX_CHATS));
+    }
+  }
+  useEffect(() => { saveChats(currentUser?.id, chats); }, [chats, currentUser?.id]);
 
-  // ── Reset chat when the account changes ──
+  // ── Another account: its own chats ──
   const [chatUser, setChatUser] = useState(currentUser?.id);
   if (chatUser !== currentUser?.id) {
     setChatUser(currentUser?.id);
-    let stored = null;
-    try { stored = JSON.parse(sessionStorage.getItem(sessionKey(currentUser?.id)) || 'null'); } catch { /* ignore */ }
-    setMessages(stored || [welcomeMessage(t)]);
+    const theirs = loadChats(currentUser?.id);
+    setChats(theirs);
+    setChatId(theirs[0]?.id ?? newChatId());
+    setMessages(theirs[0]?.messages ?? [welcomeMessage(t)]);
   }
 
   // ── Auto-scroll ──
@@ -346,8 +428,12 @@ export default function BheemBot() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Stop the microphone when leaving the page.
-  useEffect(() => () => recognitionRef.current?.abort(), []);
+  // Release the microphone when leaving the page.
+  useEffect(() => () => {
+    const rec = recorderRef.current;
+    if (rec && rec.state !== 'inactive') { rec.onstop = null; rec.stop(); }
+    rec?.stream?.getTracks().forEach((tr) => tr.stop());
+  }, []);
 
   // ── Build history for API ──
   function buildHistory(msgs) {
@@ -438,10 +524,33 @@ export default function BheemBot() {
   }
 
   function newChat() {
+    if (sending) return;
     window.speechSynthesis?.cancel();
+    setChatId(newChatId());
     setMessages([welcomeMessage(t)]);
     setInput('');
+    setCatsOpen(false);
     inputRef.current?.focus();
+  }
+
+  function openChat(id) {
+    if (sending) return;
+    const chat = chats.find((c) => c.id === id);
+    if (!chat) return;
+    window.speechSynthesis?.cancel();
+    setChatId(id);
+    // Opening a chat is not a new turn in it, so it keeps its place in the list.
+    setLastSaved(chat.messages);
+    setMessages(chat.messages);
+    setCatsOpen(false);
+  }
+
+  function deleteChat(id) {
+    setChats((prev) => prev.filter((c) => c.id !== id));
+    if (id === chatId) {
+      setChatId(newChatId());
+      setMessages([welcomeMessage(t)]);
+    }
   }
 
   function toPost() {
@@ -449,23 +558,48 @@ export default function BheemBot() {
   }
 
   // ── Voice input ──
-  function toggleMic() {
-    if (!SpeechRecognitionImpl) return;
-    if (listening) { recognitionRef.current?.stop(); return; }
-    const rec = new SpeechRecognitionImpl();
-    rec.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
-    rec.interimResults = true;
-    rec.continuous = false;
-    const before = input ? `${input.trim()} ` : '';
-    rec.onresult = (e) => {
-      const heard = Array.from(e.results).map((r) => r[0].transcript).join('');
-      setInput(before + heard);
+  // Recorded here, written out on the server: see /chat/transcribe for why
+  // the browser's own recognition is not used.
+  async function toggleMic() {
+    setMicError('');
+    if (mic === 'recording') { recorderRef.current?.stop(); return; }
+    if (mic !== 'idle') return;
+    let stream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setMicError(t('bot.micDenied'));
+      return;
+    }
+    const type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']
+      .find((m) => window.MediaRecorder.isTypeSupported?.(m));
+    const rec = new window.MediaRecorder(stream, type ? { mimeType: type } : undefined);
+    const parts = [];
+    rec.ondataavailable = (e) => { if (e.data.size) parts.push(e.data); };
+    const cutoff = setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, MAX_RECORDING_MS);
+    rec.onstop = async () => {
+      clearTimeout(cutoff);
+      stream.getTracks().forEach((tr) => tr.stop());
+      const blob = new Blob(parts, { type: rec.mimeType || type || 'audio/webm' });
+      if (!blob.size) { setMic('idle'); return; }
+      setMic('transcribing');
+      try {
+        const heard = (await transcribeAudio(blob, lang)).trim();
+        if (heard) {
+          setInput((prev) => (prev.trim() ? `${prev.trim()} ${heard}` : heard));
+          inputRef.current?.focus();
+        } else {
+          setMicError(t('bot.micNothing'));
+        }
+      } catch {
+        setMicError(t('bot.micFailed'));
+      } finally {
+        setMic('idle');
+      }
     };
-    rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
-    recognitionRef.current = rec;
-    setListening(true);
+    recorderRef.current = rec;
     rec.start();
+    setMic('recording');
   }
 
   const lastBot = [...messages].reverse().find((m) => m.role === 'assistant' && !m.typing);
@@ -507,7 +641,7 @@ export default function BheemBot() {
                 onClick={() => setCatsOpen(true)}
                 className="inline-flex items-center gap-1.5 rounded-xl border border-[#1e3260]/70 bg-[#0a1428]/80 px-3 py-2 text-[12.5px] font-medium text-[#c7d6ee] transition hover:text-white xl:hidden"
               >
-                <LayoutGrid size={14} strokeWidth={2} /> <span className="hidden sm:inline">{t('bot.categories')}</span>
+                <History size={14} strokeWidth={2} /> <span className="hidden sm:inline">{t('bot.chatsAndTopics')}</span>
               </button>
               <button
                 type="button"
@@ -573,20 +707,25 @@ export default function BheemBot() {
               />
             </div>
 
-            {SpeechRecognitionImpl && (
+            {canRecord && (
               <button
                 type="button"
                 onClick={toggleMic}
-                aria-pressed={listening}
+                disabled={mic === 'transcribing'}
+                aria-pressed={mic === 'recording'}
                 className={[
                   'inline-flex shrink-0 items-center gap-2 rounded-2xl border px-4 text-[13px] font-semibold transition',
-                  listening
+                  mic === 'recording'
                     ? 'border-[#ff8a8a]/60 bg-[#2a0f18] text-[#ffb3b3]'
-                    : 'border-[#3f6bd4]/70 bg-[#0d1838] text-white hover:border-[#4d94ff]',
+                    : 'border-[#3f6bd4]/70 bg-[#0d1838] text-white hover:border-[#4d94ff] disabled:opacity-70',
                 ].join(' ')}
               >
-                {listening ? <MicOff size={16} strokeWidth={2} /> : <Mic size={16} strokeWidth={2} />}
-                <span className="hidden sm:inline">{listening ? t('bot.listening') : t('bot.speak')}</span>
+                {mic === 'recording' && <MicOff size={16} strokeWidth={2} />}
+                {mic === 'transcribing' && <Loader2 size={16} strokeWidth={2} className="animate-spin" />}
+                {mic === 'idle' && <Mic size={16} strokeWidth={2} />}
+                <span className="hidden sm:inline">
+                  {mic === 'recording' ? t('bot.listening') : mic === 'transcribing' ? t('bot.transcribing') : t('bot.speak')}
+                </span>
               </button>
             )}
 
@@ -605,12 +744,14 @@ export default function BheemBot() {
               <Send size={17} strokeWidth={2.2} />
             </button>
           </div>
+          {micError && <p className="mt-2 text-[12px] text-[#ff9a9a]" role="alert">{micError}</p>}
           <p className="mt-2 text-[11px] text-[#4a5f84]">{t('bot.disclaimer')}</p>
         </div>
       </section>
 
       {/* ── Categories panel (wide screens) ── */}
       <aside className="hidden w-[280px] shrink-0 overflow-y-auto border-l border-[#1e3260]/60 px-5 py-6 xl:block">
+        <RecentChats chats={chats} currentId={chatId} onOpen={openChat} onDelete={deleteChat} />
         <h2 className="mb-3 font-display text-[17px] font-semibold text-white">{t('bot.categories')}</h2>
         <CategoryList onPick={pickCategory} />
       </aside>
@@ -626,6 +767,7 @@ export default function BheemBot() {
                 <X size={18} strokeWidth={1.8} />
               </button>
             </div>
+            <RecentChats chats={chats} currentId={chatId} onOpen={openChat} onDelete={deleteChat} />
             <CategoryList onPick={pickCategory} />
           </div>
         </div>
