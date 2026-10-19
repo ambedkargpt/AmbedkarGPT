@@ -1,0 +1,8 @@
+# What a CLI deployment uploads. The Vercel project builds from frontend/
+# (its root directory), so nothing else in the repository needs to leave it.
+/*
+!/frontend
+frontend/node_modules
+frontend/dist
+frontend/test-results
+frontend/playwright-report
