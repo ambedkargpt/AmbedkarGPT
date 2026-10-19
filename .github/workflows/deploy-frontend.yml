@@ -1,0 +1,98 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# deploy-frontend.yml
+#
+# Deploys the web app to Vercel from GitHub Actions, using the Vercel CLI.
+#
+# Why not Vercel's own Git integration: on the Hobby plan Vercel will not
+# deploy a private repository that belongs to a GitHub organization. This
+# repository is the organization's, so the integration only works while the
+# repository is public. A deployment made with the CLI and a token is not tied
+# to the Git connection, so it works on Hobby with the repository private.
+#
+#   push to main   -> production deployment (www.ambedkargpt.in)
+#   pull request   -> preview deployment, its URL posted in the job summary
+#   manual run     -> production deployment
+#
+# Required GitHub Secrets (Settings -> Secrets and variables -> Actions):
+#   VERCEL_TOKEN       a token from vercel.com/account/tokens
+#   VERCEL_ORG_ID      the Vercel account ID (Account Settings -> General -> Vercel ID)
+#   VERCEL_PROJECT_ID  the project's ID (Project -> Settings -> General -> Project ID)
+#
+# The VITE_* variables are not set here: `vercel pull` fetches the project's
+# own environment variables, the same ones the Git integration used, and the
+# project's settings (including its root directory) come down with them.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-${{ github.event_name == 'pull_request' && github.head_ref || 'production' }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    # Pull requests from forks get no secrets, so they would only fail here.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check the Vercel secrets are set
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          missing=""
+          [ -n "$VERCEL_TOKEN" ] || missing="$missing VERCEL_TOKEN"
+          [ -n "$VERCEL_ORG_ID" ] || missing="$missing VERCEL_ORG_ID"
+          [ -n "$VERCEL_PROJECT_ID" ] || missing="$missing VERCEL_PROJECT_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing GitHub secrets:$missing (see the header of this workflow)"
+            exit 1
+          fi
+
+      - name: Install the Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Set the target
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "TARGET=preview" >> "$GITHUB_ENV"
+            echo "PROD_FLAG=" >> "$GITHUB_ENV"
+          else
+            echo "TARGET=production" >> "$GITHUB_ENV"
+            echo "PROD_FLAG=--prod" >> "$GITHUB_ENV"
+          fi
+
+      - name: Pull the project settings and environment
+        run: vercel pull --yes --environment=$TARGET --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: vercel build $PROD_FLAG --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy
+        run: |
+          url=$(vercel deploy --prebuilt $PROD_FLAG --token=${{ secrets.VERCEL_TOKEN }})
+          echo "Deployed ($TARGET): $url" | tee -a "$GITHUB_STEP_SUMMARY"
