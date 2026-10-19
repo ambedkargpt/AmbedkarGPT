@@ -669,7 +669,6 @@ export default {
   "bot.newChat": "New chat",
   "bot.you": "You",
   "bot.sources": "Sources",
-  "bot.toPost": "Turn this into a post",
   "bot.listen": "Listen",
   "bot.stop": "Stop",
   "bot.copy": "Copy",

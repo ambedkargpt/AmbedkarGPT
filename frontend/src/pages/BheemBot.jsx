@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Scale, BookOpen, Heart, HelpCircle,
-  Send, Plus, ArrowRight, Copy, Check,
+  Send, Plus, Copy, Check,
   Volume2, Square, ExternalLink, X, ArrowLeft, Menu, History, Trash2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -207,7 +207,7 @@ function SourcePill({ s }) {
   );
 }
 
-function BotMessage({ msg, lang, showActions, onToPost }) {
+function BotMessage({ msg, lang, showActions }) {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const blocks = msg.typing ? [] : parseReply(msg.content);
@@ -261,14 +261,6 @@ function BotMessage({ msg, lang, showActions, onToPost }) {
 
       {showActions && !msg.typing && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onToPost}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#2d6fff] px-4 py-2 text-[12.5px] font-semibold text-white shadow-[0_0_16px_rgba(45,111,255,0.35)] transition hover:bg-[#3d7fff]"
-          >
-            {t('bot.toPost')}
-            <ArrowRight size={14} strokeWidth={2.2} />
-          </button>
           <ListenButton text={text} lang={lang} />
           <CopyButton text={text} />
         </div>
@@ -540,10 +532,6 @@ export default function BheemBot() {
     }
   }
 
-  function toPost() {
-    navigate(currentUser ? '/generate/social-media' : '/login');
-  }
-
   const lastBot = [...messages].reverse().find((m) => m.role === 'assistant' && !m.typing);
   const showTopics = !sending;
 
@@ -602,7 +590,7 @@ export default function BheemBot() {
             if (m.role === 'user') return <UserMessage key={m.id} msg={m} />;
             const shown = m.id === 'welcome' ? { ...m, content: t('bot.welcome') } : m;
             const actionable = m === lastBot && m.id !== 'welcome' && !m.failed;
-            return <BotMessage key={m.id} msg={shown} lang={lang} showActions={actionable} onToPost={toPost} />;
+            return <BotMessage key={m.id} msg={shown} lang={lang} showActions={actionable} />;
           })}
 
           {showTopics && (
