@@ -94,7 +94,7 @@ def _do_retrieve(query: str, top_k: int) -> List[dict]:
 # came back as an error. Left running here, a slow retrieval finishes in the
 # background and warms the stack for the next question instead.
 _RETRIEVE_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="bheembot-rag")
-_RETRIEVE_TIMEOUT_S = 8
+_RETRIEVE_TIMEOUT_S = 12  # measured 7-8.5 s warm; the reply (~10-15 s) still fits the 29 s gateway
 
 
 def _try_retrieve(query: str, top_k: int = 5) -> List[dict]:
@@ -234,7 +234,10 @@ def chat_message(
             if title and title not in seen:
                 seen.add(title)
                 snippet = (c.get("chunk_text") or "")[:160].rstrip() + "…"
-                sources.append(SourceChunk(video_title=title, snippet=snippet))
+                link = (c.get("video_link") or "").strip()
+                # The video the passage came from, so the pill can open it.
+                sources.append(SourceChunk(video_title=title, snippet=snippet,
+                                           url=link if link.startswith("https://") else None))
 
     lang_label = "Hindi" if payload.language == "hi" else "English"
     system_content = _SYSTEM_PROMPT.replace("{context}", context_str).replace("{language}", lang_label)

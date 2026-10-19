@@ -685,6 +685,8 @@ export default {
   "bot.recent": "Recent chats",
   "bot.deleteChat": "Delete this chat",
   "bot.chatsAndTopics": "Chats & topics",
+  "bot.openBook": "Open this page of the book in a new tab",
+  "bot.openVideo": "Watch this video on YouTube",
   "bot.welcome": "Hello! I'm BhimBot, your AI knowledge assistant trained on Dr. BR Ambedkar's writings and speeches. Ask me about constitutional law, social justice, or his philosophy.",
   "quest.loading": "Loading questions…",
   "quest.progress": "Question {n} of {total}",

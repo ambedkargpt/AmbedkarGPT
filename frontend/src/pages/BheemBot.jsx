@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Scale, BookOpen, Heart, HelpCircle,
   Send, Plus, Copy, Check,
-  Volume2, Square, ExternalLink, X, ArrowLeft, Menu, History, Trash2,
+  Volume2, Square, ExternalLink, X, ArrowLeft, Menu, History, Trash2, PlayCircle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { sendChatMessage } from '../api/chat';
@@ -183,25 +183,29 @@ function UserMessage({ msg }) {
 }
 
 function SourcePill({ s }) {
+  const { t } = useI18n();
+  // Two kinds: a page of Babasaheb's books (opens the page viewer) and a video
+  // from the channels' archive (opens it on YouTube).
+  const isBook = !s.url || s.url.startsWith('/book/');
+  const Icon = isBook ? BookOpen : PlayCircle;
   const label = s.video_title.length > 48 ? `${s.video_title.slice(0, 48)}…` : s.video_title;
   const pill =
     'inline-flex items-center gap-1.5 rounded-lg border border-[#1e3260]/80 bg-[#0a1428] px-2.5 py-1 text-[11.5px] text-[#9db6dc]';
-  // A book source opens its scanned page in a new tab; other sources stay plain labels.
   return s.url ? (
     <a
       href={s.url}
       target="_blank"
       rel="noopener noreferrer"
-      title={`${s.snippet}\n\nOpen this page of the book in a new tab`}
+      title={`${s.snippet}\n\n${isBook ? t('bot.openBook') : t('bot.openVideo')}`}
       className={`${pill} transition-colors hover:border-[#4d94ff] hover:text-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#4d94ff]`}
     >
-      <BookOpen size={12} strokeWidth={1.8} />
+      <Icon size={12} strokeWidth={1.8} />
       {label}
       <ExternalLink size={10} strokeWidth={2} className="opacity-70" aria-hidden="true" />
     </a>
   ) : (
     <span title={s.snippet} className={pill}>
-      <BookOpen size={12} strokeWidth={1.8} />
+      <Icon size={12} strokeWidth={1.8} />
       {label}
     </span>
   );
