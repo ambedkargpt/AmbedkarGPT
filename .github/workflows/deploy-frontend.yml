@@ -18,9 +18,9 @@
 #   VERCEL_ORG_ID      the Vercel account ID (Account Settings -> General -> Vercel ID)
 #   VERCEL_PROJECT_ID  the project's ID (Project -> Settings -> General -> Project ID)
 #
-# The VITE_* variables are not set here: `vercel pull` fetches the project's
-# own environment variables, the same ones the Git integration used, and the
-# project's settings (including its root directory) come down with them.
+# The VITE_* variables are not set here: the deployment is built on Vercel,
+# which supplies the project's own environment variables, sensitive ones
+# included. See the Deploy step.
 # ─────────────────────────────────────────────────────────────────────────────
 
 name: Deploy Frontend
@@ -58,7 +58,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 24   # what the Vercel project builds with
+          node-version: 24
 
       - name: Check the Vercel secrets are set
         env:
@@ -86,13 +86,14 @@ jobs:
             echo "PROD_FLAG=--prod" >> "$GITHUB_ENV"
           fi
 
-      - name: Pull the project settings and environment
-        run: vercel pull --yes --environment=$TARGET --token=${{ secrets.VERCEL_TOKEN }}
-
-      - name: Build
-        run: vercel build $PROD_FLAG --token=${{ secrets.VERCEL_TOKEN }}
-
+      # Built on Vercel, not here. The project's VITE_API_URL and
+      # VITE_GOOGLE_CLIENT_ID are "sensitive" variables, and `vercel pull`
+      # never downloads a sensitive value: a build made on the runner went out
+      # with neither, so the site called nothing and Google sign-in failed
+      # with invalid_client. A remote build gets every variable, exactly as
+      # the Git integration's builds did. .vercelignore keeps the upload to
+      # the frontend.
       - name: Deploy
         run: |
-          url=$(vercel deploy --prebuilt $PROD_FLAG --token=${{ secrets.VERCEL_TOKEN }})
+          url=$(vercel deploy $PROD_FLAG --yes --token=${{ secrets.VERCEL_TOKEN }})
           echo "Deployed ($TARGET): $url" | tee -a "$GITHUB_STEP_SUMMARY"
