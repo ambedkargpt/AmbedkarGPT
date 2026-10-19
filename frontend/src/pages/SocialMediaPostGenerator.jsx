@@ -248,6 +248,9 @@ function truncateText(text = '', max = 160) {
   return `${t.slice(0, max).trimEnd()}…`;
 }
 
+// How deep each view sits, for stepping back through them with the history.
+const VIEW_DEPTH = { feed: 0, preview: 1, generated: 2 };
+
 export default function SocialMediaPostGenerator() {
   const navigate = useNavigate();
 
@@ -658,6 +661,23 @@ export default function SocialMediaPostGenerator() {
   // back-navigation lands on the feed rather than reopening the story.
   const location = useLocation();
   const topStory = location.state?.topStory;
+
+  // Each step into a story (feed -> preview -> generated) is its own history
+  // entry, so the phone's back button steps back out of it - to the story, then
+  // to the feed - instead of leaving the page. The view follows the entry.
+  const [viewKey, setViewKey] = useState(location.key);
+  if (viewKey !== location.key) {
+    setViewKey(location.key);
+    setView(location.state?.smView || 'feed');
+  }
+
+  function goView(next) {
+    const here = window.history.state?.usr?.smView || 'feed';
+    const steps = VIEW_DEPTH[next] - VIEW_DEPTH[here];
+    if (steps > 0) navigate(location.pathname + location.search, { state: { smView: next } });
+    else if (steps < 0) navigate(steps);
+    setView(next);
+  }
   const handoffDone = useRef(false);
 
   useEffect(() => {
@@ -673,7 +693,7 @@ export default function SocialMediaPostGenerator() {
         setSelectedArticle(article);
         setGeneratedPost('');
         setSelectedPostId(null);
-        setView('preview');
+        goView('preview');
       })
       .catch(() => {});
   }, [topStory, currentUser?.id]);
@@ -695,14 +715,14 @@ export default function SocialMediaPostGenerator() {
     setRefinementNote('');
     setRefineHint('');
     applyVersionState(null);
-    setView('preview');
+    goView('preview');
   }
 
   async function handleGenerate() {
     if (!selectedArticle) return;
     setGenerating(true);
     setGenSeconds(0);
-    setView('generated');
+    goView('generated');
     const timer = setInterval(() => setGenSeconds((s) => s + 1), 1000);
     try {
       if (!selectedArticle._backendId || !currentUser?.id) {
@@ -1103,7 +1123,7 @@ export default function SocialMediaPostGenerator() {
             <input
               type="text"
               value={searchInput}
-              onChange={(e) => { setSearchInput(e.target.value); setPage(1); setView('feed'); }}
+              onChange={(e) => { setSearchInput(e.target.value); setPage(1); goView('feed'); }}
               placeholder={t('gen.searchContent')}
               className="w-full rounded-full border border-[#1e3260]/70 bg-[#0a1130]/80 py-2.5 pl-9 pr-4 text-[13px] text-white placeholder-[#6b78a0] outline-none transition focus:border-[#3f9fff]/70 focus:shadow-[0_0_0_3px_rgba(63,159,255,0.12)]"
             />
@@ -1112,7 +1132,7 @@ export default function SocialMediaPostGenerator() {
           <div ref={filterRef} className="relative ml-auto sm:ml-0">
             <button
               type="button"
-              onClick={() => { setFilterOpen((p) => !p); setView('feed'); }}
+              onClick={() => { setFilterOpen((p) => !p); goView('feed'); }}
               className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-[12.5px] font-medium transition ${
                 filtersActive
                   ? 'border-[#3f9fff]/60 bg-[#0d1a3a] text-[#6aa8ff]'
@@ -1138,7 +1158,7 @@ export default function SocialMediaPostGenerator() {
                   <button
                     key={d.id}
                     type="button"
-                    onClick={() => { setDateFilter(d.id); setPage(1); setView('feed'); }}
+                    onClick={() => { setDateFilter(d.id); setPage(1); goView('feed'); }}
                     className={`flex w-full items-center justify-between px-4 py-2 text-[12.5px] transition hover:bg-[#0f1a3a] ${
                       d.id === dateFilter ? 'text-[#3f9fff]' : 'text-white/80'
                     }`}
@@ -1161,7 +1181,7 @@ export default function SocialMediaPostGenerator() {
                           <button
                             key={id}
                             type="button"
-                            onClick={() => { setDateFilter(id); setPage(1); setView('feed'); }}
+                            onClick={() => { setDateFilter(id); setPage(1); goView('feed'); }}
                             className={`flex w-full items-center justify-between gap-3 px-4 py-2 text-[12.5px] transition hover:bg-[#0f1a3a] ${
                               selected ? 'text-[#3f9fff]' : 'text-white/80'
                             }`}
@@ -1517,7 +1537,7 @@ export default function SocialMediaPostGenerator() {
                                   setTypeFilter(o.id);
                                   setTypeOpen(false);
                                   setPage(1);
-                                  setView('feed');
+                                  goView('feed');
                                 }}
                                 className={`flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left text-[12.5px] transition hover:bg-[#0f1a3a] ${
                                   on ? 'text-[#3f9fff]' : 'text-white/80'
@@ -1777,7 +1797,7 @@ export default function SocialMediaPostGenerator() {
             <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
               <button
                 type="button"
-                onClick={() => setView('feed')}
+                onClick={() => goView('feed')}
                 className="inline-flex items-center gap-1.5 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 px-3 py-1.5 text-[12px] font-medium text-[#8b94b8] transition hover:border-[#3f9fff]/50 hover:text-white"
               >
                 <ArrowLeft size={12} strokeWidth={2} />
@@ -2024,7 +2044,7 @@ export default function SocialMediaPostGenerator() {
               {/* Back — icon-only on mobile */}
               <button
                 type="button"
-                onClick={() => setView('preview')}
+                onClick={() => goView('preview')}
                 className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 text-[#8b94b8] transition hover:border-[#3f9fff]/50 hover:text-white sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5"
               >
                 <ArrowLeft size={12} strokeWidth={2} />

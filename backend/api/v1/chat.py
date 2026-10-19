@@ -144,6 +144,19 @@ def _ask_openai(messages: List[dict]) -> str:
     return (response.choices[0].message.content or "").strip()
 
 
+def _ask_deepseek(messages: List[dict]) -> str:
+    # DeepSeek speaks the OpenAI chat API, so the same client works against its base URL.
+    client = OpenAI(api_key=settings.deepseek_api_key, base_url=settings.deepseek_base_url,
+                    timeout=_OPENAI_TIMEOUT_S, max_retries=0)
+    response = client.chat.completions.create(
+        model=settings.deepseek_model,
+        messages=messages,
+        max_tokens=1024,
+        temperature=0.5,
+    )
+    return (response.choices[0].message.content or "").strip()
+
+
 def _ask_gemini(messages: List[dict]) -> str:
     from google import genai
 
@@ -166,6 +179,9 @@ def _ask_gemini(messages: List[dict]) -> str:
 
 
 def _providers():
+    # DeepSeek answers first; the other two are only the fallback when it fails.
+    if getattr(settings, "deepseek_api_key", None):
+        yield "deepseek", _ask_deepseek
     if getattr(settings, "openai_api_key", None):
         yield "openai", _ask_openai
     if getattr(settings, "gemini_api_key", None) or os.getenv("GOOGLE_API_KEY"):

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, RotateCw } from 'lucide-react';
 
 import { useAuth } from '../context/AuthContext';
@@ -71,6 +71,8 @@ function readLayout() {
 
 export default function BhimRadioPage() {
   const { t } = useI18n();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { currentUser } = useAuth();
   const {
     primeStation, configured,
@@ -205,11 +207,19 @@ export default function BhimRadioPage() {
             is chosen. It is a view preference, not a setting, so it is kept in
             the browser and never sent anywhere. */}
         <div className="bhim-station-switch">
-          {/* The way out. Standalone, the page is reached from the landing
-              page or a shared link, and a link from WhatsApp opens with no
-              history to go back to - so this goes home, not back(). */}
+          {/* The way out: back to the page the listener came from. A link
+              opened from WhatsApp has no page before it in the app (the
+              router's first entry has the key "default"), so that one goes
+              home instead of out of the site. */}
           {STANDALONE && (
-            <Link to="/" className="bhim-back" aria-label={t('radio.backHome')}>
+            <Link
+              to="/"
+              className="bhim-back"
+              aria-label={t('radio.backHome')}
+              onClick={(e) => {
+                if (location.key !== 'default') { e.preventDefault(); navigate(-1); }
+              }}
+            >
               <ArrowLeft size={16} aria-hidden="true" />
               <span>{t('radio.home')}</span>
             </Link>
