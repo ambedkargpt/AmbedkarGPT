@@ -2,39 +2,32 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Scale, BookOpen, Heart, HelpCircle,
-  Search, Send, Mic, Paperclip,
-  Sparkles, LayoutDashboard, Menu, X,
-  ChevronRight, Bot, ExternalLink,
+  Send, Plus, Copy, Check,
+  Volume2, Square, ExternalLink, X, ArrowLeft, Menu, History, Trash2, PlayCircle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { sendChatMessage } from '../api/chat';
-import logoSrc from '../assets/images/logo-animation.webp';
 import { useI18n } from '../i18n/index.jsx';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import FormattedReply, { parseReply, visibleBlockCount } from '../components/FormattedReply';
+import DashboardShell from '../layouts/DashboardShell';
+import { useShell } from '../layouts/dashboardShellContext';
 
-// ── Constants ──────────────────────────────────────────────────────────────────
+/**
+ * BhimBot, laid out the way the coming redesign has it, in today's theme:
+ *
+ *   app rail | the conversation, with the composer under it | categories
+ *
+ * Signed in, the page sits in the same frame as every other app screen, so
+ * the rail on the left is the app's own. A guest (the bot is public) gets the
+ * page on its own ground with a way back home instead.
+ */
 
 const CATEGORIES = [
-  {
-    id: 'constitution',
-    icon: Scale,
-    prompt: 'Explain the fundamental rights in the Indian Constitution as drafted by Dr. Ambedkar and why they matter for marginalized communities.',
-  },
-  {
-    id: 'writings',
-    icon: BookOpen,
-    prompt: "What are Dr. Ambedkar's most important books and what key ideas does each one explore?",
-  },
-  {
-    id: 'justice',
-    icon: Heart,
-    prompt: 'How did Dr. Ambedkar define social justice and what concrete steps did he propose to achieve it?',
-  },
-  {
-    id: 'faqs',
-    icon: HelpCircle,
-    prompt: "What are some frequently asked questions about Dr. B.R. Ambedkar's life, education, and legacy?",
-  },
+  { id: 'constitution', icon: Scale },
+  { id: 'writings',     icon: BookOpen },
+  { id: 'justice',      icon: Heart },
+  { id: 'faqs',         icon: HelpCircle },
 ];
 
 // A factory, not a constant: the greeting has to be built in the language in
@@ -48,12 +41,56 @@ const welcomeMessage = (t) => ({
   timestamp: Date.now(),
 });
 
-const SIDEBAR_WIDTH_KEY  = 'bheembot_sidebar_width';
 const sessionKey = (userId) => `bheembot_history_${userId || 'anon'}`;
-const CHAT_TIMEOUT_MS    = 45_000;
-const SIDEBAR_MIN        = 160;
-const SIDEBAR_MAX        = 420;
-const SIDEBAR_DEFAULT    = 220;
+const chatsKey = (userId) => `bheembot_chats_${userId || 'anon'}`;
+const CHAT_TIMEOUT_MS = 45_000;
+const MAX_CHATS = 30;
+
+const newChatId = () => `c${Date.now().toString(36)}`;
+
+/**
+ * Past conversations, kept in this browser. "New chat" used to replace the
+ * one conversation there was, so whatever had been asked was gone. Each chat
+ * is now its own entry, newest first, and the last one is reopened on return.
+ * The old single-chat session copy is brought in once so nothing is lost.
+ */
+function loadChats(userId) {
+  try {
+    const saved = JSON.parse(localStorage.getItem(chatsKey(userId)) || 'null');
+    if (Array.isArray(saved)) return saved;
+  } catch { /* unreadable: start fresh */ }
+  try {
+    const legacy = JSON.parse(sessionStorage.getItem(sessionKey(userId)) || 'null');
+    if (Array.isArray(legacy) && legacy.some((m) => m.role === 'user')) {
+      return [{ id: newChatId(), updatedAt: Date.now(), messages: legacy }];
+    }
+  } catch { /* ignore */ }
+  return [];
+}
+
+function saveChats(userId, chats) {
+  try { localStorage.setItem(chatsKey(userId), JSON.stringify(chats.slice(0, MAX_CHATS))); } catch { /* storage full */ }
+}
+
+function chatTitle(chat) {
+  const first = chat.messages?.find((m) => m.role === 'user')?.content || '';
+  return first.length > 60 ? `${first.slice(0, 60)}…` : first;
+}
+
+function clock(ts) {
+  if (!ts) return '';
+  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+/** The reply as plain text, for the clipboard and for reading aloud. */
+function plainText(markup) {
+  return (markup || '')
+    .replace(/^>\s?/gm, '')
+    .replace(/^\s*[-*]\s+/gm, '')
+    .replace(/[*_`#]/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
 
 // ── Typing dots ────────────────────────────────────────────────────────────────
 
@@ -71,265 +108,276 @@ function TypingDots() {
   );
 }
 
-// ── Message bubble ─────────────────────────────────────────────────────────────
+// ── Answer actions ─────────────────────────────────────────────────────────────
 
-function MessageBubble({ msg }) {
-  const isUser = msg.role === 'user';
-  const [expanded, setExpanded] = useState(false);
+const actionBtn =
+  'inline-flex items-center gap-1.5 rounded-xl border border-[#1e3260]/70 bg-[#0a1428]/80 px-3.5 py-2 text-[12.5px] font-medium text-[#c7d6ee] transition hover:border-[#3a6bc4]/70 hover:text-white';
 
-  // Replies are rendered from their markup; a long one collapses at a block boundary,
-  // never mid-sentence.
-  const blocks = isUser ? null : parseReply(msg.content);
-  const collapsedCount = blocks ? visibleBlockCount(blocks) : 0;
-  const isLong = !isUser && blocks.length > collapsedCount;
+function ListenButton({ text, lang }) {
+  const { t } = useI18n();
+  const [speaking, setSpeaking] = useState(false);
+  const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
+
+  useEffect(() => () => { if (supported) window.speechSynthesis.cancel(); }, [supported]);
+  if (!supported) return null;
+
+  function toggle() {
+    const synth = window.speechSynthesis;
+    if (speaking) { synth.cancel(); setSpeaking(false); return; }
+    synth.cancel();
+    // One sentence per utterance: Chrome silently stops a long one after
+    // about fifteen seconds.
+    const sentences = text.split(/(?<=[।?!.])\s+/).map((s) => s.trim()).filter(Boolean);
+    const code = lang === 'hi' ? 'hi-IN' : 'en-IN';
+    const voice = synth.getVoices().find((v) => v.lang?.startsWith(lang === 'hi' ? 'hi' : 'en'));
+    sentences.forEach((s, i) => {
+      const u = new SpeechSynthesisUtterance(s);
+      u.lang = code;
+      if (voice) u.voice = voice;
+      if (i === sentences.length - 1) u.onend = () => setSpeaking(false);
+      synth.speak(u);
+    });
+    setSpeaking(true);
+  }
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
-      {!isUser && (
-        <div className="mr-2.5 mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#2d6fff] to-[#7b5cff] shadow-[0_0_14px_rgba(79,107,255,0.4)]">
-          <Bot size={14} strokeWidth={2} className="text-white" />
-        </div>
-      )}
+    <button type="button" onClick={toggle} className={actionBtn}>
+      {speaking ? <Square size={13} strokeWidth={2.2} /> : <Volume2 size={14} strokeWidth={2} />}
+      {speaking ? t('bot.stop') : t('bot.listen')}
+    </button>
+  );
+}
 
-      <div className={`max-w-[75%] ${isUser ? 'max-w-[65%]' : ''}`}>
-        <div
-          className={[
-            'rounded-2xl px-4 py-3 text-[13.5px] leading-[1.7]',
-            isUser
-              ? 'rounded-tr-sm bg-[#2d6fff] text-white'
-              : 'rounded-tl-sm border border-[#1e3260]/60 bg-[#070f24] text-[#d0dff2]',
-          ].join(' ')}
-        >
+function CopyButton({ text }) {
+  const { t } = useI18n();
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch { /* clipboard blocked: nothing to do */ }
+  }
+  return (
+    <button type="button" onClick={copy} className={actionBtn}>
+      {copied ? <Check size={14} strokeWidth={2.2} className="text-[#22c55e]" /> : <Copy size={14} strokeWidth={2} />}
+      {copied ? t('bot.copied') : t('bot.copy')}
+    </button>
+  );
+}
+
+// ── Messages ───────────────────────────────────────────────────────────────────
+
+function UserMessage({ msg }) {
+  const { t } = useI18n();
+  return (
+    <div className="mb-5 flex justify-end">
+      <div className="max-w-[78%] rounded-2xl rounded-tr-sm border border-[#1e3260]/70 bg-[#0d1838] px-4 py-3">
+        <p className="mb-1 text-[11px] text-[#6f86ad]">
+          {t('bot.you')}{msg.timestamp ? ` · ${clock(msg.timestamp)}` : ''}
+        </p>
+        <p className="whitespace-pre-wrap text-[14px] font-medium leading-relaxed text-white">{msg.content}</p>
+      </div>
+    </div>
+  );
+}
+
+function SourcePill({ s }) {
+  const { t } = useI18n();
+  // Two kinds: a page of Babasaheb's books (opens the page viewer) and a video
+  // from the channels' archive (opens it on YouTube).
+  const isBook = !s.url || s.url.startsWith('/book/');
+  const Icon = isBook ? BookOpen : PlayCircle;
+  const label = s.video_title.length > 48 ? `${s.video_title.slice(0, 48)}…` : s.video_title;
+  const pill =
+    'inline-flex items-center gap-1.5 rounded-lg border border-[#1e3260]/80 bg-[#0a1428] px-2.5 py-1 text-[11.5px] text-[#9db6dc]';
+  return s.url ? (
+    <a
+      href={s.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      title={`${s.snippet}\n\n${isBook ? t('bot.openBook') : t('bot.openVideo')}`}
+      className={`${pill} transition-colors hover:border-[#4d94ff] hover:text-white focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#4d94ff]`}
+    >
+      <Icon size={12} strokeWidth={1.8} />
+      {label}
+      <ExternalLink size={10} strokeWidth={2} className="opacity-70" aria-hidden="true" />
+    </a>
+  ) : (
+    <span title={s.snippet} className={pill}>
+      <Icon size={12} strokeWidth={1.8} />
+      {label}
+    </span>
+  );
+}
+
+function BotMessage({ msg, lang, showActions }) {
+  const { t } = useI18n();
+  const [expanded, setExpanded] = useState(false);
+  const blocks = msg.typing ? [] : parseReply(msg.content);
+  const collapsedCount = blocks.length ? visibleBlockCount(blocks) : 0;
+  const isLong = blocks.length > collapsedCount;
+  const text = plainText(msg.content);
+
+  return (
+    <div className="mb-5">
+      <article className="max-w-[860px] rounded-2xl border border-[#1e3260]/70 bg-[#081127]/95 px-5 py-4 shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
+        <header className="mb-2.5 flex items-center gap-2">
+          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#2d6fff] to-[#7b5cff]">
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-white" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+              <circle cx="12" cy="12" r="9" /><path d="M12 3v18M3 12h18" />
+            </svg>
+          </span>
+          <span className="text-[12.5px] font-semibold text-white">{t('bot.name')}</span>
+          {msg.timestamp && !msg.typing && (
+            <span className="font-mono text-[11px] text-[#6f86ad]">{clock(msg.timestamp)}</span>
+          )}
+        </header>
+
+        <div className="text-[14.5px] leading-[1.75] text-[#d6e2f5]">
           {msg.typing ? (
             <TypingDots />
           ) : (
             <>
-              {isUser ? (
-                <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
-              ) : (
-                <FormattedReply blocks={blocks} maxBlocks={isLong && !expanded ? collapsedCount : undefined} />
-              )}
+              <FormattedReply blocks={blocks} maxBlocks={isLong && !expanded ? collapsedCount : undefined} />
               {isLong && (
                 <button
                   type="button"
                   onClick={() => setExpanded((v) => !v)}
                   className="mt-2 block text-[12.5px] text-[#4d94ff] underline underline-offset-2 hover:text-[#7ab4ff]"
                 >
-                  {expanded ? 'Show less' : 'Show more'}
+                  {expanded ? t('bot.showLess') : t('bot.showMore')}
                 </button>
               )}
             </>
           )}
         </div>
 
-        {!isUser && !msg.typing && msg.sources?.length > 0 && (
-          <div className="mt-1.5 flex flex-wrap gap-1.5">
-            {msg.sources.map((s, i) => {
-              const label = s.video_title.length > 40 ? s.video_title.slice(0, 40) + '…' : s.video_title;
-              const pill = 'inline-flex items-center gap-1 rounded-full border border-[#1a3060]/60 bg-[#0a1428] px-2.5 py-0.5 text-[10.5px] text-[#5a80b8]';
-              // A book source opens its scanned page in a new tab; other sources stay plain labels.
-              return s.url ? (
-                <a
-                  key={i}
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title={`${s.snippet}\n\nOpen this page of the book in a new tab`}
-                  className={`${pill} transition-colors hover:border-[#4d94ff] hover:text-[#9cc3ff] focus-visible:outline focus-visible:outline-1 focus-visible:outline-[#4d94ff]`}
-                >
-                  <BookOpen size={9} strokeWidth={1.8} />
-                  {label}
-                  <ExternalLink size={8} strokeWidth={2} className="opacity-70" aria-hidden="true" />
-                </a>
-              ) : (
-                <span key={i} title={s.snippet} className={pill}>
-                  <BookOpen size={9} strokeWidth={1.8} />
-                  {label}
-                </span>
-              );
-            })}
+        {!msg.typing && msg.sources?.length > 0 && (
+          <div className="mt-4 border-t border-[#1e3260]/60 pt-3">
+            <p className="mb-2 text-[11px] font-medium text-[#6f86ad]">{t('bot.sources')}</p>
+            <div className="flex flex-wrap gap-2">
+              {msg.sources.map((s, i) => <SourcePill key={i} s={s} />)}
+            </div>
           </div>
         )}
-      </div>
+      </article>
+
+      {showActions && !msg.typing && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <ListenButton text={text} lang={lang} />
+          <CopyButton text={text} />
+        </div>
+      )}
     </div>
   );
 }
 
-// ── Sidebar ────────────────────────────────────────────────────────────────────
-
-function ChatSidebar({ onCategoryClick, searchQuery, setSearchQuery, onClose, mobile }) {
+/** The app drawer's opener on a phone. A component of its own so the hook
+ *  runs inside the shell that provides it. */
+function AppMenuButton() {
   const { t } = useI18n();
-  const navigate = useNavigate();
-  const filtered = searchQuery
-    ? CATEGORIES.filter(
-        (c) =>
-          t(`bot.cat.${c.id}.title`).toLowerCase().includes(searchQuery.toLowerCase()) ||
-          t(`bot.cat.${c.id}.desc`).toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : CATEGORIES;
-
+  const { openMenu } = useShell();
   return (
-    <aside className="flex h-full w-full flex-col overflow-hidden bg-[#070c1e]">
-      {/* Header — logo + name */}
-      <div className="flex items-center justify-between px-4 pt-5 pb-4">
-        <button
-          type="button"
-          onClick={() => navigate('/dashboard')}
-          className="flex min-w-0 items-center gap-2 transition-opacity hover:opacity-80"
-        >
-          <img
-            src={logoSrc}
-            alt="AmbedkarGPT"
-            className="h-7 w-7 shrink-0 rounded-lg object-contain"
-            style={{ background: 'transparent' }}
-          />
-          <span className="truncate font-display text-[14px] font-semibold gradient-text-blue">
-            {t('brand.ambedkar')}GPT
-          </span>
-        </button>
-        {mobile && (
-          <button type="button" onClick={onClose} className="ml-2 shrink-0 text-[#5a7a9e] hover:text-white">
-            <X size={18} strokeWidth={1.8} />
-          </button>
-        )}
-      </div>
-
-      {/* Search */}
-      <div className="px-3 pb-3">
-        <div className="flex items-center gap-2 rounded-xl border border-[#1e3260]/60 bg-[#0a1428] px-3 py-2.5">
-          <Search size={12} strokeWidth={2} className="shrink-0 text-[#4a6080]" />
-          <input
-            type="text"
-            placeholder={t('bot.searchCategories')}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-transparent text-[12px] text-white placeholder:text-[#4a6080] outline-none"
-          />
-        </div>
-      </div>
-
-      {/* Categories */}
-      <div className="flex-1 overflow-y-auto px-3 pb-2">
-        <p className="mb-2 px-1 text-[9.5px] font-semibold uppercase tracking-[0.18em] text-[#4a6080]">
-          {t('bot.knowledgeCategories')}
-        </p>
-        <div className="space-y-1">
-          {/* eslint-disable-next-line no-unused-vars */}
-          {filtered.map(({ id, icon: CatIcon, prompt }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => { onCategoryClick(prompt); if (mobile) onClose?.(); }}
-              className="group w-full rounded-xl border border-transparent px-3 py-2.5 text-left transition-all hover:border-[#1e3260]/70 hover:bg-[#0d1531]/70"
-            >
-              <div className="flex items-start gap-2.5">
-                <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-[#1e3260]/60 bg-[#0a1428] text-[#4d94ff]">
-                  <CatIcon size={12} strokeWidth={1.8} />
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-[12px] font-semibold text-white">{t(`bot.cat.${id}.title`)}</p>
-                  <p className="mt-0.5 text-[10.5px] leading-snug text-[#5a7a9e]">{t(`bot.cat.${id}.desc`)}</p>
-                </div>
-                <ChevronRight size={12} strokeWidth={1.8} className="mt-1 shrink-0 text-[#1e3260] transition group-hover:text-[#4d94ff]" />
-              </div>
-            </button>
-          ))}
-          {filtered.length === 0 && (
-            <p className="px-2 py-3 text-[11.5px] text-[#4a6080]">{t('bot.noCategories')}</p>
-          )}
-        </div>
-      </div>
-
-      {/* Back to dashboard */}
-      <div className="px-3 pb-3">
-        <button
-          type="button"
-          onClick={() => navigate('/dashboard')}
-          className="flex w-full items-center gap-2 rounded-xl border border-[#1e3260]/40 bg-[#0a1428]/60 px-3 py-2 text-[11.5px] text-[#5a7a9e] transition hover:border-[#3a6bc4]/60 hover:text-white"
-        >
-          <LayoutDashboard size={13} strokeWidth={1.8} />
-          {t('bot.backToDashboard')}
-        </button>
-      </div>
-
-      {/* Footer */}
-      <p className="px-4 pb-4 text-[10px] text-[#2a3a5e]">
-        {t('bot.poweredBy')}
-      </p>
-    </aside>
-  );
-}
-
-// ── Resize handle ──────────────────────────────────────────────────────────────
-
-function ResizeHandle({ onMouseDown, isDragging }) {
-  const { t } = useI18n();
-  return (
-    <div
-      onMouseDown={onMouseDown}
-      className="group relative z-20 hidden w-[5px] shrink-0 cursor-col-resize select-none md:flex md:items-center md:justify-center"
-      title={t('bot.dragResize')}
-      style={{ background: 'transparent' }}
+    <button
+      type="button"
+      onClick={openMenu}
+      aria-label={t('common.openMenu')}
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#1e3260]/70 text-[#8ea3c7] transition hover:text-white md:hidden"
     >
-      {/* Visible line */}
-      <div
-        className="h-full w-px transition-all duration-150"
-        style={{
-          background: isDragging
-            ? 'linear-gradient(180deg, transparent 0%, rgba(63,159,255,0.7) 30%, rgba(63,159,255,0.7) 70%, transparent 100%)'
-            : 'linear-gradient(180deg, transparent 0%, rgba(30,50,96,0.7) 30%, rgba(30,50,96,0.7) 70%, transparent 100%)',
-        }}
-      />
-      {/* Hover/active highlight — wider invisible hit zone */}
-      <div
-        className="absolute inset-y-0 -left-1 -right-1 transition-opacity duration-150"
-        style={{
-          opacity: isDragging ? 1 : 0,
-          background:
-            'linear-gradient(180deg, transparent 0%, rgba(63,159,255,0.12) 30%, rgba(63,159,255,0.12) 70%, transparent 100%)',
-        }}
-      />
-      {/* Grab dots indicator at center */}
-      <div
-        className="absolute top-1/2 -translate-y-1/2 flex flex-col gap-[3px] opacity-0 transition-opacity group-hover:opacity-100"
-        style={{ opacity: isDragging ? 1 : undefined }}
-      >
-        {[0, 1, 2].map((i) => (
-          <div key={i} className="h-[3px] w-[3px] rounded-full bg-[#3f9fff]/60" />
+      <Menu size={17} strokeWidth={1.9} />
+    </button>
+  );
+}
+
+// ── Past chats ─────────────────────────────────────────────────────────────────
+
+function RecentChats({ chats, currentId, onOpen, onDelete }) {
+  const { t, lang } = useI18n();
+  if (!chats.length) return null;
+  const when = (ts) => new Date(ts).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short' });
+  return (
+    <div className="mb-6">
+      <h2 className="mb-2 flex items-center gap-2 font-display text-[15px] font-semibold text-white">
+        <History size={15} strokeWidth={2} className="text-[#7fb5ff]" /> {t('bot.recent')}
+      </h2>
+      <ul className="space-y-1">
+        {chats.map((c) => (
+          <li key={c.id} className="group relative">
+            <button
+              type="button"
+              onClick={() => onOpen(c.id)}
+              className={[
+                'w-full rounded-xl border px-3 py-2 pr-8 text-left transition',
+                c.id === currentId
+                  ? 'border-[#3f6bd4]/70 bg-[#0d1838]'
+                  : 'border-transparent hover:border-[#1e3260]/70 hover:bg-[#0d1531]/60',
+              ].join(' ')}
+            >
+              <span className="line-clamp-2 block text-[12.5px] leading-snug text-[#d6e2f5]">{chatTitle(c)}</span>
+              <span className="mt-0.5 block text-[10.5px] text-[#6f86ad]">{when(c.updatedAt)}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(c.id)}
+              aria-label={t('bot.deleteChat')}
+              title={t('bot.deleteChat')}
+              className="absolute right-2 top-2 rounded-md p-1 text-[#6f86ad] opacity-0 transition hover:text-[#ff8a8a] focus:opacity-100 group-hover:opacity-100"
+            >
+              <Trash2 size={13} strokeWidth={2} />
+            </button>
+          </li>
         ))}
-      </div>
+      </ul>
     </div>
+  );
+}
+
+// ── Categories ─────────────────────────────────────────────────────────────────
+
+function CategoryList({ onPick }) {
+  const { t } = useI18n();
+  return (
+    <>
+      <ul className="divide-y divide-[#1e3260]/60 border-y border-[#1e3260]/60">
+        {/* eslint-disable-next-line no-unused-vars -- used as a JSX tag */}
+        {CATEGORIES.map(({ id, icon: CatIcon }) => (
+          <li key={id}>
+            <button
+              type="button"
+              onClick={() => onPick(t(`bot.cat.${id}.prompt`))}
+              className="group flex w-full items-start gap-2.5 px-1 py-3 text-left transition hover:bg-[#0d1531]/60"
+            >
+              <CatIcon size={14} strokeWidth={1.9} className="mt-0.5 shrink-0 text-[#7fb5ff]" />
+              <span className="min-w-0">
+                <span className="block text-[13px] font-semibold text-white group-hover:text-[#9cc3ff]">
+                  {t(`bot.cat.${id}.title`)}
+                </span>
+                <span className="mt-0.5 block text-[11.5px] leading-snug text-[#6f86ad]">{t(`bot.cat.${id}.desc`)}</span>
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-[11.5px] leading-relaxed text-[#6f86ad]">{t('bot.pickHint')}</p>
+    </>
   );
 }
 
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function BheemBot() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
 
-  // ── Sidebar width (resizable) ──
-  const [sidebarWidth, setSidebarWidth] = useState(() => {
-    const stored = parseInt(localStorage.getItem(SIDEBAR_WIDTH_KEY), 10);
-    return stored >= SIDEBAR_MIN && stored <= SIDEBAR_MAX ? stored : SIDEBAR_DEFAULT;
-  });
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartX   = useRef(0);
-  const dragStartW   = useRef(0);
-
   // ── Chat state ──
-  const [messages,     setMessages]     = useState(() => {
-    try {
-      const stored = sessionStorage.getItem(sessionKey(currentUser?.id));
-      if (stored) return JSON.parse(stored);
-    } catch { /* ignore */ }
-    return [welcomeMessage(t)];
-  });
-  const [input,        setInput]        = useState('');
-  const [sending,      setSending]      = useState(false);
-  const [searchQuery,  setSearchQuery]  = useState('');
-  const [sidebarOpen,  setSidebarOpen]  = useState(false);
+  const [chats, setChats] = useState(() => loadChats(currentUser?.id));
+  const [chatId, setChatId] = useState(() => chats[0]?.id ?? newChatId());
+  const [messages, setMessages] = useState(() => chats[0]?.messages ?? [welcomeMessage(t)]);
+  const [input, setInput]       = useState('');
+  const [sending, setSending]   = useState(false);
+  const [catsOpen, setCatsOpen] = useState(false);
 
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
@@ -339,64 +387,36 @@ export default function BheemBot() {
     sessionStorage.removeItem('bheembot_history');
   }, []);
 
-  // ── Persist chat (per-user) ──
-  useEffect(() => {
-    try {
-      const toStore = messages.filter((m) => !m.typing);
-      sessionStorage.setItem(sessionKey(currentUser?.id), JSON.stringify(toStore));
-    } catch { /* storage full */ }
-  }, [messages, currentUser?.id]);
-
-  // ── Persist sidebar width ──
-  useEffect(() => {
-    localStorage.setItem(SIDEBAR_WIDTH_KEY, String(sidebarWidth));
-  }, [sidebarWidth]);
-
-  // ── Reset chat when user changes (account switch) ──
-  const prevUserIdRef = useRef(currentUser?.id);
-  useEffect(() => {
-    if (prevUserIdRef.current !== currentUser?.id) {
-      prevUserIdRef.current = currentUser?.id;
-      try {
-        const stored = sessionStorage.getItem(sessionKey(currentUser?.id));
-        setMessages(stored ? JSON.parse(stored) : [welcomeMessage(t)]);
-      } catch {
-        setMessages([welcomeMessage(t)]);
-      }
+  // ── Keep this conversation in the list of chats ──
+  // Only once something has been asked: an empty "new chat" is not worth a row.
+  const [lastSaved, setLastSaved] = useState(messages);
+  if (lastSaved !== messages) {
+    setLastSaved(messages);
+    const settled = messages.filter((m) => !m.typing);
+    if (settled.some((m) => m.role === 'user')) {
+      setChats([
+        { id: chatId, updatedAt: settled[settled.length - 1]?.timestamp ?? 0, messages: settled },
+        ...chats.filter((c) => c.id !== chatId),
+      ].slice(0, MAX_CHATS));
     }
-  }, [currentUser?.id]);
+  }
+  useEffect(() => { saveChats(currentUser?.id, chats); }, [chats, currentUser?.id]);
+
+  // ── Another account: its own chats ──
+  const [chatUser, setChatUser] = useState(currentUser?.id);
+  if (chatUser !== currentUser?.id) {
+    setChatUser(currentUser?.id);
+    const theirs = loadChats(currentUser?.id);
+    setChats(theirs);
+    setChatId(theirs[0]?.id ?? newChatId());
+    setMessages(theirs[0]?.messages ?? [welcomeMessage(t)]);
+  }
 
   // ── Auto-scroll ──
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // ── Drag-resize logic ──────────────────────────────────────────────────────
-  const handleResizeMouseDown = useCallback((e) => {
-    e.preventDefault();
-    dragStartX.current = e.clientX;
-    dragStartW.current = sidebarWidth;
-    setIsDragging(true);
-  }, [sidebarWidth]);
-
-  useEffect(() => {
-    if (!isDragging) return;
-
-    const onMouseMove = (e) => {
-      const delta = e.clientX - dragStartX.current;
-      const next  = Math.min(SIDEBAR_MAX, Math.max(SIDEBAR_MIN, dragStartW.current + delta));
-      setSidebarWidth(next);
-    };
-
-    const onMouseUp = () => setIsDragging(false);
-
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup',   onMouseUp);
-    return () => {
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup',   onMouseUp);
-    };
-  }, [isDragging]);
 
   // ── Build history for API ──
   function buildHistory(msgs) {
@@ -424,14 +444,27 @@ export default function BheemBot() {
       timedOut = true;
       setMessages((prev) => [
         ...prev.filter((m) => m.id !== typingId),
-        { id: Date.now(), role: 'assistant', content: t('bot.slowReply'), sources: [], timestamp: Date.now() },
+        { id: Date.now(), role: 'assistant', content: t('bot.slowReply'), sources: [], timestamp: Date.now(), failed: true },
       ]);
       setSending(false);
     }, CHAT_TIMEOUT_MS);
 
     try {
       const history = buildHistory(messages.concat(userMsg));
-      const { reply, sources } = await sendChatMessage({ message: trimmed, history });
+      // The first question after a quiet spell lands on a cold server and can
+      // run past the gateway's limit (a 502/503/504, or no response at all).
+      // The second attempt finds it warm, so one silent retry is made before
+      // anything is shown as an error.
+      const ask = () => sendChatMessage({ message: trimmed, history, language: lang });
+      let res;
+      try {
+        res = await ask();
+      } catch (first) {
+        const code = first?.response?.status;
+        if (timedOut || (code && code < 500)) throw first;
+        res = await ask();
+      }
+      const { reply, sources } = res;
       if (timedOut) return;
       clearTimeout(timer);
       setMessages((prev) => [
@@ -445,7 +478,7 @@ export default function BheemBot() {
       if (httpStatus === 401) {
         setMessages((prev) => [
           ...prev.filter((m) => m.id !== typingId),
-          { id: Date.now(), role: 'assistant', content: 'Your session has expired. Please log in again.', sources: [], timestamp: Date.now() },
+          { id: Date.now(), role: 'assistant', content: t('bot.sessionExpired'), sources: [], timestamp: Date.now(), failed: true },
         ]);
         setTimeout(() => {
           sessionStorage.setItem('auth_redirect', '/bhimbot');
@@ -455,34 +488,59 @@ export default function BheemBot() {
       } else {
         setMessages((prev) => [
           ...prev.filter((m) => m.id !== typingId),
-          { id: Date.now(), role: 'assistant', content: 'Something went wrong. Please try again.', sources: [], timestamp: Date.now() },
+          { id: Date.now(), role: 'assistant', content: t('bot.error'), sources: [], timestamp: Date.now(), failed: true },
         ]);
       }
     } finally {
       if (!timedOut) setSending(false);
     }
-  }, [input, sending, messages, navigate, logout]);
+  }, [input, sending, messages, navigate, logout, lang, t]);
 
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
   }
 
-  function handleCategoryClick(prompt) {
-    setInput(prompt);
+  // A category is a ready question: it is asked straight away.
+  function pickCategory(prompt) {
+    setCatsOpen(false);
+    send(prompt);
+  }
+
+  function newChat() {
+    if (sending) return;
+    window.speechSynthesis?.cancel();
+    setChatId(newChatId());
+    setMessages([welcomeMessage(t)]);
+    setInput('');
+    setCatsOpen(false);
     inputRef.current?.focus();
   }
 
-  return (
-    <div
-      className="flex h-screen overflow-hidden text-[#e5e7eb]"
-      style={{
-        background: 'radial-gradient(1200px 700px at 20% 0%, #0d1636 0%, #070b1c 55%, #05081a 100%)',
-        // Disable text selection while dragging to avoid highlighting content
-        userSelect: isDragging ? 'none' : undefined,
-        cursor: isDragging ? 'col-resize' : undefined,
-      }}
-    >
-      {/* ── Keyframe CSS ── */}
+  function openChat(id) {
+    if (sending) return;
+    const chat = chats.find((c) => c.id === id);
+    if (!chat) return;
+    window.speechSynthesis?.cancel();
+    setChatId(id);
+    // Opening a chat is not a new turn in it, so it keeps its place in the list.
+    setLastSaved(chat.messages);
+    setMessages(chat.messages);
+    setCatsOpen(false);
+  }
+
+  function deleteChat(id) {
+    setChats((prev) => prev.filter((c) => c.id !== id));
+    if (id === chatId) {
+      setChatId(newChatId());
+      setMessages([welcomeMessage(t)]);
+    }
+  }
+
+  const lastBot = [...messages].reverse().find((m) => m.role === 'assistant' && !m.typing);
+  const showTopics = !sending;
+
+  const page = (
+    <div className="relative flex h-full min-h-0 text-[#e5e7eb]">
       <style>{`
         @keyframes bheembot-dot {
           0%, 60%, 100% { transform: translateY(0); opacity: .5; }
@@ -490,148 +548,154 @@ export default function BheemBot() {
         }
       `}</style>
 
-      {/* ── Desktop sidebar (resizable) ── */}
-      <div
-        className="hidden md:block shrink-0 border-r border-[#141d3a]/70"
-        style={{ width: sidebarWidth }}
-      >
-        <ChatSidebar
-          onCategoryClick={handleCategoryClick}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-        />
-      </div>
-
-      {/* ── Resize handle ── */}
-      <ResizeHandle onMouseDown={handleResizeMouseDown} isDragging={isDragging} />
-
-      {/* ── Mobile sidebar overlay ── */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-50 md:hidden">
-          <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-            onClick={() => setSidebarOpen(false)}
-          />
-          <div className="absolute left-0 top-0 h-full w-[260px]">
-            <ChatSidebar
-              mobile
-              onCategoryClick={handleCategoryClick}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              onClose={() => setSidebarOpen(false)}
-            />
-          </div>
-        </div>
-      )}
-
-      {/* ── Main chat area ── */}
-      <div className="relative flex flex-1 min-w-0 flex-col">
-
-        {/* Ambient glows */}
-        <div className="pointer-events-none fixed top-0 right-0 h-[380px] w-[380px] rounded-full bg-[#3f9fff]/8 blur-[130px]" />
-        <div className="pointer-events-none fixed bottom-0 left-1/3 h-[320px] w-[320px] rounded-full bg-[#7b5cff]/8 blur-[130px]" />
-
-        {/* ── Header ── */}
-        <header className="relative z-10 flex shrink-0 items-center justify-between border-b border-[#141d3a]/70 bg-[#070b1c]/90 px-4 py-3.5 backdrop-blur-sm md:px-6">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="mr-1 flex h-8 w-8 items-center justify-center rounded-lg border border-[#1e3260]/60 text-[#5a7a9e] transition hover:text-white md:hidden"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu size={16} strokeWidth={1.8} />
-            </button>
-
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#2d6fff] to-[#7b5cff] shadow-[0_0_18px_rgba(79,107,255,0.4)]">
-              <Sparkles size={16} strokeWidth={2} className="text-white" />
+      {/* ── Conversation column ── */}
+      <section className="flex min-w-0 flex-1 flex-col">
+        <header className="relative z-30 shrink-0 px-4 pt-4 md:px-8 md:pt-6">
+          <div className="flex items-start justify-between gap-3 border-b border-[#1e3260]/60 pb-3 md:pb-4">
+            <div className="flex min-w-0 items-start gap-2.5">
+            {currentUser && <AppMenuButton />}
+            <div className="min-w-0">
+              {!currentUser && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/')}
+                  className="mb-3 inline-flex items-center gap-1.5 text-[12px] text-[#6f86ad] transition hover:text-white"
+                >
+                  <ArrowLeft size={13} strokeWidth={2} /> {t('bot.home')}
+                </button>
+              )}
+              <h1 className="font-display text-[24px] font-bold leading-tight text-white md:text-[34px]">{t('bot.name')}</h1>
+              <p className="mt-1 hidden text-[13px] text-[#8ea3c7] sm:block">{t('bot.subtitle')}</p>
             </div>
-            <div>
-              <h1 className="font-display text-[15px] font-semibold text-white">{t('bot.assistant')}</h1>
-              <div className="flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#22c55e] shadow-[0_0_6px_rgba(34,197,94,0.8)]" />
-                <span className="text-[11px] text-[#22c55e]">{t('bot.online')}</span>
-              </div>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="hidden text-[12px] text-[#5a7a9e] sm:block">
-              {currentUser?.username ?? ''}
-            </span>
-            <button
-              type="button"
-              onClick={() => navigate('/dashboard')}
-              className="hidden items-center gap-1.5 rounded-xl border border-[#1e3260]/60 bg-[#0a1428]/60 px-3 py-1.5 text-[12px] text-[#5a7a9e] transition hover:border-[#3a6bc4]/60 hover:text-white sm:flex"
-            >
-              <LayoutDashboard size={12} strokeWidth={1.8} />
-              {t('nav.dashboard')}
-            </button>
+            <div className="flex items-center gap-2">
+              <LanguageSwitcher />
+              <button
+                type="button"
+                onClick={() => setCatsOpen(true)}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#1e3260]/70 bg-[#0a1428]/80 px-3 py-2 text-[12.5px] font-medium text-[#c7d6ee] transition hover:text-white xl:hidden"
+              >
+                <History size={14} strokeWidth={2} /> <span className="hidden sm:inline">{t('bot.chatsAndTopics')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={newChat}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#1e3260]/70 bg-[#0a1428]/80 px-3 py-2 text-[12.5px] font-medium text-[#c7d6ee] transition hover:border-[#3a6bc4]/70 hover:text-white"
+              >
+                <Plus size={14} strokeWidth={2.2} /> <span className="hidden sm:inline">{t('bot.newChat')}</span>
+              </button>
+            </div>
           </div>
         </header>
 
         {/* ── Messages ── */}
-        <div className="relative z-10 flex-1 overflow-y-auto px-4 py-5 md:px-6">
-          {messages.map((msg) => (
-            <MessageBubble key={msg.id} msg={msg} />
-          ))}
+        <div className="relative z-10 min-h-0 flex-1 overflow-y-auto px-4 py-5 md:px-8 md:py-6">
+          {messages.map((m) => {
+            if (m.role === 'user') return <UserMessage key={m.id} msg={m} />;
+            const shown = m.id === 'welcome' ? { ...m, content: t('bot.welcome') } : m;
+            const actionable = m === lastBot && m.id !== 'welcome' && !m.failed;
+            return <BotMessage key={m.id} msg={shown} lang={lang} showActions={actionable} />;
+          })}
+
+          {showTopics && (
+            <div className="mt-2">
+              <p className="mb-2 text-[12px] text-[#6f86ad]">{t('bot.startTopic')}</p>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map(({ id }) => (
+                  <button
+                    key={id}
+                    type="button"
+                    onClick={() => pickCategory(t(`bot.cat.${id}.prompt`))}
+                    className="rounded-full border border-[#1e3260]/80 bg-[#0a1428]/80 px-3.5 py-1.5 text-[12.5px] text-[#c7d6ee] transition hover:border-[#4d94ff] hover:text-white"
+                  >
+                    {t(`bot.cat.${id}.title`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div ref={messagesEndRef} />
         </div>
 
-        {/* ── Input bar ── */}
-        <div className="relative z-10 shrink-0 border-t border-[#141d3a]/70 bg-[#070b1c]/90 px-4 py-4 backdrop-blur-sm md:px-6">
-          <div className="flex items-end gap-2.5 rounded-2xl border border-[#1e3260]/70 bg-[#0a1428] px-4 py-3 transition focus-within:border-[#3f6bd4] focus-within:shadow-[0_0_0_3px_rgba(63,107,212,0.15)]">
-            <button
-              type="button"
-              disabled
-              title={t('bot.attachSoon')}
-              className="mb-0.5 shrink-0 text-[#2a3a5e]"
-            >
-              <Paperclip size={16} strokeWidth={1.8} />
-            </button>
-
-            <textarea
-              ref={inputRef}
-              rows={1}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={t('bot.askAnything')}
-              className="flex-1 resize-none bg-transparent text-[13.5px] text-white placeholder:text-[#3a4e6e] outline-none leading-[1.5]"
-              style={{ maxHeight: '120px', overflowY: 'auto' }}
-              onInput={(e) => {
-                e.target.style.height = 'auto';
-                e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
-              }}
-            />
-
-            <button
-              type="button"
-              disabled
-              title={t('bot.voiceSoon')}
-              className="mb-0.5 shrink-0 text-[#2a3a5e]"
-            >
-              <Mic size={16} strokeWidth={1.8} />
-            </button>
+        {/* ── Composer ── */}
+        <div className="relative z-10 shrink-0 border-t border-[#1e3260]/60 bg-[#070b1c]/85 px-4 pb-3 pt-3 backdrop-blur-sm md:px-8 md:pb-4">
+          <label htmlFor="bhimbot-input" className="mb-2 hidden text-[12px] font-medium text-[#8ea3c7] sm:block">
+            {t('bot.askLabel')}
+          </label>
+          <div className="flex items-stretch gap-2.5">
+            <div className="flex min-w-0 flex-1 items-center rounded-2xl border border-[#1e3260]/80 bg-[#0a1428] px-4 py-3 transition focus-within:border-[#3f6bd4] focus-within:shadow-[0_0_0_3px_rgba(63,107,212,0.15)]">
+              <textarea
+                id="bhimbot-input"
+                ref={inputRef}
+                rows={1}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={t('bot.askAnything')}
+                className="w-full resize-none bg-transparent text-[14px] leading-[1.5] text-white outline-none placeholder:text-[#4a5f84]"
+                style={{ maxHeight: '120px', overflowY: 'auto' }}
+                onInput={(e) => {
+                  e.target.style.height = 'auto';
+                  e.target.style.height = `${Math.min(e.target.scrollHeight, 120)}px`;
+                }}
+              />
+            </div>
 
             <button
               type="button"
               onClick={() => send()}
               disabled={!input.trim() || sending}
+              aria-label={t('bot.send')}
               className={[
-                'mb-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition',
+                'flex w-14 shrink-0 items-center justify-center rounded-2xl transition',
                 input.trim() && !sending
-                  ? 'bg-[#2d6fff] text-white shadow-[0_0_14px_rgba(45,111,255,0.4)] hover:bg-[#3d7fff]'
-                  : 'bg-[#0d1531] text-[#2a3a5e]',
+                  ? 'bg-[#2d6fff] text-white shadow-[0_0_16px_rgba(45,111,255,0.4)] hover:bg-[#3d7fff]'
+                  : 'bg-[#1a2c5c] text-[#6f86ad]',
               ].join(' ')}
             >
-              <Send size={14} strokeWidth={2.2} />
+              <Send size={17} strokeWidth={2.2} />
             </button>
           </div>
-          <p className="mt-2 text-center text-[10.5px] text-[#2a3a5e]">
-            {t('bot.disclaimer')}
-          </p>
+          <p className="mt-2 text-[11px] text-[#4a5f84]">{t('bot.disclaimer')}</p>
         </div>
-      </div>
+      </section>
+
+      {/* ── Categories panel (wide screens) ── */}
+      <aside className="hidden w-[280px] shrink-0 overflow-y-auto border-l border-[#1e3260]/60 px-5 py-6 xl:block">
+        <RecentChats chats={chats} currentId={chatId} onOpen={openChat} onDelete={deleteChat} />
+        <h2 className="mb-3 font-display text-[17px] font-semibold text-white">{t('bot.categories')}</h2>
+        <CategoryList onPick={pickCategory} />
+      </aside>
+
+      {/* ── Categories sheet (narrower screens) ── */}
+      {catsOpen && (
+        <div className="fixed inset-0 z-50 xl:hidden">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setCatsOpen(false)} />
+          <div className="absolute right-0 top-0 h-full w-[300px] max-w-[85vw] overflow-y-auto border-l border-[#1e3260]/70 bg-[#070c1e] px-5 py-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="font-display text-[17px] font-semibold text-white">{t('bot.categories')}</h2>
+              <button type="button" onClick={() => setCatsOpen(false)} className="text-[#6f86ad] hover:text-white" aria-label={t('bot.close')}>
+                <X size={18} strokeWidth={1.8} />
+              </button>
+            </div>
+            <RecentChats chats={chats} currentId={chatId} onOpen={openChat} onDelete={deleteChat} />
+            <CategoryList onPick={pickCategory} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  // Signed in, the page lives in the app frame with its rail; a guest gets it
+  // on its own ground.
+  if (currentUser) return <DashboardShell active="bheembot">{page}</DashboardShell>;
+  return (
+    <div
+      className="h-screen overflow-hidden"
+      style={{ background: 'radial-gradient(1200px 700px at 20% 0%, #0d1636 0%, #070b1c 55%, #05081a 100%)' }}
+    >
+      {page}
     </div>
   );
 }
+
