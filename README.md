@@ -7,13 +7,13 @@ It has four parts:
 - **Post generator.** A party worker picks a news story. AmbedkarGPT then writes a social media post about it in their party's voice, from their position in the party, in Hindi or English. The post is grounded in the source story and in the political commentary the system has indexed.
 - **BhimBot.** A chat assistant that answers from Dr. B. R. Ambedkar's writings and speeches and from that commentary archive, and cites what it drew on.
 - **Bhim Radio.** A daily Hindi news bulletin, *दैनिक मध्य भारत समाचार*, read by the anchor काजल जाटव. It plays on a public page with a headline ticker.
-- **News pipeline.** It watches political YouTube channels, transcribes new videos, and turns them into the news stories that the other three parts use.
+- **News pipeline.** It gathers the day's political news and turns it into the stories that the other three parts use.
 
 ## How it fits together
 
 ```
-YouTube channels ──▶ watcher Lambda ──▶ Batch worker ──▶ MongoDB `news`
-                    (every few min)    (transcripts,            │
+News sources ─────▶ watcher Lambda ──▶ Batch worker ──▶ MongoDB `news`
+                    (every few min)    (collects, writes        │
                                         stories, RAG index)      │
                                                                  ▼
    React app (Vercel) ◀──── API Gateway ◀──── FastAPI on Lambda ─┤
@@ -57,7 +57,7 @@ Run it from the repository root: the code imports itself as `backend.…`. The A
 - `MONGODB_URI`, `MONGODB_DATABASE` and `JWT_SECRET`
 - `DEEPSEEK_API_KEY`, for posts and BhimBot
 - `GEMINI_API_KEY` and `PINECONE_API_KEY`, for retrieval
-- `MEMGRAPH_URI`, `MEMGRAPH_USERNAME` and `MEMGRAPH_PASSWORD`. Without them, BhimBot answers from the video archive only and shows no book-page citations.
+- `MEMGRAPH_URI`, `MEMGRAPH_USERNAME` and `MEMGRAPH_PASSWORD`. Without them, BhimBot answers from the commentary archive only and shows no book-page citations.
 
 ### Web app
 
