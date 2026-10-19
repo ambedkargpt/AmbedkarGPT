@@ -2,11 +2,11 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Scale, BookOpen, Heart, HelpCircle,
-  Send, Mic, MicOff, Plus, ArrowRight, Copy, Check,
-  Volume2, Square, ExternalLink, X, ArrowLeft, Menu, History, Trash2, Loader2,
+  Send, Plus, ArrowRight, Copy, Check,
+  Volume2, Square, ExternalLink, X, ArrowLeft, Menu, History, Trash2,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { sendChatMessage, transcribeAudio } from '../api/chat';
+import { sendChatMessage } from '../api/chat';
 import { useI18n } from '../i18n/index.jsx';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import FormattedReply, { parseReply, visibleBlockCount } from '../components/FormattedReply';
@@ -45,10 +45,6 @@ const sessionKey = (userId) => `bheembot_history_${userId || 'anon'}`;
 const chatsKey = (userId) => `bheembot_chats_${userId || 'anon'}`;
 const CHAT_TIMEOUT_MS = 45_000;
 const MAX_CHATS = 30;
-const MAX_RECORDING_MS = 60_000;
-
-const canRecord =
-  typeof window !== 'undefined' && !!window.MediaRecorder && !!navigator.mediaDevices?.getUserMedia;
 
 const newChatId = () => `c${Date.now().toString(36)}`;
 
@@ -386,12 +382,9 @@ export default function BheemBot() {
   const [input, setInput]       = useState('');
   const [sending, setSending]   = useState(false);
   const [catsOpen, setCatsOpen] = useState(false);
-  const [mic, setMic]           = useState('idle'); // 'idle' | 'recording' | 'transcribing'
-  const [micError, setMicError] = useState('');
 
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
-  const recorderRef    = useRef(null);
 
   // ── Remove legacy shared key on first mount ──
   useEffect(() => {
@@ -428,12 +421,6 @@ export default function BheemBot() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Release the microphone when leaving the page.
-  useEffect(() => () => {
-    const rec = recorderRef.current;
-    if (rec && rec.state !== 'inactive') { rec.onstop = null; rec.stop(); }
-    rec?.stream?.getTracks().forEach((tr) => tr.stop());
-  }, []);
 
   // ── Build history for API ──
   function buildHistory(msgs) {
@@ -557,51 +544,6 @@ export default function BheemBot() {
     navigate(currentUser ? '/generate/social-media' : '/login');
   }
 
-  // ── Voice input ──
-  // Recorded here, written out on the server: see /chat/transcribe for why
-  // the browser's own recognition is not used.
-  async function toggleMic() {
-    setMicError('');
-    if (mic === 'recording') { recorderRef.current?.stop(); return; }
-    if (mic !== 'idle') return;
-    let stream;
-    try {
-      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      setMicError(t('bot.micDenied'));
-      return;
-    }
-    const type = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg']
-      .find((m) => window.MediaRecorder.isTypeSupported?.(m));
-    const rec = new window.MediaRecorder(stream, type ? { mimeType: type } : undefined);
-    const parts = [];
-    rec.ondataavailable = (e) => { if (e.data.size) parts.push(e.data); };
-    const cutoff = setTimeout(() => { if (rec.state === 'recording') rec.stop(); }, MAX_RECORDING_MS);
-    rec.onstop = async () => {
-      clearTimeout(cutoff);
-      stream.getTracks().forEach((tr) => tr.stop());
-      const blob = new Blob(parts, { type: rec.mimeType || type || 'audio/webm' });
-      if (!blob.size) { setMic('idle'); return; }
-      setMic('transcribing');
-      try {
-        const heard = (await transcribeAudio(blob, lang)).trim();
-        if (heard) {
-          setInput((prev) => (prev.trim() ? `${prev.trim()} ${heard}` : heard));
-          inputRef.current?.focus();
-        } else {
-          setMicError(t('bot.micNothing'));
-        }
-      } catch {
-        setMicError(t('bot.micFailed'));
-      } finally {
-        setMic('idle');
-      }
-    };
-    recorderRef.current = rec;
-    rec.start();
-    setMic('recording');
-  }
-
   const lastBot = [...messages].reverse().find((m) => m.role === 'assistant' && !m.typing);
   const showTopics = !sending;
 
@@ -707,28 +649,6 @@ export default function BheemBot() {
               />
             </div>
 
-            {canRecord && (
-              <button
-                type="button"
-                onClick={toggleMic}
-                disabled={mic === 'transcribing'}
-                aria-pressed={mic === 'recording'}
-                className={[
-                  'inline-flex shrink-0 items-center gap-2 rounded-2xl border px-4 text-[13px] font-semibold transition',
-                  mic === 'recording'
-                    ? 'border-[#ff8a8a]/60 bg-[#2a0f18] text-[#ffb3b3]'
-                    : 'border-[#3f6bd4]/70 bg-[#0d1838] text-white hover:border-[#4d94ff] disabled:opacity-70',
-                ].join(' ')}
-              >
-                {mic === 'recording' && <MicOff size={16} strokeWidth={2} />}
-                {mic === 'transcribing' && <Loader2 size={16} strokeWidth={2} className="animate-spin" />}
-                {mic === 'idle' && <Mic size={16} strokeWidth={2} />}
-                <span className="hidden sm:inline">
-                  {mic === 'recording' ? t('bot.listening') : mic === 'transcribing' ? t('bot.transcribing') : t('bot.speak')}
-                </span>
-              </button>
-            )}
-
             <button
               type="button"
               onClick={() => send()}
@@ -744,7 +664,6 @@ export default function BheemBot() {
               <Send size={17} strokeWidth={2.2} />
             </button>
           </div>
-          {micError && <p className="mt-2 text-[12px] text-[#ff9a9a]" role="alert">{micError}</p>}
           <p className="mt-2 text-[11px] text-[#4a5f84]">{t('bot.disclaimer')}</p>
         </div>
       </section>
