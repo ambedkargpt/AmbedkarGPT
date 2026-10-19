@@ -42,6 +42,7 @@ export default function NewsTicker({ className = '', onOpen, docked = false }) {
   const viewportRef = useRef(null);
   const measureRef = useRef(null);
   const [copyWidth, setCopyWidth] = useState(0);
+  const [reps, setReps] = useState(1);
 
   // Ask for the manifest without opening the player. Without this the strip
   // would stay empty until someone visited the radio page.
@@ -50,24 +51,26 @@ export default function NewsTicker({ className = '', onOpen, docked = false }) {
   const headline = track?.title || station?.title || '';
 
   /**
-   * How wide one pass is.
+   * How wide one pass is, and how many times the headline repeats in it.
    *
-   * At least the width of the strip, even when the sentence is shorter. Two
-   * copies sitting at their natural width are both on screen at once on a wide
-   * monitor, so the second one appears to start in the middle of the page
-   * rather than entering from the right edge - which is not a crawl, it is two
-   * labels sliding. Padding each pass out to the full width puts the next
-   * headline exactly at the right-hand edge as the last one leaves.
+   * A pass has to be at least as wide as the strip, or the second copy shows
+   * up in the middle of the page instead of entering from the right edge.
+   * Padding a short headline out with blank space left wide empty stretches
+   * on both sides of it, so the headline is repeated instead, with a marker
+   * between, until the pass fills the strip: the band reads full, the way a
+   * channel's crawl does.
    *
-   * Measured from a copy that is never padded, so this cannot feed back into
-   * itself and grow on every pass.
+   * Measured from one unpadded unit, so this cannot feed back into itself.
    */
   const remeasure = useCallback(() => {
     const viewport = viewportRef.current;
     const text = measureRef.current;
     if (!viewport || !text) return;
-    const natural = text.scrollWidth;
-    if (natural > 0) setCopyWidth(Math.max(natural, viewport.clientWidth));
+    const unit = text.scrollWidth;
+    if (unit <= 0) return;
+    const n = Math.max(1, Math.ceil(viewport.clientWidth / unit));
+    setReps(n);
+    setCopyWidth(unit * n);
   }, []);
 
   useLayoutEffect(() => {
@@ -134,9 +137,9 @@ export default function NewsTicker({ className = '', onOpen, docked = false }) {
           <span
             ref={measureRef}
             aria-hidden="true"
-            className="news-ticker-text pointer-events-none invisible absolute left-0 top-0 whitespace-nowrap px-10"
+            className="news-ticker-text pointer-events-none invisible absolute left-0 top-0 inline-flex whitespace-nowrap"
           >
-            {headline}
+            <TickerUnit headline={headline} />
           </span>
 
           {/* Two passes, translated by exactly half the pair: as the first
@@ -152,10 +155,12 @@ export default function NewsTicker({ className = '', onOpen, docked = false }) {
               <span
                 key={copy}
                 aria-hidden={copy === 1}
-                className="news-ticker-text shrink-0 whitespace-nowrap px-10 text-white"
-                style={{ minWidth: copyWidth ? `${copyWidth}px` : undefined }}
+                className="news-ticker-text inline-flex shrink-0 whitespace-nowrap text-white"
+                style={{ width: copyWidth ? `${copyWidth}px` : undefined }}
               >
-                {headline}
+                {Array.from({ length: reps }, (_, i) => (
+                  <TickerUnit key={i} headline={headline} hidden={copy === 1 || i > 0} />
+                ))}
               </span>
             ))}
           </div>
@@ -196,4 +201,14 @@ export default function NewsTicker({ className = '', onOpen, docked = false }) {
   );
 
   return docked ? createPortal(strip, document.body) : strip;
+}
+
+/** One headline and the marker that separates it from the next repeat. */
+function TickerUnit({ headline, hidden = false }) {
+  return (
+    <span className="inline-flex items-center" aria-hidden={hidden || undefined}>
+      <span className="px-6">{headline}</span>
+      <span className="text-[#ffc72c]" aria-hidden="true">◆</span>
+    </span>
+  );
 }
