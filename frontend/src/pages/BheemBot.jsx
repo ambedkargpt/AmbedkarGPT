@@ -10,6 +10,7 @@ import { useAuth } from '../context/AuthContext';
 import { sendChatMessage } from '../api/chat';
 import logoSrc from '../assets/images/logo-animation.webp';
 import { useI18n } from '../i18n/index.jsx';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import FormattedReply, { parseReply, visibleBlockCount } from '../components/FormattedReply';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -18,22 +19,18 @@ const CATEGORIES = [
   {
     id: 'constitution',
     icon: Scale,
-    prompt: 'Explain the fundamental rights in the Indian Constitution as drafted by Dr. Ambedkar and why they matter for marginalized communities.',
   },
   {
     id: 'writings',
     icon: BookOpen,
-    prompt: "What are Dr. Ambedkar's most important books and what key ideas does each one explore?",
   },
   {
     id: 'justice',
     icon: Heart,
-    prompt: 'How did Dr. Ambedkar define social justice and what concrete steps did he propose to achieve it?',
   },
   {
     id: 'faqs',
     icon: HelpCircle,
-    prompt: "What are some frequently asked questions about Dr. B.R. Ambedkar's life, education, and legacy?",
   },
 ];
 
@@ -215,11 +212,11 @@ function ChatSidebar({ onCategoryClick, searchQuery, setSearchQuery, onClose, mo
         </p>
         <div className="space-y-1">
           {/* eslint-disable-next-line no-unused-vars */}
-          {filtered.map(({ id, icon: CatIcon, prompt }) => (
+          {filtered.map(({ id, icon: CatIcon }) => (
             <button
               key={id}
               type="button"
-              onClick={() => { onCategoryClick(prompt); if (mobile) onClose?.(); }}
+              onClick={() => { onCategoryClick(t(`bot.cat.${id}.prompt`)); if (mobile) onClose?.(); }}
               className="group w-full rounded-xl border border-transparent px-3 py-2.5 text-left transition-all hover:border-[#1e3260]/70 hover:bg-[#0d1531]/70"
             >
               <div className="flex items-start gap-2.5">
@@ -305,7 +302,7 @@ function ResizeHandle({ onMouseDown, isDragging }) {
 // ── Main Page ──────────────────────────────────────────────────────────────────
 
 export default function BheemBot() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -431,7 +428,20 @@ export default function BheemBot() {
 
     try {
       const history = buildHistory(messages.concat(userMsg));
-      const { reply, sources } = await sendChatMessage({ message: trimmed, history });
+      // The first question after a quiet spell lands on a cold server and can
+      // run past the gateway's limit (a 502/503/504, or no response at all).
+      // The second attempt finds it warm, so one silent retry is made before
+      // anything is shown as an error.
+      const ask = () => sendChatMessage({ message: trimmed, history, language: lang });
+      let res;
+      try {
+        res = await ask();
+      } catch (first) {
+        const code = first?.response?.status;
+        if (timedOut || (code && code < 500)) throw first;
+        res = await ask();
+      }
+      const { reply, sources } = res;
       if (timedOut) return;
       clearTimeout(timer);
       setMessages((prev) => [
@@ -445,7 +455,7 @@ export default function BheemBot() {
       if (httpStatus === 401) {
         setMessages((prev) => [
           ...prev.filter((m) => m.id !== typingId),
-          { id: Date.now(), role: 'assistant', content: 'Your session has expired. Please log in again.', sources: [], timestamp: Date.now() },
+          { id: Date.now(), role: 'assistant', content: t('bot.sessionExpired'), sources: [], timestamp: Date.now() },
         ]);
         setTimeout(() => {
           sessionStorage.setItem('auth_redirect', '/bhimbot');
@@ -455,13 +465,13 @@ export default function BheemBot() {
       } else {
         setMessages((prev) => [
           ...prev.filter((m) => m.id !== typingId),
-          { id: Date.now(), role: 'assistant', content: 'Something went wrong. Please try again.', sources: [], timestamp: Date.now() },
+          { id: Date.now(), role: 'assistant', content: t('bot.error'), sources: [], timestamp: Date.now() },
         ]);
       }
     } finally {
       if (!timedOut) setSending(false);
     }
-  }, [input, sending, messages, navigate, logout]);
+  }, [input, sending, messages, navigate, logout, lang, t]);
 
   function handleKeyDown(e) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
@@ -555,6 +565,7 @@ export default function BheemBot() {
           </div>
 
           <div className="flex items-center gap-2">
+            <LanguageSwitcher />
             <span className="hidden text-[12px] text-[#5a7a9e] sm:block">
               {currentUser?.username ?? ''}
             </span>
@@ -572,7 +583,7 @@ export default function BheemBot() {
         {/* ── Messages ── */}
         <div className="relative z-10 flex-1 overflow-y-auto px-4 py-5 md:px-6">
           {messages.map((msg) => (
-            <MessageBubble key={msg.id} msg={msg} />
+            <MessageBubble key={msg.id} msg={msg.id === 'welcome' ? { ...msg, content: t('bot.welcome') } : msg} />
           ))}
           <div ref={messagesEndRef} />
         </div>

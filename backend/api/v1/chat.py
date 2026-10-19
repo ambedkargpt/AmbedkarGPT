@@ -87,15 +87,24 @@ def _do_retrieve(query: str, top_k: int) -> List[dict]:
     )
 
 
+# One long-lived worker. A `with ThreadPoolExecutor()` block waits for its
+# thread on the way out, so the timeout below never cut anything short: on a
+# cold container the reply waited for the whole retrieval stack to load (50 s
+# seen), the API gateway gave up at 29 s, and the first question of a session
+# came back as an error. Left running here, a slow retrieval finishes in the
+# background and warms the stack for the next question instead.
+_RETRIEVE_POOL = ThreadPoolExecutor(max_workers=2, thread_name_prefix="bheembot-rag")
+_RETRIEVE_TIMEOUT_S = 8
+
+
 def _try_retrieve(query: str, top_k: int = 5) -> List[dict]:
     """
-    Retrieve relevant chunks with a hard 10s timeout.
+    Retrieve relevant chunks, waiting at most _RETRIEVE_TIMEOUT_S.
     Returns empty list gracefully if the stack is slow or unavailable.
     """
     try:
-        with ThreadPoolExecutor(max_workers=1) as pool:
-            future = pool.submit(_do_retrieve, query, top_k)
-            return future.result(timeout=10)
+        future = _RETRIEVE_POOL.submit(_do_retrieve, query, top_k)
+        return future.result(timeout=_RETRIEVE_TIMEOUT_S)
     except FuturesTimeoutError:
         logger.warning("RAG retrieval timed out for BheemBot — falling back to LLM-only.")
         return []
@@ -205,7 +214,11 @@ def chat_message(
     try:
         from backend.semrag.memgraph_retriever import retrieve_semrag_context
 
-        semrag_ctx, semrag_sources = retrieve_semrag_context(payload.message.strip(), top_k=5)
+        # Same budget as the fallback retrieval: an unreachable graph must not
+        # hold the reply past the gateway's limit.
+        semrag_ctx, semrag_sources = _RETRIEVE_POOL.submit(
+            retrieve_semrag_context, payload.message.strip(), top_k=5
+        ).result(timeout=_RETRIEVE_TIMEOUT_S)
         if semrag_ctx:
             context_str = semrag_ctx
     except Exception as exc:
