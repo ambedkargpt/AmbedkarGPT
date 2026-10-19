@@ -58,8 +58,8 @@ function readCollapsed() {
 // from the DOM made each row re-centre its icon on the first frame, so the
 // whole rail jumped before the width had started to move.
 function fadeCls(collapsed) {
-  return `whitespace-nowrap transition-opacity duration-200 ease-out motion-reduce:transition-none ${
-    collapsed ? 'pointer-events-none opacity-0' : 'opacity-100 delay-75'
+  return `whitespace-nowrap transition-opacity duration-300 ease-out motion-reduce:transition-none ${
+    collapsed ? 'pointer-events-none opacity-0' : 'opacity-100 delay-150'
   }`;
 }
 
@@ -207,7 +207,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
           <ChevronRight
             size={15}
             strokeWidth={2}
-            className={`ml-auto shrink-0 transition-[transform,opacity] duration-200 group-hover:translate-x-0.5 ${collapsed ? 'opacity-0' : 'opacity-100'}`}
+            className={`ml-auto shrink-0 transition-[transform,opacity] duration-300 group-hover:translate-x-0.5 ${collapsed ? 'opacity-0' : 'opacity-100'}`}
           />
         </button>
 
@@ -347,7 +347,7 @@ export default function Sidebar({ active = 'dashboard', onSelect, mobileOpen = f
           sit centred in it) and the labels are clipped and faded rather than
           removed. They never wrap mid-way: each one is whitespace-nowrap. */}
       <aside
-        className={`hidden lg:flex flex-col shrink-0 overflow-hidden border-r border-[#141d3a]/70 transition-[width] duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
+        className={`hidden lg:flex flex-col shrink-0 overflow-hidden border-r border-[#141d3a]/70 transition-[width] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
           collapsed ? 'w-[76px]' : 'w-[252px]'
         }`}
         style={{ background: 'linear-gradient(180deg,#0a1024 0%,#070b1c 100%)' }}
