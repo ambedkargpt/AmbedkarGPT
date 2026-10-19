@@ -542,7 +542,7 @@ export default function BheemBot() {
         <div className="pointer-events-none fixed bottom-0 left-1/3 h-[320px] w-[320px] rounded-full bg-[#7b5cff]/8 blur-[130px]" />
 
         {/* ── Header ── */}
-        <header className="relative z-10 flex shrink-0 items-center justify-between border-b border-[#141d3a]/70 bg-[#070b1c]/90 px-4 py-3.5 backdrop-blur-sm md:px-6">
+        <header className="relative z-30 flex shrink-0 items-center justify-between border-b border-[#141d3a]/70 bg-[#070b1c]/90 px-4 py-3.5 backdrop-blur-sm md:px-6">
           <div className="flex items-center gap-3">
             <button
               type="button"
