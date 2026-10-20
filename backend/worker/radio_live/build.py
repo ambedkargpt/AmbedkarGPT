@@ -98,6 +98,19 @@ def _patient_mongo() -> None:
     pymongo.MongoClient.__init__ = patient
 
 
+class _WithoutResearch:
+    """A collection whose find() leaves out the research brief."""
+
+    def __init__(self, collection):
+        self._collection = collection
+
+    def find(self, query=None, projection=None, *args, **kwargs):
+        return self._collection.find(query, projection or {"research": 0}, *args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._collection, name)
+
+
 def _seconds(path: pathlib.Path) -> float:
     out = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
                           "-of", "csv=p=0", str(path)], capture_output=True, text=True, check=True)
@@ -252,7 +265,11 @@ def _build(args, settings, build_radio, engine_storage, state, publish_storage, 
     # at most a few dozen per party, and the full bodies of 500 made the read
     # slow enough to time out; 150 is still several times the window.
     MongoStorySource.SCAN_LIMIT = 150
-    source = build_radio.RoundRobinSource(MongoStorySource.from_settings(settings), PARTIES)
+    mongo = MongoStorySource.from_settings(settings)
+    # And without each story's research brief (~21 KB), which the bulletin
+    # never reads: it was most of every byte the scan pulled.
+    mongo._collection = _WithoutResearch(mongo._collection)
+    source = build_radio.RoundRobinSource(mongo, PARTIES)
     services = build_daily_services(settings, source, storage=engine_storage)
     lang, copy, music = settings.daily_lang, services.copy, services.assets.music
     style = services.prompts.voice_style.get(lang)

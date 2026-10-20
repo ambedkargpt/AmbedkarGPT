@@ -672,8 +672,6 @@ export default {
   "bot.newChat": "नई बातचीत",
   "bot.you": "आप",
   "bot.sources": "स्रोत",
-  "bot.listen": "सुनिए",
-  "bot.stop": "रोकिए",
   "bot.copy": "कॉपी",
   "bot.copied": "कॉपी हो गया",
   "bot.startTopic": "किसी विषय से शुरू कीजिए",

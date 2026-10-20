@@ -25,6 +25,11 @@ FRESH_WINDOW = timedelta(days=3)
 FRESH_WINDOW_TENANTS = ("congress", "samajwadi", "bjp")
 
 
+# Fields a listing leaves behind. A story's research brief is for writing a
+# post about it, not for showing it in a list.
+LIST_PROJECTION = {"research": 0}
+
+
 class NewsRepository:
     def __init__(self) -> None:
         self.collection = db["news"]
@@ -106,8 +111,12 @@ class NewsRepository:
         # row was written — a bulk import gives every row the same created_at,
         # which would leave the feed in arbitrary order. created_at is the
         # tiebreaker for the few documents with no published_at.
+        # Without the research brief: about 21 KB a story that the feed never
+        # shows. Sending it made a page of 100 stories ~2 MB, and the feed took
+        # 23 s to load; the brief is still read with the story by id, where
+        # posts are written.
         return list(
-            self.collection.find(query)
+            self.collection.find(query, LIST_PROJECTION)
             .sort([("published_at", -1), ("created_at", -1)])
             .skip(skip)
             .limit(limit)

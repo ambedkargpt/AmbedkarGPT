@@ -24,6 +24,7 @@ import SavedPromptsGrid     from '../components/dashboard/SavedPromptsGrid';
 import AchievementsGrid     from '../components/dashboard/AchievementsGrid';
 import DashboardFooter      from '../components/dashboard/DashboardFooter';
 import { partyLogo }        from '../utils/politicalParties';
+import { labelForId }       from '../utils/partyRoles';
 import { useI18n }         from '../i18n/index.jsx';
 import {
   formatFullDate, fromInputValue, sameDay, startOfDay, toInputValue, weekdayShort,
@@ -88,6 +89,9 @@ export default function Dashboard() {
   // Resolved from the full party list, not the offered one, so an account
   // carrying a party we no longer offer still shows its own mark.
   const welcomeLogo  = partyLogo(currentUser?.political_party);
+  // Who the posts are written as: the party and the position in it. Both
+  // shape every post, so they are stated where the user lands.
+  const roleName = labelForId(currentUser?.party_position || '', currentUser?.political_party || '', lang);
   const displayName  = currentUser?.username ?? '—';
   const displayEmail = currentUser?.email ?? currentUser?.phone ?? '—';
   const joinedLabel  = (() => {
@@ -182,6 +186,13 @@ export default function Dashboard() {
               <span className="text-white">{t('dash.welcomeBack')} </span>
               <span className="gradient-text-blue">{first}</span>
             </h1>
+            {(currentUser?.political_party || roleName) && (
+              <p className="mt-2 inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-[#2a4a8a]/60 bg-[#0d1838]/80 px-3 py-1 text-[13px] font-medium text-[#c7d6ee]">
+                {currentUser?.political_party && <span className="truncate">{currentUser.political_party}</span>}
+                {currentUser?.political_party && roleName && <span className="text-[#4f7fd4]" aria-hidden="true">·</span>}
+                {roleName && <span className="font-semibold text-white">{roleName}</span>}
+              </p>
+            )}
             <p className="mt-1.5 text-[15px] leading-snug text-[#9aa5c4] md:text-[16.5px]">
               {t('dash.subtitle')}
             </p>

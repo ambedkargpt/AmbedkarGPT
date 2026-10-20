@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Scale, BookOpen, Heart, HelpCircle,
   Send, Plus, Copy, Check,
-  Volume2, Square, ExternalLink, X, ArrowLeft, Menu, History, Trash2, PlayCircle,
+  ExternalLink, X, ArrowLeft, Menu, History, Trash2, PlayCircle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { sendChatMessage } from '../api/chat';
@@ -113,41 +113,6 @@ function TypingDots() {
 const actionBtn =
   'inline-flex items-center gap-1.5 rounded-xl border border-[#1e3260]/70 bg-[#0a1428]/80 px-3.5 py-2 text-[12.5px] font-medium text-[#c7d6ee] transition hover:border-[#3a6bc4]/70 hover:text-white';
 
-function ListenButton({ text, lang }) {
-  const { t } = useI18n();
-  const [speaking, setSpeaking] = useState(false);
-  const supported = typeof window !== 'undefined' && 'speechSynthesis' in window;
-
-  useEffect(() => () => { if (supported) window.speechSynthesis.cancel(); }, [supported]);
-  if (!supported) return null;
-
-  function toggle() {
-    const synth = window.speechSynthesis;
-    if (speaking) { synth.cancel(); setSpeaking(false); return; }
-    synth.cancel();
-    // One sentence per utterance: Chrome silently stops a long one after
-    // about fifteen seconds.
-    const sentences = text.split(/(?<=[।?!.])\s+/).map((s) => s.trim()).filter(Boolean);
-    const code = lang === 'hi' ? 'hi-IN' : 'en-IN';
-    const voice = synth.getVoices().find((v) => v.lang?.startsWith(lang === 'hi' ? 'hi' : 'en'));
-    sentences.forEach((s, i) => {
-      const u = new SpeechSynthesisUtterance(s);
-      u.lang = code;
-      if (voice) u.voice = voice;
-      if (i === sentences.length - 1) u.onend = () => setSpeaking(false);
-      synth.speak(u);
-    });
-    setSpeaking(true);
-  }
-
-  return (
-    <button type="button" onClick={toggle} className={actionBtn}>
-      {speaking ? <Square size={13} strokeWidth={2.2} /> : <Volume2 size={14} strokeWidth={2} />}
-      {speaking ? t('bot.stop') : t('bot.listen')}
-    </button>
-  );
-}
-
 function CopyButton({ text }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
@@ -211,7 +176,7 @@ function SourcePill({ s }) {
   );
 }
 
-function BotMessage({ msg, lang, showActions }) {
+function BotMessage({ msg, showActions }) {
   const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const blocks = msg.typing ? [] : parseReply(msg.content);
@@ -265,7 +230,6 @@ function BotMessage({ msg, lang, showActions }) {
 
       {showActions && !msg.typing && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <ListenButton text={text} lang={lang} />
           <CopyButton text={text} />
         </div>
       )}
@@ -508,7 +472,6 @@ export default function BheemBot() {
 
   function newChat() {
     if (sending) return;
-    window.speechSynthesis?.cancel();
     setChatId(newChatId());
     setMessages([welcomeMessage(t)]);
     setInput('');
@@ -520,7 +483,6 @@ export default function BheemBot() {
     if (sending) return;
     const chat = chats.find((c) => c.id === id);
     if (!chat) return;
-    window.speechSynthesis?.cancel();
     setChatId(id);
     // Opening a chat is not a new turn in it, so it keeps its place in the list.
     setLastSaved(chat.messages);
@@ -594,7 +556,7 @@ export default function BheemBot() {
             if (m.role === 'user') return <UserMessage key={m.id} msg={m} />;
             const shown = m.id === 'welcome' ? { ...m, content: t('bot.welcome') } : m;
             const actionable = m === lastBot && m.id !== 'welcome' && !m.failed;
-            return <BotMessage key={m.id} msg={shown} lang={lang} showActions={actionable} />;
+            return <BotMessage key={m.id} msg={shown} showActions={actionable} />;
           })}
 
           {showTopics && (
