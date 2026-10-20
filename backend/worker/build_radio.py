@@ -303,42 +303,21 @@ _LENGTH_LINE_TO = """- `script`: the full story, up to {words} words (roughly {s
 # Merged into their file, never written over it: it also holds day_words,
 # months and the tenant names that turn a date into speech. Replacing the file
 # would leave the anchor unable to say what day it is.
-DAILY_LINES_HI = {
-    "intro": (
-        "नमस्कार! मैं सविता जाटव। "
-        "आप सुन रहे हैं $station — "
-        "अंबेडकरजीपीटी की पेशकश। "
-        "पेश हैं $date की $tenant से जुड़ी बड़ी खबरें।"
-    ),
-    "intro_general": (
-        "नमस्कार! मैं सविता जाटव। "
-        "आप सुन रहे हैं $station — "
-        "अंबेडकरजीपीटी की पेशकश। "
-        "पेश हैं $date की बड़ी खबरें, हर दल से।"
-    ),
-    # Eight links in the rotation, three of them station idents, so the name
-    # lands about every third story rather than on every one.
-    "connectives": [
-        "इसके बाद, अगली खबर।",
-        "अब चलते हैं अगली खबर की ओर।",
-        "आप सुन रहे हैं भीम रेडियो, अंबेडकरजीपीटी की पेशकश।",
-        "और अब, एक और अहम खबर।",
-        "आगे बढ़ते हैं।",
-        "भीम रेडियो पर खबरें, इतिहास और आंदोलन — अंबेडकरजीपीटी डॉट इन पर।",
-        "अब बात इस खबर की।",
-        "सविता जाटव के साथ, आप सुन रहे हैं भीम रेडियो।",
-    ],
-    # The anchor has a name now, so the bulletin says plainly that the name and
-    # the voice are both generated. Without that line a listener has every
-    # reason to think Savita Jatav is a reporter who exists.
-    "outro": (
-        "ये थीं आज की बड़ी खबरें। "
-        "ये बुलेटिन अंबेडकरजीपीटी ने एआई की मदद से तैयार किया है, "
-        "और इसे पढ़ने वाली आवाज़ भी एआई की है। "
-        "सविता जाटव का नमस्कार। "
-        "ये प्रसारण थोड़ी देर में फिर शुरू होगा। जय भीम।"
-    ),
-}
+# Our own editorial material lives beside this file, as files rather than
+# strings in code, so the editorial side can read and change it without
+# touching Python:
+#
+#   radio_prompts/script_writer.md    replaces theirs: the editorial line, names
+#                                     in headlines, and the hard rules
+#   radio_prompts/fact_checker.md     replaces theirs: allows slant, not untruth
+#   radio_prompts/anchor_lines_hi.json  merged over their daily_hi.json: intro,
+#                                     the links between stories (ads included)
+#                                     and the sign-off
+#   radio_assets/music/*.wav          dropped over their music of the same name
+#
+# See radio_prompts/README.md for what each one says and why.
+RADIO_PROMPTS = pathlib.Path(__file__).resolve().parent / "radio_prompts"
+RADIO_ASSETS = pathlib.Path(__file__).resolve().parent / "radio_assets"
 
 
 # What a story costs on air, as a straight line through two measured builds:
@@ -395,6 +374,28 @@ def _write_prompts(words: int) -> pathlib.Path | None:
     target = pathlib.Path(tempfile.mkdtemp(prefix="bheem-prompts-"))
     shutil.copytree(source, target, dirs_exist_ok=True)
 
+    # Ours over theirs. The length patch below then runs against our writer,
+    # which carries the same length line on purpose so it still applies.
+    for name in ("script_writer.md", "fact_checker.md"):
+        ours = RADIO_PROMPTS / name
+        if ours.is_file():
+            shutil.copyfile(ours, target / name)
+            log.info("prompts: %s is ours", name)
+
+    # Who holds which office, kept by the desk: the one place a name may come
+    # from that the story does not give. Both desks read the same list, or the
+    # checker fails every name the writer was allowed to add.
+    holders = RADIO_PROMPTS / "office_holders.md"
+    if holders.is_file():
+        listed = holders.read_text(encoding="utf-8").strip()
+        for name in ("script_writer.md", "fact_checker.md"):
+            prompt = target / name
+            if not prompt.is_file():
+                continue
+            prompt.write_text(prompt.read_text(encoding="utf-8").rstrip() + "\n\n" + listed + "\n",
+                              encoding="utf-8")
+        log.info("prompts: office-holder list attached to writer and checker")
+
     writer = target / "script_writer.md"
     text = writer.read_text(encoding="utf-8")
     if _LENGTH_LINE_FROM not in text:
@@ -412,18 +413,110 @@ def _write_prompts(words: int) -> pathlib.Path | None:
     )
     # The anchor's own lines, merged so their date vocabulary survives.
     daily = target / "daily_hi.json"
-    if daily.is_file():
+    ours = RADIO_PROMPTS / "anchor_lines_hi.json"
+    if daily.is_file() and ours.is_file():
         import json as _json
 
         lines = _json.loads(daily.read_text(encoding="utf-8"))
-        lines.update(DAILY_LINES_HI)
+        mine = {k: v for k, v in _json.loads(ours.read_text(encoding="utf-8")).items()
+                if not k.startswith("_")}
+        lines.update(mine)
         daily.write_text(_json.dumps(lines, ensure_ascii=False, indent=2), encoding="utf-8")
-        log.info("prompts: anchor lines replaced (%d keys)", len(DAILY_LINES_HI))
+        log.info("prompts: anchor lines replaced (%d keys, %d links between stories)",
+                 len(mine), len(mine.get("connectives", [])))
 
     os.environ["BHEEM_PROMPTS_DIR"] = str(target)
     log.info("prompts: script target set to %d words (%s)", words, target)
     return target
 
+
+# A sound effect inside a spoken line.
+#
+# The engine voices every line as one clip and has no way to put music in the
+# middle of one - so an ad and its "back to the news" were a single breath. A
+# line may now carry SFX_MARK where a sound effect belongs. Each piece on either
+# side is voiced on its own (and cached on its own, so they cost the same as
+# any other line), and the pieces come back joined around the effect as the
+# one WAV the engine asked for. The engine never knows.
+SFX_MARK = "[[sfx]]"
+SFX_GAP_SEC = 0.25
+
+
+def _join_with_effect(pieces: list[bytes], effect: pathlib.Path) -> bytes:
+    """pieces[0] + effect + pieces[1] + effect + ..., as one WAV in the voice's format."""
+    import subprocess
+    import tempfile
+    import wave
+
+    with tempfile.TemporaryDirectory(prefix="bheem-sfx-") as tmp:
+        tmp = pathlib.Path(tmp)
+        files = []
+        for i, data in enumerate(pieces):
+            f = tmp / f"v{i}.wav"
+            f.write_bytes(data)
+            files.append(f)
+        with wave.open(str(files[0]), "rb") as w:
+            rate, channels = w.getframerate(), w.getnchannels()
+        layout = "mono" if channels == 1 else "stereo"
+        fmt = f"aformat=sample_rates={rate}:channel_layouts={layout}"
+
+        inputs, chains, order = [], [], []
+        for i, f in enumerate(files):
+            inputs += ["-i", str(f)]
+            chains.append(f"[{len(inputs) // 2 - 1}:a]{fmt}[v{i}]")
+            order.append(f"[v{i}]")
+            if i < len(files) - 1:
+                inputs += ["-i", str(effect)]
+                n = len(inputs) // 2 - 1
+                # A breath either side, so the effect separates rather than
+                # clips the words around it.
+                chains.append(f"[{n}:a]{fmt},volume=0.8,"
+                              f"adelay={int(SFX_GAP_SEC * 1000)}:all=1,"
+                              f"apad=pad_dur={SFX_GAP_SEC}[s{i}]")
+                order.append(f"[s{i}]")
+        chains.append("".join(order) + f"concat=n={len(order)}:v=0:a=1[out]")
+        out = tmp / "joined.wav"
+        subprocess.run(
+            ["ffmpeg", "-y", "-v", "error", *inputs, "-filter_complex", ";".join(chains),
+             "-map", "[out]", "-ar", str(rate), "-ac", str(channels), str(out)],
+            check=True,
+        )
+        return out.read_bytes()
+
+
+def _with_sound_effects(narrate, effect: pathlib.Path):
+    """Wrap SegmentCache.narrate so SFX_MARK in a line becomes `effect`."""
+    def narrate_with_effects(self, tts, text, **kwargs):
+        if SFX_MARK not in text:
+            return narrate(self, tts, text, **kwargs)
+        pieces = [part.strip() for part in text.split(SFX_MARK)]
+        voiced = [narrate(self, tts, part, **kwargs) for part in pieces if part]
+        return _join_with_effect(voiced, effect)
+    return narrate_with_effects
+
+
+def _write_assets() -> pathlib.Path | None:
+    """Copy their assets and drop our music over theirs, file for file.
+
+    Only the 30-second opening theme today, in place of their 5-second sonic
+    logo - it is the first thing the bulletin plays, so swapping the file
+    changes the opening without changing the engine. Returns the copy, which
+    the caller has to put on Settings itself: like the prompts directory,
+    BHEEM_ASSETS_DIR was read when Settings was constructed.
+    """
+    import shutil
+    import tempfile
+
+    source = pathlib.Path(os.environ["BHEEM_ASSETS_DIR"])
+    ours = sorted((RADIO_ASSETS / "music").glob("*.wav"))
+    if not source.is_dir() or not ours:
+        return None
+    target = pathlib.Path(tempfile.mkdtemp(prefix="bheem-assets-"))
+    shutil.copytree(source, target, dirs_exist_ok=True)
+    for wav in ours:
+        shutil.copyfile(wav, target / "music" / wav.name)
+    log.info("assets: ours over theirs: %s", ", ".join(w.name for w in ours))
+    return target
 
 def prepare_environment() -> None:
     """Copy our variables onto the BHEEM_* names and fill in the defaults."""
@@ -516,6 +609,18 @@ def main(argv: list[str] | None = None) -> int:
             # nothing ever read: the build quietly used Bheem Radio's own
             # length and every story came back from cache unchanged.
             settings = settings.model_copy(update={"prompts_dir": written})
+
+    assets = _write_assets()
+    if assets is not None:
+        settings = settings.model_copy(update={"assets_dir": assets})
+
+    # The station's own transition, between an ad and the way back to the news.
+    effect = pathlib.Path(settings.assets_dir) / "music" / "transition.wav"
+    if effect.is_file():
+        from bheem_radio.daily.segment_cache import SegmentCache
+        SegmentCache.narrate = _with_sound_effects(SegmentCache.narrate, effect)
+    else:
+        log.warning("no %s: lines marked %s will be read straight through", effect, SFX_MARK)
 
     services = build_daily_services(settings, source)
     result = build_tenant_stream(args.tenant, day, services)

@@ -122,6 +122,9 @@ export async function loadStation(tenant) {
   return {
     tenant: manifest.tenant || tenant,
     date: manifest.date || '',
+    // When this bulletin went on air. A rebuild for a new story starts the
+    // loop from here, so the newest story is what a listener hears next.
+    startsAt: manifest.starts_at || '',
     title: manifest.title || '',
     audioUrl,
     durationSec: Number(manifest.duration_sec) || 0,
@@ -211,6 +214,16 @@ const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
 export function broadcastPositionSec(station, nowMs = Date.now()) {
   const duration = Number(station?.durationSec);
   if (!Number.isFinite(duration) || duration <= 0) return 0;
+
+  // A bulletin that says when it went on air runs from that moment: it is
+  // rebuilt whenever a story comes in, with that story first, and joining the
+  // new file at "time since midnight" would drop the listener somewhere in
+  // the middle of it instead of at the news they have not heard.
+  const startedMs = Date.parse(String(station?.startsAt || ''));
+  if (Number.isFinite(startedMs)) {
+    const sinceStart = (nowMs - startedMs) / 1000;
+    return ((sinceStart % duration) + duration) % duration;
+  }
 
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(station?.date || ''));
   if (!match) return 0;

@@ -254,3 +254,23 @@ describe('broadcastPositionSec', () => {
     expect(broadcastPositionSec({ date: '2026-10-06', durationSec: 0 }, MIDNIGHT_IST)).toBe(0);
   });
 });
+
+describe('broadcastPositionSec with starts_at', () => {
+  // A rebuild for a new story starts the loop from the moment it went on air,
+  // so the newest story is what a listener hears next.
+  const station = { durationSec: 600, date: '2026-10-20', startsAt: '2026-10-20T10:00:00+00:00' };
+
+  it('counts from starts_at, not from midnight', () => {
+    expect(broadcastPositionSec(station, Date.parse('2026-10-20T10:00:30Z'))).toBeCloseTo(30);
+  });
+
+  it('loops round the bulletin after that', () => {
+    expect(broadcastPositionSec(station, Date.parse('2026-10-20T10:12:00Z'))).toBeCloseTo(120);
+  });
+
+  it('falls back to midnight IST without it', () => {
+    const { startsAt, ...noStart } = station;   // eslint-disable-line no-unused-vars
+    const midnightIst = Date.UTC(2026, 9, 20) - 5.5 * 3600 * 1000;
+    expect(broadcastPositionSec(noStart, midnightIst + 45_000)).toBeCloseTo(45);
+  });
+});

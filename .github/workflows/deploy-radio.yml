@@ -1,7 +1,10 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # Deploy Radio
 #
-# Builds the Bheem Radio bulletin image and registers its Batch job definition.
+# Builds the Bhim Radio bulletin image and registers its Batch job definition.
+# The job (backend/worker/radio_live) rebuilds the bulletin whenever the last
+# two days' stories change, newest story first; the schedule
+# ambedkargpt-radio-general starts it every few minutes.
 #
 # Separate from deploy-worker.yml because it is a separate image, and it is a
 # separate image because bheem-radio needs openai>=3.0 and google-genai>=2.25
@@ -27,7 +30,9 @@ on:
     paths:
       - 'Dockerfile.radio'
       - 'backend/worker/build_radio.py'
-      - 'backend/worker/radio_handler.py'
+      - 'backend/worker/radio_live/**'
+      - 'backend/worker/radio_prompts/**'
+      - 'backend/worker/radio_assets/**'
       - '.github/workflows/deploy-radio.yml'
   workflow_dispatch:        # for moving the pinned Bheem Radio commit
 
@@ -52,10 +57,16 @@ jobs:
       - name: Log in to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
+      # The engine repository is private. Its token reaches the build as a
+      # BuildKit secret, used for the clone and never stored in the image.
       - name: Build radio image
+        env:
+          DOCKER_BUILDKIT: "1"
+          BHEEM_RADIO_TOKEN: ${{ secrets.BHEEM_RADIO_TOKEN }}
         run: |
           IMAGE_URI="${{ secrets.ECR_REGISTRY }}/ambedkargpt-radio"
           docker build -f Dockerfile.radio \
+            --secret id=bheem_radio_token,env=BHEEM_RADIO_TOKEN \
             -t "${IMAGE_URI}:latest" \
             -t "${IMAGE_URI}:${{ github.sha }}" \
             .
@@ -69,12 +80,13 @@ jobs:
       # 1 vCPU / 2 GB: mixing an hour of mono audio is light. The slow case is
       # waiting on the voice API, not the mixing, so more CPU buys nothing.
       #
-      # Timeout 30 min: a cold day with nothing cached needs about ninety
-      # cloned-voice requests, which is ten minutes at the Sarvam Starter
-      # plan's ten a minute.
+      # Timeout 90 min: the first build voices every line of an hour-long
+      # bulletin; later ones find almost everything in the voice cache kept in
+      # the bucket and take a few minutes. Most runs find nothing new and exit
+      # in under a minute.
       #
-      # One retry. The content-addressed cache makes it cheap: a retry only
-      # pays for whatever failed the first time.
+      # No retry: the schedule starts the job again in a few minutes anyway,
+      # and the build resumes from what the failed run already wrote.
       #
       # SARVAM_API_KEY is listed with the rest because build_radio only reaches
       # for Bulbul v3 when it sees that key, and falls back to a Gemini stock
@@ -92,12 +104,10 @@ jobs:
             --job-definition-name ambedkargpt-radio \
             --type container \
             --platform-capabilities FARGATE \
-            --retry-strategy '{"attempts": 2}' \
-            --timeout '{"attemptDurationSeconds": 1800}' \
-            --parameters '{"tenant": "general"}' \
+            --retry-strategy '{"attempts": 1}' \
+            --timeout '{"attemptDurationSeconds": 5400}' \
             --container-properties "{
               \"image\": \"${IMAGE_URI}:${{ github.sha }}\",
-              \"command\": [\"--tenant\", \"Ref::tenant\"],
               \"jobRoleArn\":       \"${WORKER_ROLE_ARN}\",
               \"executionRoleArn\": \"${WORKER_ROLE_ARN}\",
               \"fargatePlatformConfiguration\": {\"platformVersion\": \"LATEST\"},
@@ -107,7 +117,6 @@ jobs:
               ],
               \"environment\": [
                 {\"name\": \"S3_BUCKET\",                   \"value\": \"ambedkargpt-radio\"},
-                {\"name\": \"BHEEM_DAILY_S3_PREFIX\",       \"value\": \"\"},
                 {\"name\": \"BHEEM_DAILY_PUBLIC_BASE_URL\", \"value\": \"https://d12duaxzxz067j.cloudfront.net\"},
                 {\"name\": \"MONGODB_DATABASE\",            \"value\": \"ambedkargpt\"}
               ],

@@ -399,6 +399,11 @@ def test_the_prompt_patch_fails_loudly_when_upstream_moves(tmp_path, monkeypatch
 
     (tmp_path / "script_writer.md").write_text("nothing like the line", encoding="utf-8")
     monkeypatch.setenv("BHEEM_PROMPTS_DIR", str(tmp_path))
+    # Our own writer goes over theirs and carries the same line, so point the
+    # override at an empty folder to test the guard against their wording.
+    empty = tmp_path / "ours"
+    empty.mkdir()
+    monkeypatch.setattr(build_radio, "RADIO_PROMPTS", empty)
 
     with pytest.raises(RuntimeError, match="no longer contains"):
         build_radio._write_prompts(190)
