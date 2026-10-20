@@ -127,6 +127,11 @@ export function RadioProvider({ children }) {
   const segments = useMemo(() => station?.segments ?? [], [station]);
   const index = trackAt(tracks, position);
   const track = index >= 0 ? tracks[index] : null;
+  // Read by the manifest check, which runs on a timer and must see the
+  // current values rather than the ones it was set up with.
+  const indexRef = useRef(index);
+  const playingRef = useRef(false);
+  useEffect(() => { indexRef.current = index; playingRef.current = playing; }, [index, playing]);
 
   // ── Load the day's stream ───────────────────────────────────────────────
   const [reloadToken, setReloadToken] = useState(0);
@@ -149,6 +154,40 @@ export function RadioProvider({ children }) {
       });
     return () => { cancelled = true; };
   }, [primed, tenant, reloadToken]);
+
+  // ── A newer bulletin ────────────────────────────────────────────────────
+  // The bulletin is rebuilt whenever a story comes in, newest first. Every two
+  // minutes the manifest is asked for again (it is cached for sixty seconds,
+  // so this is one small request). A new one is put on straight away for
+  // someone not listening; for someone who is, it waits for the story they
+  // are in to finish, so nobody is cut off mid-sentence.
+  const [pending, setPending] = useState(null);   // { station, fromIndex }
+  useEffect(() => {
+    if (!primed || !radioConfigured || !station) return undefined;
+    let cancelled = false;
+    const check = () => {
+      loadStation(tenant)
+        .then((next) => {
+          if (cancelled || !next || !next.tracks.length || next.audioUrl === station.audioUrl) return;
+          if (playingRef.current) {
+            setPending({ station: next, fromIndex: indexRef.current });
+          } else {
+            setPending(null);
+            setStation(next);
+          }
+        })
+        .catch(() => {});
+    };
+    const timer = setInterval(check, 120_000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [primed, tenant, station]);
+
+  // The story that was playing when the new bulletin arrived has ended: put
+  // the new one on. The audio effect below then joins it where it has got to.
+  if (pending && index !== pending.fromIndex) {
+    setPending(null);
+    setStation(pending.station);
+  }
 
   // ── The element ─────────────────────────────────────────────────────────
   useEffect(() => {
