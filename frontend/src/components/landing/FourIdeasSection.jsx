@@ -1,6 +1,8 @@
 import { Handshake, Landmark, ScrollText } from 'lucide-react';
 
 import SectionLabel from './SectionLabel';
+import { MobileCarouselControls, MobileCardStack } from './CarouselNav';
+import useAutoCarousel from '../../hooks/useAutoCarousel';
 import { useI18n } from '../../i18n/index.jsx';
 
 // Keyed rather than literal: the card copy is translated at render, so the
@@ -16,6 +18,58 @@ const IDEAS = [
   { Icon: ScrollText, id: 'const' },
   { Icon: Landmark, id: 'country' },
 ];
+
+function IdeaCard({ idea, className = '' }) {
+  const { t } = useI18n();
+  return (
+    <div className={`liquid-glass hover-lift flex flex-col rounded-2xl p-7 md:p-8 ${className}`}>
+      {/* The icon sits on its own tile rather than loose on the card,
+          which gives the three cards a shared anchor at the same size
+          whatever the glyph inside happens to be. */}
+      <span
+        className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#3f9fff]/25"
+        style={{ background: 'linear-gradient(145deg, rgba(63,159,255,0.18), rgba(123,92,255,0.10))' }}
+      >
+        <idea.Icon size={26} strokeWidth={1.6} className="text-[#7fc0ff]" aria-hidden="true" />
+      </span>
+
+      <p className="mt-6 whitespace-pre-line font-display text-[20px] font-bold leading-tight text-white md:text-[22px]">
+        {t(`ideas.${idea.id}.title`)}
+      </p>
+
+      <p className="mt-3 text-[clamp(15px,4vw,19px)] leading-relaxed text-[#9ab8d8] md:text-[21px]">
+        {t(`ideas.${idea.id}.body`)}
+      </p>
+    </div>
+  );
+}
+
+function IdeasMobileCarousel() {
+  const { t } = useI18n();
+  const { activeIdx, goPrev, goNext, goTo, animation, rootRef, swipeHandlers } = useAutoCarousel(IDEAS.length);
+
+  return (
+    <div ref={rootRef} className="mt-10 sm:hidden">
+      <div className="mx-auto max-w-[360px] touch-pan-y" {...swipeHandlers}>
+        <MobileCardStack
+          items={IDEAS}
+          activeIdx={activeIdx}
+          animation={animation}
+          renderItem={(idea) => <IdeaCard idea={idea} className="w-full" />}
+        />
+      </div>
+
+      <MobileCarouselControls
+        count={IDEAS.length}
+        activeIdx={activeIdx}
+        onPrev={goPrev}
+        onNext={goNext}
+        onSelect={goTo}
+        labelFor={(i) => t(`ideas.${IDEAS[i].id}.body`)}
+      />
+    </div>
+  );
+}
 
 export default function FourIdeasSection() {
   const { t } = useI18n();
@@ -35,30 +89,14 @@ export default function FourIdeasSection() {
           </h2>
         </div>
 
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
+        {/* Phones: one card at a time, swiped or auto-advanced, instead of
+            three cards stacked down the page. From sm up it is the same
+            three-column grid as before. */}
+        <IdeasMobileCarousel />
+
+        <div className="mt-10 hidden gap-5 sm:grid sm:grid-cols-3">
           {IDEAS.map((idea) => (
-            <div
-              key={idea.id}
-              className="liquid-glass hover-lift flex flex-col rounded-2xl p-7 md:p-8"
-            >
-              {/* The icon sits on its own tile rather than loose on the card,
-                  which gives the three cards a shared anchor at the same size
-                  whatever the glyph inside happens to be. */}
-              <span
-                className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#3f9fff]/25"
-                style={{ background: 'linear-gradient(145deg, rgba(63,159,255,0.18), rgba(123,92,255,0.10))' }}
-              >
-                <idea.Icon size={26} strokeWidth={1.6} className="text-[#7fc0ff]" aria-hidden="true" />
-              </span>
-
-              <p className="mt-6 whitespace-pre-line font-display text-[20px] font-bold leading-tight text-white md:text-[22px]">
-                {t(`ideas.${idea.id}.title`)}
-              </p>
-
-              <p className="mt-3 text-[clamp(15px,4vw,19px)] leading-relaxed text-[#9ab8d8] md:text-[21px]">
-                {t(`ideas.${idea.id}.body`)}
-              </p>
-            </div>
+            <IdeaCard key={idea.id} idea={idea} />
           ))}
         </div>
       </div>

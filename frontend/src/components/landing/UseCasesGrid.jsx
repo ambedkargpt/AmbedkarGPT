@@ -1,6 +1,8 @@
 ﻿import { Cpu, Search, Zap, Target, ArrowRight } from "lucide-react";
 import SectionLabel from "./SectionLabel";
 import StaggerReveal from "../ui/StaggerReveal";
+import { MobileCarouselControls, MobileCardStack } from "./CarouselNav";
+import useAutoCarousel from "../../hooks/useAutoCarousel";
 import { useI18n } from "../../i18n/index.jsx";
 
 const USE_CASES = [
@@ -50,6 +52,37 @@ function UseCaseCard({ icon: Icon, id }) {
   );
 }
 
+function UseCasesMobileCarousel() {
+  const { t } = useI18n();
+  const { activeIdx, goPrev, goNext, goTo, animation, rootRef, swipeHandlers } = useAutoCarousel(USE_CASES.length);
+
+  return (
+    <div ref={rootRef} className="mt-8 sm:mt-14 md:hidden">
+      <div className="mx-auto max-w-[360px] touch-pan-y sm:max-w-[560px]" {...swipeHandlers}>
+        <MobileCardStack
+          items={USE_CASES}
+          activeIdx={activeIdx}
+          animation={animation}
+          renderItem={(uc) => (
+            <div className="w-full">
+              <UseCaseCard {...uc} />
+            </div>
+          )}
+        />
+      </div>
+
+      <MobileCarouselControls
+        count={USE_CASES.length}
+        activeIdx={activeIdx}
+        onPrev={goPrev}
+        onNext={goNext}
+        onSelect={goTo}
+        labelFor={(i) => `Go to ${t(`uc.${USE_CASES[i].id}.title`)}`}
+      />
+    </div>
+  );
+}
+
 export default function UseCasesGrid() {
   const { t } = useI18n();
   return (
@@ -69,7 +102,11 @@ export default function UseCasesGrid() {
           <span className="italic gradient-text-blue">{t('uc.headEm2')}</span>
         </h2>
 
-        <StaggerReveal step={100} className="mt-8 sm:mt-14 grid gap-6 md:grid-cols-2">
+        {/* Below md: one card at a time, swiped or auto-advanced, instead of
+            four tall cards stacked down the page. From md up, the 2x2 grid. */}
+        <UseCasesMobileCarousel />
+
+        <StaggerReveal step={100} className="mt-8 sm:mt-14 hidden gap-6 md:grid md:grid-cols-2">
           {USE_CASES.map((uc) => (
             <UseCaseCard key={uc.id} {...uc} />
           ))}

@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Edit3, Headphones, Mic2, Video, Newspaper, Scale, ArrowRight, Check } from 'lucide-react';
 import SectionLabel from './SectionLabel';
+import { NavButton, MobileCarouselControls, MobileCardStack } from './CarouselNav';
+import useAutoCarousel from '../../hooks/useAutoCarousel';
 import { useI18n } from '../../i18n/index.jsx';
 
 const SERVICES = [
@@ -55,24 +57,6 @@ function handleCardMove(e) {
   const rect = el.getBoundingClientRect();
   el.style.setProperty('--mx', `${e.clientX - rect.left}px`);
   el.style.setProperty('--my', `${e.clientY - rect.top}px`);
-}
-
-function NavButton({ onClick, direction, label }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#2a4375]/60 bg-[#0a1430] text-[#7a90b8] transition hover:border-[#4a78c8]/80 hover:bg-[#0f1e45] hover:text-white"
-    >
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        {direction === 'left'
-          ? <path d="M10 4l-4 4 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-          : <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-        }
-      </svg>
-    </button>
-  );
 }
 
 function ServiceCard({ service }) {
@@ -342,49 +326,28 @@ function DesktopCarousel() {
 }
 
 function MobileCarousel() {
-  const [activeIdx, setActiveIdx] = useState(0);
-
-  function goPrev() {
-    setActiveIdx((i) => (i - 1 + SERVICES.length) % SERVICES.length);
-  }
-  function goNext() {
-    setActiveIdx((i) => (i + 1) % SERVICES.length);
-  }
-
-  const service = SERVICES[activeIdx];
+  const { t } = useI18n();
+  const { activeIdx, goPrev, goNext, goTo, animation, rootRef, swipeHandlers } = useAutoCarousel(SERVICES.length);
 
   return (
-    <div className="mt-10 px-6">
-      <div
-        key={activeIdx}
-        className="mx-auto flex max-w-[360px]"
-        style={{ animation: 'makerJumpIn 0.22s ease-out both' }}
-      >
-        <ServiceCard service={service} />
+    <div ref={rootRef} className="mt-10 px-6">
+      <div className="mx-auto max-w-[360px] touch-pan-y" {...swipeHandlers}>
+        <MobileCardStack
+          items={SERVICES}
+          activeIdx={activeIdx}
+          animation={animation}
+          renderItem={(service) => <ServiceCard service={service} />}
+        />
       </div>
 
-      <div className="mt-5 flex items-center justify-center gap-4">
-        <NavButton onClick={goPrev} direction="left" label="Previous" />
-
-        <div className="flex items-center gap-2">
-          {SERVICES.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setActiveIdx(i)}
-              className={[
-                'rounded-full transition-all duration-200',
-                i === activeIdx
-                  ? 'h-2 w-6 bg-[#3f9fff]'
-                  : 'h-2 w-2 bg-[#2a4375]/60 hover:bg-[#3f9fff]/50',
-              ].join(' ')}
-              aria-label={`Go to ${SERVICES[i].title}`}
-            />
-          ))}
-        </div>
-
-        <NavButton onClick={goNext} direction="right" label="Next" />
-      </div>
+      <MobileCarouselControls
+        count={SERVICES.length}
+        activeIdx={activeIdx}
+        onPrev={goPrev}
+        onNext={goNext}
+        onSelect={goTo}
+        labelFor={(i) => `Go to ${t(`svc.${SERVICES[i].id}.title`)}`}
+      />
     </div>
   );
 }
