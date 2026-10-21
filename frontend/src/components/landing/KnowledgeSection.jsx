@@ -201,10 +201,23 @@ function DesktopCarousel() {
   const trackIdxRef             = useRef(SERVICES.length);
   const timerRef                = useRef(null);
 
+  // Where a move starts from. The wrap back to the middle copy happens on
+  // transitionend, and a hidden tab runs no transitions, so that event never
+  // came while the timer kept stepping: after a while in the background the
+  // track had slid past every card and the section came back empty, just the
+  // arrows and dots. A position outside the middle copy is brought back into
+  // it before the next step, whatever happened to the events.
+  function settled() {
+    const n = SERVICES.length;
+    const cur = trackIdxRef.current;
+    return cur >= n && cur < n * 2 ? cur : n + (((cur % n) + n) % n);
+  }
+
   const startTimer = useCallback(() => {
     clearInterval(timerRef.current);
     timerRef.current = setInterval(() => {
-      const next = trackIdxRef.current + 1;
+      if (document.hidden) return;   // nothing to see, and nothing would settle
+      const next = settled() + 1;
       trackIdxRef.current = next;
       setAnimated(true);
       setTrackIdx(next);
@@ -215,6 +228,22 @@ function DesktopCarousel() {
     startTimer();
     return () => clearInterval(timerRef.current);
   }, [startTimer]);
+
+  // Coming back to the tab: put the track on the middle copy at once, without
+  // a slide, in case a step was taken that never settled.
+  useEffect(() => {
+    function onVisible() {
+      if (document.hidden) return;
+      const cur = settled();
+      if (cur !== trackIdxRef.current) {
+        trackIdxRef.current = cur;
+        setAnimated(false);
+        setTrackIdx(cur);
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, []);
 
   // After each slide completes, silently jump back to the middle copy if needed
   function onTransitionEnd() {
@@ -244,14 +273,14 @@ function DesktopCarousel() {
   }, [animated]);
 
   function goPrev() {
-    const next = trackIdxRef.current - 1;
+    const next = settled() - 1;
     trackIdxRef.current = next;
     setAnimated(true);
     setTrackIdx(next);
     startTimer();
   }
   function goNext() {
-    const next = trackIdxRef.current + 1;
+    const next = settled() + 1;
     trackIdxRef.current = next;
     setAnimated(true);
     setTrackIdx(next);
