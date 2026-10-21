@@ -7,7 +7,8 @@ import { RADIO_REQUIRES_LOGIN } from '../../data/radioAccess';
 import { useI18n } from '../../i18n/index.jsx';
 
 /*
- * The phone hero's tool cards. Same products, colours and icons as the
+ * "Our Services" on a phone: the tools as compact cards, one at a time with
+ * the next peeking in. Same products, colours and icons as the
  * services carousel and the generator's picker, live ones first. Text keys are
  * the services section's where it has them (svc.*) and hero.tool.* for the
  * three it does not cover.
@@ -116,7 +117,7 @@ function ToolCard({ tool, index, onTry }) {
   );
 }
 
-export default function HeroToolCarousel() {
+export default function ToolCardCarousel() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
