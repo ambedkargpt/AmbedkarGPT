@@ -1,3 +1,5 @@
+import { useRef } from 'react';
+
 import { MobileCarouselControls } from './CarouselNav';
 import useAutoCarousel from '../../hooks/useAutoCarousel';
 
@@ -15,6 +17,9 @@ import useAutoCarousel from '../../hooks/useAutoCarousel';
  * Only the active card and its two neighbours are shown; a card coming round
  * from the far side travels while hidden.
  */
+// iOS-like: quick off the mark, long soft landing.
+const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const DURATION = 480;
 const GAP = 12;
 const PEEK = 22;
 const SIDE = GAP + PEEK;
@@ -32,10 +37,62 @@ function offsetFrom(i, active, count) {
 export default function PeekCarousel({ count, renderItem, labelFor, interval, className = '' }) {
   const { activeIdx, goPrev, goNext, goTo, rootRef, swipeHandlers } = useAutoCarousel(count, interval ? { interval } : undefined);
 
+  // The track follows the finger while it is down, written straight to the
+  // element once per frame rather than through React state, so a drag costs
+  // no re-render. On release it eases back to 0 while the hook decides
+  // whether that was a swipe to the next or previous card.
+  const trackRef = useRef(null);
+  const drag = useRef({ x: 0, y: 0, dx: 0, axis: null, frame: 0 });
+
+  function paint() {
+    drag.current.frame = 0;
+    const el = trackRef.current;
+    if (el) el.style.transform = `translate3d(${drag.current.dx}px,0,0)`;
+  }
+
+  const handlers = {
+    onTouchStart(e) {
+      const t = e.touches[0];
+      drag.current = { x: t.clientX, y: t.clientY, dx: 0, axis: null, frame: 0 };
+      if (trackRef.current) trackRef.current.style.transition = 'none';
+      swipeHandlers.onTouchStart(e);
+    },
+    onTouchMove(e) {
+      const t = e.touches[0];
+      const d = drag.current;
+      const dx = t.clientX - d.x;
+      const dy = t.clientY - d.y;
+      // Decide once whether this is a sideways drag or the page scrolling.
+      if (!d.axis && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) d.axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';
+      if (d.axis !== 'x') return;
+      d.dx = dx * 0.9;
+      if (!d.frame) d.frame = requestAnimationFrame(paint);
+    },
+    onTouchEnd(e) {
+      release();
+      swipeHandlers.onTouchEnd(e);
+    },
+    onTouchCancel(e) {
+      release();
+      swipeHandlers.onTouchCancel(e);
+    },
+  };
+
+  function release() {
+    const d = drag.current;
+    if (d.frame) cancelAnimationFrame(d.frame);
+    d.frame = 0;
+    d.dx = 0;
+    const el = trackRef.current;
+    if (!el) return;
+    el.style.transition = `transform ${DURATION}ms ${EASE}`;
+    el.style.transform = 'translate3d(0,0,0)';
+  }
+
   return (
     <div ref={rootRef} className={className}>
-      <div className="touch-pan-y overflow-hidden py-1" {...swipeHandlers}>
-        <div className="grid">
+      <div className="peek-track touch-pan-y overflow-hidden py-1" {...handlers}>
+        <div ref={trackRef} className="grid" style={{ transform: 'translate3d(0,0,0)', willChange: 'transform' }}>
           {Array.from({ length: count }, (_, i) => {
             const d = offsetFrom(i, activeIdx, count);
             const active = d === 0;
@@ -44,13 +101,18 @@ export default function PeekCarousel({ count, renderItem, labelFor, interval, cl
               <div
                 key={i}
                 className={[
-                  'relative flex [grid-area:1/1] transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] motion-reduce:transition-none',
+                  'relative flex [grid-area:1/1] motion-reduce:!transition-none',
                   active ? 'z-10 opacity-100' : near ? 'opacity-55' : 'pointer-events-none opacity-0',
                 ].join(' ')}
                 style={{
                   width: CARD_W,
                   marginLeft: SIDE,
-                  transform: `translateX(calc(${d} * (100% + ${GAP}px)))`,
+                  transform: `translate3d(calc(${d} * (100% + ${GAP}px)),0,0)`,
+                  transition: `transform ${DURATION}ms ${EASE}, opacity ${DURATION}ms ${EASE}`,
+                  // Its own layer, painted once up front, so moving it never
+                  // repaints it - including a card coming round from hidden.
+                  willChange: 'transform, opacity',
+                  backfaceVisibility: 'hidden',
                 }}
                 aria-hidden={active ? undefined : true}
               >
