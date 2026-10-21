@@ -57,7 +57,7 @@ function UseCasesMobileCarousel() {
   const { t } = useI18n();
   return (
     <PeekCarousel
-      className="mt-8 sm:mt-14 md:hidden"
+      className="-mx-6 mt-8 sm:mt-14 md:hidden"
       count={USE_CASES.length}
       labelFor={(i) => `Go to ${t(`uc.${USE_CASES[i].id}.title`)}`}
       renderItem={(i) => (

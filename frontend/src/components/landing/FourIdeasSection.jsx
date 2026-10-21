@@ -47,7 +47,7 @@ function IdeasMobileCarousel() {
   const { t } = useI18n();
   return (
     <PeekCarousel
-      className="mt-10 sm:hidden"
+      className="-mx-6 mt-10 sm:hidden"
       count={IDEAS.length}
       labelFor={(i) => t(`ideas.${IDEAS[i].id}.body`)}
       renderItem={(i) => <IdeaCard idea={IDEAS[i]} className="w-full" />}

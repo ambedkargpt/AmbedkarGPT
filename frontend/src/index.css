@@ -1488,3 +1488,11 @@ html { scroll-behavior: smooth; }
   backdrop-filter: none;
   background-color: rgba(12, 20, 48, 0.94);
 }
+/* A card coming round the end of a phone carousel fades in where it lands,
+   rather than sliding across behind the active one (two names, so the
+   animation restarts on each move). */
+@keyframes peekFadeIn0 { from { opacity: 0; } }
+@keyframes peekFadeIn1 { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .peek-track [style*="peekFadeIn"] { animation: none !important; }
+}

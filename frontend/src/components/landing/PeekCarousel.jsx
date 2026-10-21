@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 import { MobileCarouselControls } from './CarouselNav';
 import useAutoCarousel from '../../hooks/useAutoCarousel';
@@ -36,6 +36,17 @@ function offsetFrom(i, active, count) {
 
 export default function PeekCarousel({ count, renderItem, labelFor, interval, className = '' }) {
   const { activeIdx, goPrev, goNext, goTo, rootRef, swipeHandlers } = useAutoCarousel(count, interval ? { interval } : undefined);
+
+  // The card shown before this one, to spot a card that comes round: with
+  // three cards the one leaving on the left re-enters on the right, and it
+  // used to slide across behind the active card to get there. A card whose
+  // place jumps by more than one step moves without a slide and fades in.
+  const [shown, setShown] = useState(activeIdx);
+  const [before, setBefore] = useState(activeIdx);
+  if (shown !== activeIdx) {
+    setBefore(shown);
+    setShown(activeIdx);
+  }
 
   // The track follows the finger while it is down, written straight to the
   // element once per frame rather than through React state, so a drag costs
@@ -91,12 +102,16 @@ export default function PeekCarousel({ count, renderItem, labelFor, interval, cl
 
   return (
     <div ref={rootRef} className={className}>
-      <div className="peek-track touch-pan-y overflow-hidden py-1" {...handlers}>
+      {/* Room above and below for each card's glow, shadow and hover lift,
+          which the clipping box used to cut off; the negative margin keeps
+          the section's spacing as it was. */}
+      <div className="peek-track touch-pan-y -my-6 overflow-hidden py-6" {...handlers}>
         <div ref={trackRef} className="grid" style={{ transform: 'translate3d(0,0,0)', willChange: 'transform' }}>
           {Array.from({ length: count }, (_, i) => {
             const d = offsetFrom(i, activeIdx, count);
             const active = d === 0;
             const near = Math.abs(d) <= 1;
+            const cameRound = Math.abs(d - offsetFrom(i, before, count)) > 1;
             return (
               <div
                 key={i}
@@ -108,7 +123,9 @@ export default function PeekCarousel({ count, renderItem, labelFor, interval, cl
                   width: CARD_W,
                   marginLeft: SIDE,
                   transform: `translate3d(calc(${d} * (100% + ${GAP}px)),0,0)`,
-                  transition: `transform ${DURATION}ms ${EASE}, opacity ${DURATION}ms ${EASE}`,
+                  transition: cameRound ? 'none' : `transform ${DURATION}ms ${EASE}, opacity ${DURATION}ms ${EASE}`,
+                  // Alternating names restart the fade on every move.
+                  animation: cameRound && near ? `peekFadeIn${activeIdx % 2} ${DURATION}ms ${EASE} both` : undefined,
                   // Its own layer, painted once up front, so moving it never
                   // repaints it - including a card coming round from hidden.
                   willChange: 'transform, opacity',
