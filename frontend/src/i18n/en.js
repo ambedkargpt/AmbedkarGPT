@@ -159,7 +159,7 @@ export default {
   'nav.notifications': 'Notifications',
   'nav.accountMenu': 'Account menu',
   'landing.badge': 'An AI Tool For Political Dominance',
-  "landing.heroSub": "Combine Ambedkar's vision with AI to write winning arguments, turn viral posts into real-world votes, and lead the Bahujan leaders to a historic victory.",
+  "landing.heroSub": "Build your narrative with Ambedkar's vision and AI, spread it among the people, and turn it into real-world votes, all in one place.",
   'landing.buildNarrative': 'Build your narrative',
   'landing.unbiased': 'Unbiased',
   'landing.equal': 'Equal',
