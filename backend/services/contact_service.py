@@ -67,14 +67,31 @@ def send_contact_message(payload: ContactMessageRequest) -> None:
             detail="Messages cannot be sent right now. Please email us directly.",
         )
 
+    deliver(f"AmbedkarGPT contact form: {payload.name}", _body(payload), str(payload.email))
+    logger.info(
+        "[contact] message from %s delivered to %s via %s",
+        payload.email,
+        settings.contact_recipient_email,
+        settings.smtp_host,
+    )
+
+
+def deliver(subject: str, body: str, reply_to: str) -> None:
+    """Send one email to the configured recipient, or raise an HTTPException."""
+    if not settings.smtp_host or not settings.smtp_user:
+        logger.error("[contact] SMTP is not configured; refusing to accept the message")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Messages cannot be sent right now. Please email us directly.",
+        )
     msg = EmailMessage()
-    msg["Subject"] = f"AmbedkarGPT contact form: {payload.name}"
+    msg["Subject"] = subject
     msg["From"] = settings.contact_from_email
     msg["To"] = settings.contact_recipient_email
     # So hitting reply in the inbox answers the visitor rather than the sender
     # account the provider made us authenticate as.
-    msg["Reply-To"] = str(payload.email)
-    msg.set_content(_body(payload))
+    msg["Reply-To"] = reply_to
+    msg.set_content(body)
 
     try:
         with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=_TIMEOUT_SECONDS) as smtp:
@@ -97,10 +114,3 @@ def send_contact_message(payload: ContactMessageRequest) -> None:
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Messages cannot be sent right now. Please email us directly.",
         ) from exc
-
-    logger.info(
-        "[contact] message from %s delivered to %s via %s",
-        payload.email,
-        settings.contact_recipient_email,
-        settings.smtp_host,
-    )

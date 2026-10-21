@@ -2,6 +2,7 @@
 import { CheckCircle2 } from 'lucide-react';
 import SectionLabel from './SectionLabel';
 import CorpusContactModal from './CorpusContactModal';
+import CorpusContributeModal from './CorpusContributeModal';
 import libraryImg   from '../../assets/images/corpus-library.webp';
 import { useI18n } from '../../i18n/index.jsx';
 
@@ -134,7 +135,11 @@ export default function DalitCorpusSection() {
         </div>
       </div>
 
-      {contactType && (
+      {/* Contributing is a form with an upload; buying is still a conversation. */}
+      {contactType === 'contribute' && (
+        <CorpusContributeModal onClose={() => setContactType(null)} />
+      )}
+      {contactType === 'buy' && (
         <CorpusContactModal
           type={contactType}
           onClose={() => setContactType(null)}
