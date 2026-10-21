@@ -1,8 +1,7 @@
 import { Handshake, Landmark, ScrollText } from 'lucide-react';
 
 import SectionLabel from './SectionLabel';
-import { MobileCarouselControls, MobileCardStack } from './CarouselNav';
-import useAutoCarousel from '../../hooks/useAutoCarousel';
+import PeekCarousel from './PeekCarousel';
 import { useI18n } from '../../i18n/index.jsx';
 
 // Keyed rather than literal: the card copy is translated at render, so the
@@ -46,28 +45,13 @@ function IdeaCard({ idea, className = '' }) {
 
 function IdeasMobileCarousel() {
   const { t } = useI18n();
-  const { activeIdx, goPrev, goNext, goTo, animation, rootRef, swipeHandlers } = useAutoCarousel(IDEAS.length);
-
   return (
-    <div ref={rootRef} className="mt-10 sm:hidden">
-      <div className="mx-auto max-w-[360px] touch-pan-y" {...swipeHandlers}>
-        <MobileCardStack
-          items={IDEAS}
-          activeIdx={activeIdx}
-          animation={animation}
-          renderItem={(idea) => <IdeaCard idea={idea} className="w-full" />}
-        />
-      </div>
-
-      <MobileCarouselControls
-        count={IDEAS.length}
-        activeIdx={activeIdx}
-        onPrev={goPrev}
-        onNext={goNext}
-        onSelect={goTo}
-        labelFor={(i) => t(`ideas.${IDEAS[i].id}.body`)}
-      />
-    </div>
+    <PeekCarousel
+      className="-mx-6 mt-10 sm:hidden"
+      count={IDEAS.length}
+      labelFor={(i) => t(`ideas.${IDEAS[i].id}.body`)}
+      renderItem={(i) => <IdeaCard idea={IDEAS[i]} className="w-full" />}
+    />
   );
 }
 

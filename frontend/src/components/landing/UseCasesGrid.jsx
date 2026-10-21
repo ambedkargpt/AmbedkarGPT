@@ -1,8 +1,7 @@
 ﻿import { Cpu, Search, Zap, Target, ArrowRight } from "lucide-react";
 import SectionLabel from "./SectionLabel";
 import StaggerReveal from "../ui/StaggerReveal";
-import { MobileCarouselControls, MobileCardStack } from "./CarouselNav";
-import useAutoCarousel from "../../hooks/useAutoCarousel";
+import PeekCarousel from "./PeekCarousel";
 import { useI18n } from "../../i18n/index.jsx";
 
 const USE_CASES = [
@@ -25,7 +24,7 @@ function UseCaseCard({ icon: Icon, id }) {
         }}
       />
 
-      <div className="glass-card hover-lift relative flex h-full flex-col overflow-hidden p-8 transition-all duration-500 hover:border-[#3f9fff]/30 md:p-10">
+      <div className="glass-card hover-lift relative flex h-full w-full flex-col overflow-hidden p-5 transition-all duration-500 hover:border-[#3f9fff]/30 sm:p-8 md:p-10">
         <div
           className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
           style={{
@@ -35,16 +34,18 @@ function UseCaseCard({ icon: Icon, id }) {
         />
         <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-[#3f9fff]/15 blur-3xl" />
 
-        <div className="flex items-center gap-5">
-          <span className="inline-flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-[#2a4375]/80 bg-[#0c1735]/80 text-[#5fa5ff] shadow-[0_0_22px_rgba(63,159,255,0.25)]">
-            <Icon size={24} strokeWidth={1.7} />
+        {/* On a phone card the title gets the room: smaller icon and type, and
+            a long word wraps instead of running out of the card. */}
+        <div className="flex items-center gap-3.5 sm:gap-5">
+          <span className="inline-flex h-11 w-11 shrink-0 sm:h-14 sm:w-14 items-center justify-center rounded-xl border border-[#2a4375]/80 bg-[#0c1735]/80 text-[#5fa5ff] shadow-[0_0_22px_rgba(63,159,255,0.25)]">
+            <Icon size={22} strokeWidth={1.7} />
           </span>
-          <h3 className="text-[28px] font-semibold text-white md:text-[30px]">
+          <h3 className="min-w-0 break-words text-[21px] font-semibold leading-tight text-white sm:text-[28px] md:text-[30px]">
             {t(`uc.${id}.title`)}
           </h3>
         </div>
         <div className="mt-3 h-px w-12 rounded-full bg-[#2a4375]/60" />
-        <p className="mt-4 flex-1 text-[clamp(15px,4vw,19px)] leading-8 text-[#bfcfe8] md:text-[20px]">
+        <p className="mt-4 flex-1 text-[15px] leading-7 text-[#bfcfe8] sm:text-[clamp(15px,4vw,19px)] sm:leading-8 md:text-[20px]">
           {t(`uc.${id}.body`)}
         </p>
       </div>
@@ -54,32 +55,17 @@ function UseCaseCard({ icon: Icon, id }) {
 
 function UseCasesMobileCarousel() {
   const { t } = useI18n();
-  const { activeIdx, goPrev, goNext, goTo, animation, rootRef, swipeHandlers } = useAutoCarousel(USE_CASES.length);
-
   return (
-    <div ref={rootRef} className="mt-8 sm:mt-14 md:hidden">
-      <div className="mx-auto max-w-[360px] touch-pan-y sm:max-w-[560px]" {...swipeHandlers}>
-        <MobileCardStack
-          items={USE_CASES}
-          activeIdx={activeIdx}
-          animation={animation}
-          renderItem={(uc) => (
-            <div className="w-full">
-              <UseCaseCard {...uc} />
-            </div>
-          )}
-        />
-      </div>
-
-      <MobileCarouselControls
-        count={USE_CASES.length}
-        activeIdx={activeIdx}
-        onPrev={goPrev}
-        onNext={goNext}
-        onSelect={goTo}
-        labelFor={(i) => `Go to ${t(`uc.${USE_CASES[i].id}.title`)}`}
-      />
-    </div>
+    <PeekCarousel
+      className="-mx-6 mt-8 sm:mt-14 md:hidden"
+      count={USE_CASES.length}
+      labelFor={(i) => `Go to ${t(`uc.${USE_CASES[i].id}.title`)}`}
+      renderItem={(i) => (
+        <div className="w-full">
+          <UseCaseCard {...USE_CASES[i]} />
+        </div>
+      )}
+    />
   );
 }
 

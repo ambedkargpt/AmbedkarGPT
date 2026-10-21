@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Edit3, Headphones, Mic2, Video, Newspaper, Scale, ArrowRight, Check } from 'lucide-react';
 import SectionLabel from './SectionLabel';
-import { NavButton, MobileCarouselControls, MobileCardStack } from './CarouselNav';
-import useAutoCarousel from '../../hooks/useAutoCarousel';
+import { NavButton } from './CarouselNav';
+import ToolCardCarousel from './ToolCardCarousel';
 import { useI18n } from '../../i18n/index.jsx';
 
 const SERVICES = [
@@ -354,33 +354,6 @@ function DesktopCarousel() {
   );
 }
 
-function MobileCarousel() {
-  const { t } = useI18n();
-  const { activeIdx, goPrev, goNext, goTo, animation, rootRef, swipeHandlers } = useAutoCarousel(SERVICES.length);
-
-  return (
-    <div ref={rootRef} className="mt-10 px-6">
-      <div className="mx-auto max-w-[360px] touch-pan-y" {...swipeHandlers}>
-        <MobileCardStack
-          items={SERVICES}
-          activeIdx={activeIdx}
-          animation={animation}
-          renderItem={(service) => <ServiceCard service={service} />}
-        />
-      </div>
-
-      <MobileCarouselControls
-        count={SERVICES.length}
-        activeIdx={activeIdx}
-        onPrev={goPrev}
-        onNext={goNext}
-        onSelect={goTo}
-        labelFor={(i) => `Go to ${t(`svc.${SERVICES[i].id}.title`)}`}
-      />
-    </div>
-  );
-}
-
 export default function KnowledgeSection() {
   const { t } = useI18n();
   return (
@@ -393,19 +366,23 @@ export default function KnowledgeSection() {
       <div className="relative mx-auto max-w-[1440px] px-6">
         <SectionLabel>{t('landing.ourServices')}</SectionLabel>
 
-        <h2 className="mx-auto mt-8 max-w-[820px] text-center font-display text-[clamp(30px,8vw,46px)] font-bold leading-[1.05] text-white md:text-[62px]">
+        <h2 className="mx-auto mt-5 max-w-[820px] md:mt-8 text-center font-display text-[clamp(30px,8vw,46px)] font-bold leading-[1.05] text-white md:text-[62px]">
           {t('know.headPre')}{' '}
           <span className="gradient-text-blue italic">{t('landing.creatorJourney')}</span>
         </h2>
 
-        <p className="mx-auto mt-6 max-w-[760px] text-center text-[clamp(16px,4.3vw,22px)] leading-9 text-[#bfcfe8] md:text-[24px]">
+        {/* A phone gets the short line, so the cards are on the first screen. */}
+        <p className="mx-auto mt-3 max-w-[340px] text-center text-[15px] leading-snug text-[#bfcfe8] md:hidden">
+          {t('hero.mobileSub')}
+        </p>
+        <p className="mx-auto mt-6 hidden max-w-[760px] text-center text-[clamp(16px,4.3vw,22px)] leading-9 text-[#bfcfe8] md:block md:text-[24px]">
           {t('know.sub')}
         </p>
       </div>
 
-      {/* Mobile: one-by-one carousel */}
-      <div className="md:hidden">
-        <MobileCarousel />
+      {/* Mobile: compact tool cards, the next one peeking in */}
+      <div className="mt-6 md:hidden">
+        <ToolCardCarousel />
       </div>
 
       {/* Desktop: carousel with left/right nav */}

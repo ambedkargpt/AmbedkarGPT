@@ -1,13 +1,13 @@
 import { useNavigate } from 'react-router-dom';
 import { Edit3, Bot, Radio, Music, Headphones, Mic2, Video, ArrowRight, Check } from 'lucide-react';
-import { MobileCarouselControls } from './CarouselNav';
-import useAutoCarousel from '../../hooks/useAutoCarousel';
+import PeekCarousel from './PeekCarousel';
 import { useAuth } from '../../context/AuthContext';
 import { RADIO_REQUIRES_LOGIN } from '../../data/radioAccess';
 import { useI18n } from '../../i18n/index.jsx';
 
 /*
- * The phone hero's tool cards. Same products, colours and icons as the
+ * "Our Services" on a phone: the tools as compact cards, one at a time with
+ * the next peeking in. Same products, colours and icons as the
  * services carousel and the generator's picker, live ones first. Text keys are
  * the services section's where it has them (svc.*) and hero.tool.* for the
  * three it does not cover.
@@ -50,15 +50,6 @@ const TOOLS = [
     live: false, title: 'svc.video.title', sub: 'svc.video.sub', f: 'svc.video.f',
   },
 ];
-
-// Track geometry. The track is as wide as the screen, so 100% in its
-// translate is the screen width: a 16px gutter on the left, 16px between
-// cards, and what is left of the right gutter shows the next card.
-const GUTTER = 16;
-const GAP = 16;
-const PEEK = 28;
-const CARD_W = `calc(100% - ${GUTTER + GAP + PEEK}px)`;
-const STEP = `(100% - ${GUTTER + PEEK}px)`;
 
 function ToolCard({ tool, index, onTry }) {
   const { t } = useI18n();
@@ -116,11 +107,10 @@ function ToolCard({ tool, index, onTry }) {
   );
 }
 
-export default function HeroToolCarousel() {
+export default function ToolCardCarousel() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const { activeIdx, goPrev, goNext, goTo, rootRef, swipeHandlers } = useAutoCarousel(TOOLS.length, { interval: 5000 });
 
   function handleTry(tool) {
     if (tool.auth && !currentUser) {
@@ -132,50 +122,11 @@ export default function HeroToolCarousel() {
   }
 
   return (
-    <div ref={rootRef}>
-      <div className="touch-pan-y overflow-hidden py-1" {...swipeHandlers}>
-        <div
-          className="flex transition-transform duration-500 ease-[cubic-bezier(0.25,0.46,0.45,0.94)] motion-reduce:transition-none"
-          style={{ gap: GAP, transform: `translateX(calc(${GUTTER}px - ${activeIdx} * ${STEP}))` }}
-        >
-          {TOOLS.map((tool, i) => {
-            const active = i === activeIdx;
-            return (
-              <div
-                key={tool.id}
-                className={`relative flex shrink-0 transition-opacity duration-500 motion-reduce:transition-none ${active ? '' : 'opacity-55'}`}
-                style={{ width: CARD_W }}
-                aria-hidden={active ? undefined : true}
-              >
-                <div className="flex w-full" inert={!active}>
-                  <ToolCard tool={tool} index={i} onTry={handleTry} />
-                </div>
-                {/* The peeking card is a way to it, not a dead edge. */}
-                {!active && (
-                  <button
-                    type="button"
-                    tabIndex={-1}
-                    onClick={() => goTo(i)}
-                    className="absolute inset-0 rounded-2xl"
-                    aria-label={t(tool.title)}
-                  />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      <div className="px-4">
-        <MobileCarouselControls
-          count={TOOLS.length}
-          activeIdx={activeIdx}
-          onPrev={goPrev}
-          onNext={goNext}
-          onSelect={goTo}
-          labelFor={(i) => `Go to ${t(TOOLS[i].title)}`}
-        />
-      </div>
-    </div>
+    <PeekCarousel
+      count={TOOLS.length}
+      interval={5000}
+      labelFor={(i) => `Go to ${t(TOOLS[i].title)}`}
+      renderItem={(i) => <ToolCard tool={TOOLS[i]} index={i} onTry={handleTry} />}
+    />
   );
 }

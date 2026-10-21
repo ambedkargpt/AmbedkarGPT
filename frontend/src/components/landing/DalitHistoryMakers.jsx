@@ -2,8 +2,8 @@
 import { Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import SectionLabel from './SectionLabel';
-import { NavButton, MobileCarouselControls } from './CarouselNav';
-import useAutoCarousel from '../../hooks/useAutoCarousel';
+import { NavButton } from './CarouselNav';
+import PeekCarousel from './PeekCarousel';
 import { useAuth } from '../../context/AuthContext';
 import savitribai from '../../assets/images/makers/savitribai.webp';
 import gurram     from '../../assets/images/makers/gurram.webp';
@@ -195,44 +195,33 @@ function DesktopCarousel() {
 
 function MobileCarousel() {
   const { t } = useI18n();
-  const { activeIdx, goPrev, goNext, goTo, animation, rootRef, swipeHandlers } = useAutoCarousel(MAKERS.length);
-
-  const maker = MAKERS[activeIdx];
-
   return (
-    <div ref={rootRef} className="mt-10 px-6">
-      <div {...swipeHandlers} className="relative mx-auto h-[420px] max-w-[360px] touch-pan-y overflow-hidden rounded-2xl border border-[#2a4375]/60 bg-[#0a1430] shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
-        <div
-          key={activeIdx}
-          className="absolute inset-0"
-          style={{ animation }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-[#11204a] via-[#0b1633] to-[#070c1f]" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_25%,rgba(63,159,255,0.18),transparent_65%)]" />
-          <img
-            src={maker.image}
-            alt={t(`makers.${maker.id}.name`)}
-            loading="lazy"
-            decoding="async"
-            className="relative h-full w-full object-cover object-top"
-            style={{ filter: 'saturate(1.05) contrast(1.02)' }}
-          />
-          <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-[#030611] via-[#030611]/70 to-transparent p-5">
-            <h3 className="text-[22px] font-semibold leading-tight text-white">{t(`makers.${maker.id}.name`)}</h3>
-            <p className="mt-2 line-clamp-3 text-[16px] leading-relaxed text-[#c2d2ee]">{t(`makers.${maker.id}.blurb`)}</p>
+    <PeekCarousel
+      className="mt-10"
+      count={MAKERS.length}
+      labelFor={(i) => t(`makers.${MAKERS[i].id}.name`)}
+      renderItem={(i) => {
+        const maker = MAKERS[i];
+        return (
+          <div className="relative h-[400px] w-full overflow-hidden rounded-2xl border border-[#2a4375]/60 bg-[#0a1430] shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#11204a] via-[#0b1633] to-[#070c1f]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_25%,rgba(63,159,255,0.18),transparent_65%)]" />
+            <img
+              src={maker.image}
+              alt={t(`makers.${maker.id}.name`)}
+              loading="lazy"
+              decoding="async"
+              className="relative h-full w-full object-cover object-top"
+              style={{ filter: 'saturate(1.05) contrast(1.02)' }}
+            />
+            <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-[#030611] via-[#030611]/70 to-transparent p-5">
+              <h3 className="text-[22px] font-semibold leading-tight text-white">{t(`makers.${maker.id}.name`)}</h3>
+              <p className="mt-2 line-clamp-3 text-[16px] leading-relaxed text-[#c2d2ee]">{t(`makers.${maker.id}.blurb`)}</p>
+            </div>
           </div>
-        </div>
-      </div>
-
-      <MobileCarouselControls
-        count={MAKERS.length}
-        activeIdx={activeIdx}
-        onPrev={goPrev}
-        onNext={goNext}
-        onSelect={goTo}
-        labelFor={(i) => t(`makers.${MAKERS[i].id}.name`)}
-      />
-    </div>
+        );
+      }}
+    />
   );
 }
 

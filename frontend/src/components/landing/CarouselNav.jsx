@@ -46,29 +46,3 @@ export function MobileCarouselControls({ count, activeIdx, onPrev, onNext, onSel
     </div>
   );
 }
-
-/**
- * One card at a time, all cards stacked in the same grid cell so the box is as
- * tall as the tallest card and the dots and the content below never jump as
- * the slides change. Only the active card is visible and focusable.
- */
-export function MobileCardStack({ items, activeIdx, animation, renderItem, className = '' }) {
-  return (
-    <div className={`grid ${className}`}>
-      {items.map((item, i) => {
-        const active = i === activeIdx;
-        return (
-          <div
-            key={i}
-            className={`flex [grid-area:1/1] ${active ? '' : 'invisible'}`}
-            style={active ? { animation } : undefined}
-            aria-hidden={active ? undefined : true}
-            inert={!active}
-          >
-            {renderItem(item, i)}
-          </div>
-        );
-      })}
-    </div>
-  );
-}

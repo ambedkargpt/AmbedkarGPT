@@ -1477,3 +1477,22 @@ html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) {
   .bhim-signal-bar { animation: none; height: 12px; }
 }
+
+/* Phone carousels (PeekCarousel). A frosted card re-blurs whatever is behind
+   it on every frame it moves, which on a phone is what made the slide feel
+   like 20 fps. Inside the track the cards keep their look with an opaque
+   ground instead, and the slide stays on the compositor. */
+.peek-track .liquid-glass,
+.peek-track .glass-card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background-color: rgba(12, 20, 48, 0.94);
+}
+/* A card coming round the end of a phone carousel fades in where it lands,
+   rather than sliding across behind the active one (two names, so the
+   animation restarts on each move). */
+@keyframes peekFadeIn0 { from { opacity: 0; } }
+@keyframes peekFadeIn1 { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .peek-track [style*="peekFadeIn"] { animation: none !important; }
+}
