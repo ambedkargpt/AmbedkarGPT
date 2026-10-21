@@ -1,8 +1,7 @@
 ﻿import { Cpu, Search, Zap, Target, ArrowRight } from "lucide-react";
 import SectionLabel from "./SectionLabel";
 import StaggerReveal from "../ui/StaggerReveal";
-import { MobileCarouselControls, MobileCardStack } from "./CarouselNav";
-import useAutoCarousel from "../../hooks/useAutoCarousel";
+import PeekCarousel from "./PeekCarousel";
 import { useI18n } from "../../i18n/index.jsx";
 
 const USE_CASES = [
@@ -54,32 +53,17 @@ function UseCaseCard({ icon: Icon, id }) {
 
 function UseCasesMobileCarousel() {
   const { t } = useI18n();
-  const { activeIdx, goPrev, goNext, goTo, animation, rootRef, swipeHandlers } = useAutoCarousel(USE_CASES.length);
-
   return (
-    <div ref={rootRef} className="mt-8 sm:mt-14 md:hidden">
-      <div className="mx-auto max-w-[360px] touch-pan-y sm:max-w-[560px]" {...swipeHandlers}>
-        <MobileCardStack
-          items={USE_CASES}
-          activeIdx={activeIdx}
-          animation={animation}
-          renderItem={(uc) => (
-            <div className="w-full">
-              <UseCaseCard {...uc} />
-            </div>
-          )}
-        />
-      </div>
-
-      <MobileCarouselControls
-        count={USE_CASES.length}
-        activeIdx={activeIdx}
-        onPrev={goPrev}
-        onNext={goNext}
-        onSelect={goTo}
-        labelFor={(i) => `Go to ${t(`uc.${USE_CASES[i].id}.title`)}`}
-      />
-    </div>
+    <PeekCarousel
+      className="mt-8 sm:mt-14 md:hidden"
+      count={USE_CASES.length}
+      labelFor={(i) => `Go to ${t(`uc.${USE_CASES[i].id}.title`)}`}
+      renderItem={(i) => (
+        <div className="w-full">
+          <UseCaseCard {...USE_CASES[i]} />
+        </div>
+      )}
+    />
   );
 }
 

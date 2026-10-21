@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { LinkedinIcon, TwitterIcon } from "./SocialIcons";
 import SectionLabel from "./SectionLabel";
-import { NavButton, MobileCarouselControls } from "./CarouselNav";
-import useAutoCarousel from "../../hooks/useAutoCarousel";
+import { NavButton } from "./CarouselNav";
+import PeekCarousel from "./PeekCarousel";
 import team1 from "../../assets/images/team/team1.webp";
 import team2 from "../../assets/images/team/team2.webp";
 import team3 from "../../assets/images/team/team3.webp";
@@ -234,49 +234,38 @@ function DesktopCarousel() {
 
 function MobileCarousel() {
   const { t } = useI18n();
-  const { activeIdx, goPrev, goNext, goTo, animation, rootRef, swipeHandlers } = useAutoCarousel(TEAM.length);
-
-  const member = TEAM[activeIdx];
-
   return (
-    <div ref={rootRef} className="mt-10 px-6">
-      <div {...swipeHandlers} className="relative mx-auto h-[420px] max-w-[360px] touch-pan-y overflow-hidden rounded-2xl border border-[#2a4375]/60 bg-[#0a1430] shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
-        <div
-          key={activeIdx}
-          className="absolute inset-0"
-          style={{ animation }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-[#11204a] via-[#0b1633] to-[#070c1f]" />
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_25%,rgba(63,159,255,0.18),transparent_65%)]" />
-          <img
-            src={member.photo}
-            alt={t(`team.${member.id}`)}
-            loading="lazy"
-            decoding="async"
-            className="relative h-full w-full object-cover"
-            style={{ objectPosition: member.position || "50% 25%", filter: "saturate(1.05) contrast(1.02)" }}
-          />
-          <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-[#030611] via-[#030611]/70 to-transparent p-5">
-            <div className="flex items-end justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="text-[22px] font-semibold leading-tight text-white">{t(`team.${member.id}`)}</h3>
-                <p className="mt-1 text-[13px] uppercase tracking-[0.15em] text-[#7aa6e5]">{t(member.role)}</p>
+    <PeekCarousel
+      className="mt-10"
+      count={TEAM.length}
+      labelFor={(i) => `Go to team member ${i + 1}`}
+      renderItem={(i) => {
+        const member = TEAM[i];
+        return (
+          <div className="relative h-[400px] w-full overflow-hidden rounded-2xl border border-[#2a4375]/60 bg-[#0a1430] shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#11204a] via-[#0b1633] to-[#070c1f]" />
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_25%,rgba(63,159,255,0.18),transparent_65%)]" />
+            <img
+              src={member.photo}
+              alt={t(`team.${member.id}`)}
+              loading="lazy"
+              decoding="async"
+              className="relative h-full w-full object-cover"
+              style={{ objectPosition: member.position || "50% 25%", filter: "saturate(1.05) contrast(1.02)" }}
+            />
+            <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-[#030611] via-[#030611]/70 to-transparent p-5">
+              <div className="flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="text-[22px] font-semibold leading-tight text-white">{t(`team.${member.id}`)}</h3>
+                  <p className="mt-1 text-[13px] uppercase tracking-[0.15em] text-[#7aa6e5]">{t(member.role)}</p>
+                </div>
+                <SocialLinks linkedin={member.linkedin} twitter={member.twitter} />
               </div>
-              <SocialLinks linkedin={member.linkedin} twitter={member.twitter} />
             </div>
           </div>
-        </div>
-      </div>
-
-      <MobileCarouselControls
-        count={TEAM.length}
-        activeIdx={activeIdx}
-        onPrev={goPrev}
-        onNext={goNext}
-        onSelect={goTo}
-        labelFor={(i) => `Go to team member ${i + 1}`}
-      />
-    </div>
+        );
+      }}
+    />
   );
 }
 
