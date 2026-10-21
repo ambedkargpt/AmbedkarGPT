@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { LinkedinIcon, TwitterIcon } from "./SocialIcons";
 import SectionLabel from "./SectionLabel";
+import { NavButton, MobileCarouselControls } from "./CarouselNav";
+import useAutoCarousel from "../../hooks/useAutoCarousel";
 import team1 from "../../assets/images/team/team1.webp";
 import team2 from "../../assets/images/team/team2.webp";
 import team3 from "../../assets/images/team/team3.webp";
@@ -21,24 +23,6 @@ const TEAM = [
   { id: "kalpik",  role: "team.kganalyst",  photo: team2, position: "50% 20%" },
   { id: "sajjal",  role: "team.opsmanager", photo: team3, position: "50% 30%" },
 ];
-
-function NavButton({ onClick, direction, label }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#2a4375]/60 bg-[#0a1430] text-[#7a90b8] transition hover:border-[#4a78c8]/80 hover:bg-[#0f1e45] hover:text-white"
-    >
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        {direction === "left"
-          ? <path d="M10 4l-4 4 4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          : <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        }
-      </svg>
-    </button>
-  );
-}
 
 // Renders only the profiles that exist.
 //
@@ -250,24 +234,17 @@ function DesktopCarousel() {
 
 function MobileCarousel() {
   const { t } = useI18n();
-  const [activeIdx, setActiveIdx] = useState(0);
-
-  function goPrev() {
-    setActiveIdx((i) => (i - 1 + TEAM.length) % TEAM.length);
-  }
-  function goNext() {
-    setActiveIdx((i) => (i + 1) % TEAM.length);
-  }
+  const { activeIdx, goPrev, goNext, goTo, animation, rootRef, swipeHandlers } = useAutoCarousel(TEAM.length);
 
   const member = TEAM[activeIdx];
 
   return (
-    <div className="mt-10 px-6">
-      <div className="relative mx-auto h-[420px] max-w-[360px] overflow-hidden rounded-2xl border border-[#2a4375]/60 bg-[#0a1430] shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
+    <div ref={rootRef} className="mt-10 px-6">
+      <div {...swipeHandlers} className="relative mx-auto h-[420px] max-w-[360px] touch-pan-y overflow-hidden rounded-2xl border border-[#2a4375]/60 bg-[#0a1430] shadow-[0_20px_50px_rgba(0,0,0,0.45)]">
         <div
           key={activeIdx}
           className="absolute inset-0"
-          style={{ animation: "makerJumpIn 0.22s ease-out both" }}
+          style={{ animation }}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-[#11204a] via-[#0b1633] to-[#070c1f]" />
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_50%_25%,rgba(63,159,255,0.18),transparent_65%)]" />
@@ -291,28 +268,14 @@ function MobileCarousel() {
         </div>
       </div>
 
-      <div className="mt-5 flex items-center justify-center gap-4">
-        <NavButton onClick={goPrev} direction="left" label="Previous" />
-
-        <div className="flex items-center gap-2">
-          {TEAM.map((_, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setActiveIdx(i)}
-              className={[
-                "rounded-full transition-all duration-200",
-                i === activeIdx
-                  ? "h-2 w-6 bg-[#3f9fff]"
-                  : "h-2 w-2 bg-[#2a4375]/60 hover:bg-[#3f9fff]/50",
-              ].join(" ")}
-              aria-label={`Go to team member ${i + 1}`}
-            />
-          ))}
-        </div>
-
-        <NavButton onClick={goNext} direction="right" label="Next" />
-      </div>
+      <MobileCarouselControls
+        count={TEAM.length}
+        activeIdx={activeIdx}
+        onPrev={goPrev}
+        onNext={goNext}
+        onSelect={goTo}
+        labelFor={(i) => `Go to team member ${i + 1}`}
+      />
     </div>
   );
 }

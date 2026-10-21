@@ -678,6 +678,15 @@ export default function SocialMediaPostGenerator() {
     else if (steps < 0) navigate(steps);
     setView(next);
   }
+
+  // The page's one back control. Because each view is its own history entry,
+  // a plain history step walks generated -> story -> feed -> whatever page
+  // came before. Opened cold (no in-app history), stepping back would leave
+  // the site, so it lands on Services instead.
+  function goBack() {
+    if (location.key !== 'default') navigate(-1);
+    else navigate('/generate');
+  }
   const handoffDone = useRef(false);
 
   useEffect(() => {
@@ -954,7 +963,7 @@ export default function SocialMediaPostGenerator() {
             onClick={() => navigate('/generate')}
             className="inline-flex items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 px-3 py-1.5 text-[11.5px] font-medium text-[#8b94b8] transition hover:border-[#3a6bc4]/60 hover:text-white"
           >
-            <ArrowLeft size={12} strokeWidth={2} />
+            <LayoutGrid size={12} strokeWidth={2} />
             {t('nav.services')}
           </button>
 
@@ -1112,8 +1121,10 @@ export default function SocialMediaPostGenerator() {
         <header className="flex flex-wrap items-center gap-2.5 px-4 pb-3 pt-4 sm:flex-nowrap sm:gap-3 sm:px-6 md:px-8">
           <button
             type="button"
-            onClick={() => navigate('/generate')}
-            className="inline-flex items-center gap-1.5 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 px-3 py-2 text-[12px] font-medium text-[#8b94b8] transition hover:text-white lg:hidden"
+            onClick={goBack}
+            aria-label={t('common.back')}
+            title={t('common.back')}
+            className="inline-flex items-center gap-1.5 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 px-3 py-2 text-[12px] font-medium text-[#8b94b8] transition hover:text-white"
           >
             <ArrowLeft size={12} strokeWidth={2} />
           </button>
@@ -1795,14 +1806,6 @@ export default function SocialMediaPostGenerator() {
           return (
           <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
             <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
-              <button
-                type="button"
-                onClick={() => goView('feed')}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 px-3 py-1.5 text-[12px] font-medium text-[#8b94b8] transition hover:border-[#3f9fff]/50 hover:text-white"
-              >
-                <ArrowLeft size={12} strokeWidth={2} />
-                {t('common.back')}
-              </button>
               <span className="inline-block rounded-full border border-[#1e3a6e]/60 bg-[#0d1840]/60 px-2.5 py-0.5 font-count text-[10px] uppercase tracking-widest text-[#6aa8ff]">
                 {selectedArticle.category}
               </span>
@@ -2038,19 +2041,10 @@ export default function SocialMediaPostGenerator() {
         {/* ── Generated post view ── */}
         {view === 'generated' && (
           <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
-            {/* Header: back + title on left, actions on right.
-                Mobile: back/actions are icon-only to prevent overflow. */}
+            {/* Header: title on left, actions on right (icon-only on mobile
+                to prevent overflow). The way back is the page's single back
+                control at the top, which steps back to the story. */}
             <div className="mb-4 flex items-center gap-2">
-              {/* Back — icon-only on mobile */}
-              <button
-                type="button"
-                onClick={() => goView('preview')}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 text-[#8b94b8] transition hover:border-[#3f9fff]/50 hover:text-white sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5"
-              >
-                <ArrowLeft size={12} strokeWidth={2} />
-                <span className="hidden text-[12px] font-medium sm:inline">{t('gen.article')}</span>
-              </button>
-
               {/* nowrap, and small enough on a phone that it does not need to
                   wrap: at 16px it broke across two lines and doubled the height
                   of the whole row. */}

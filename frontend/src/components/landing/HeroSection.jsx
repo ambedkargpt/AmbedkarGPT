@@ -5,6 +5,7 @@ import Sparkle from "./Sparkle";
 import { useAuth } from "../../context/AuthContext";
 import squiggleSrc from "../../assets/images/squiggle-lines.webp";
 import ambedkarPortrait from "../../assets/images/hero-ambedkar.webp";
+import HeroToolCarousel from "./HeroToolCarousel";
 import { useI18n } from '../../i18n/index.jsx';
 
 // Headline words — null = <br /> slot
@@ -117,41 +118,6 @@ export default function HeroSection({ splashDone = true }) {
         />
       </div>
 
-      {/* ── The portrait, on phones ──
-          Below md the right-hand column is not rendered, so the one face the
-          product is named for was missing from the screen most visitors see.
-          It comes back here as part of the background rather than as a column:
-          anchored to the right edge, behind the text, and masked so it has
-          dissolved into the navy well before it reaches the headline.
-
-          Absolute on purpose. In the flow it would push the heading and both
-          buttons down a screen-height, and the hero's whole job on a phone is
-          to get the buttons above the fold. */}
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-[72%] overflow-hidden md:hidden" aria-hidden="true">
-        <img
-          src={ambedkarPortrait}
-          alt=""
-          loading="eager"
-          decoding="async"
-          className="h-full w-full object-cover"
-          style={{
-            // A crop window left of centre, which puts the face itself over
-            // toward the right edge and away from the text.
-            objectPosition: "28% 22%",
-            opacity: 0.26,
-            // Two masks at once: out to the left, where the headline and the
-            // paragraph sit, and out at the bottom so it does not end on a
-            // hard horizontal edge above the buttons.
-            maskImage:
-              "linear-gradient(to left, #000 8%, rgba(0,0,0,0.6) 45%, transparent 88%), linear-gradient(to top, transparent 4%, #000 34%)",
-            maskComposite: "intersect",
-            WebkitMaskImage:
-              "linear-gradient(to left, #000 8%, rgba(0,0,0,0.6) 45%, transparent 88%), linear-gradient(to top, transparent 4%, #000 34%)",
-            WebkitMaskComposite: "source-in",
-          }}
-        />
-      </div>
-
       {/* Scanner beam */}
       <div className="pointer-events-none absolute inset-x-0 z-10" style={{ top: "96px" }}>
         <div className="hero-scan-beam relative h-px w-full">
@@ -173,8 +139,29 @@ export default function HeroSection({ splashDone = true }) {
         </div>
       </div>
 
+      {/* ── Phones: the card carousel hero ──
+          The tall text-and-two-buttons hero filled a phone's first screen
+          with words. Below md it is a short headline and the tools
+          themselves, one card at a time with the next one peeking in. md and
+          up render the grid below, untouched. */}
+      <div className="relative z-10 pb-5 pt-4 md:hidden">
+        <div className="px-6 text-center" style={fadeUp(0)}>
+          <h1 className="font-display text-[clamp(30px,8.6vw,42px)] font-bold leading-[1.08] tracking-tight text-white">
+            {t('know.headPre')}
+            <br />
+            <span className="gradient-text-blue italic">{t('landing.creatorJourney')}</span>
+          </h1>
+          <p className="mx-auto mt-2 max-w-[340px] text-[14.5px] leading-[1.45] text-[#b7c6e1]">
+            {t('hero.mobileSub')}
+          </p>
+        </div>
+        <div className="mt-4" style={fadeUp(250)}>
+          <HeroToolCarousel />
+        </div>
+      </div>
+
       {/* ── Main content ── */}
-      <div className="relative z-10 mx-auto grid max-w-[1440px] items-stretch gap-8 px-6 pb-6 pt-4 md:grid-cols-[1fr_auto] md:pb-10 md:pt-8">
+      <div className="relative z-10 mx-auto hidden max-w-[1440px] items-stretch gap-8 px-6 pb-6 pt-4 md:grid md:grid-cols-[1fr_auto] md:pb-10 md:pt-8">
 
         {/* LEFT: text */}
         {/* No bottom padding. The grid is items-stretch, so both columns are the

@@ -47,6 +47,7 @@ import Spinner             from './components/Spinner';
 import { I18nProvider }    from './i18n/index.jsx';
 import TransitionCurtain   from './components/TransitionCurtain';
 import ErrorBoundary       from './components/ErrorBoundary';
+import OnboardingGate       from './components/onboarding/OnboardingGate';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -197,7 +198,7 @@ export default function App() {
               {RADIO_REQUIRES_LOGIN && <Route path="/bhimradio" element={<BhimRadio />} />}
             </Route>
             <Route path="/generate/social-media" element={
-              <ProtectedRoute><SocialMediaPostGenerator /></ProtectedRoute>
+              <ProtectedRoute><OnboardingGate><SocialMediaPostGenerator /></OnboardingGate></ProtectedRoute>
             } />
             <Route path="/generate/music" element={
               <ProtectedRoute><MusicGeneration /></ProtectedRoute>

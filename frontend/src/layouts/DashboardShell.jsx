@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from '../components/dashboard/Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { ShellContext } from './dashboardShellContext';
+import OnboardingStrip from '../components/onboarding/OnboardingStrip';
 import NewsTicker from '../components/NewsTicker';
 
 /**
@@ -91,6 +92,7 @@ export default function DashboardShell({ children, background, active: activePro
           <div className="dash-vignette" aria-hidden="true" />
           <div className="dash-grain" aria-hidden="true" />
 
+          <OnboardingStrip />
           {children}
         </div>
         {/* The last row of the screen-high column: the bottom of the screen,

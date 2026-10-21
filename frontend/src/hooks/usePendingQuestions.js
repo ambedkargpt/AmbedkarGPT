@@ -38,6 +38,13 @@ function load(userId) {
   return promise;
 }
 
+/** What a signed-in account still has to set up before it can post, if anything. */
+export function onboardingStep(pending) {
+  if (pending.profile) return 'profile';
+  if (pending.position) return 'preferences';
+  return null;
+}
+
 export default function usePendingQuestions(userId) {
   const [state, setState] = useState(() =>
     cache.userId === userId && cache.value
