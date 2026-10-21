@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCurtain } from '../context/CurtainContext';
-import { ArrowLeft, ArrowRight, BookmarkCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BookmarkCheck, FastForward } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { saveProfileAnswers } from '../api/profile';
 import { getPartyQuestions, getPositionQuestions } from '../api/questions';
@@ -187,6 +187,7 @@ export default function Questionnaire() {
           compulsory: Boolean(q.is_compulsory),
           text: q.question_text,
           textHi: q.question_text_hi,
+          defaultOption: q.default_option || '',
           options: (q.options ?? []).map((opt, i) => ({ value: opt, hi: q.options_hi?.[i] || '' })),
         });
         // The party set first: what someone wants said about their party holds
@@ -272,6 +273,28 @@ export default function Questionnaire() {
     }
     // Otherwise the next protected route reads a stale "still outstanding" and
     // sends them straight back into the questionnaire they just completed.
+    clearPendingQuestions();
+    leave();
+  }
+
+  // Skip the rest: every question still unanswered takes its recommended
+  // answer (the party set's default, the first option where a set has none),
+  // and the whole set is saved, so the account can post straight away and the
+  // answers can be changed later on the Preferences page.
+  const [skipping, setSkipping] = useState(false);
+  async function skipWithDefaults() {
+    if (skipping || !currentUser?.id) return;
+    setSkipping(true);
+    const filled = Object.fromEntries(questions.map((q) => [
+      q.id, answers[q.id] || q.defaultOption || q.options[0]?.value || '',
+    ]).filter(([, v]) => v));
+    try {
+      await saveProfileAnswers(currentUser.id, filled);
+    } catch {
+      setSkipping(false);
+      return;
+    }
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* ignore */ }
     clearPendingQuestions();
     leave();
   }
@@ -400,6 +423,17 @@ export default function Questionnaire() {
             offered until the answer is given. Nor while the preference
             questions are outstanding: they are required before any post, and
             a partial save would count them as done. */}
+        <button
+          type="button"
+          onClick={skipWithDefaults}
+          disabled={skipping}
+          title={t('quest.skipDefaultsHint')}
+          className="inline-flex h-10 items-center gap-2 rounded-full border border-[#1e3260]/60 px-5 text-[13px] font-medium text-[#6b80a8] transition-all hover:border-[#3a6bc4]/50 hover:text-[#a0bade] disabled:opacity-50"
+        >
+          <FastForward size={14} strokeWidth={1.8} />
+          {skipping ? t('quest.skipping') : t('quest.skipDefaults')}
+        </button>
+
         {!mustAnswer && !pending.position && (
           <button
             type="button"
