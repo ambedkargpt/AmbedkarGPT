@@ -18,7 +18,7 @@ import logoSrc from '../assets/images/logo-animation.webp';
 import { useAuth } from '../context/AuthContext';
 import { getNews, getNewsById, getTenants } from '../api/news';
 import { adaptNews, resolveTenantForUser } from '../utils/newsTenants';
-import { generatePostForNews, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion } from '../api/posts';
+import { generatePostForNews, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion, warmGenerator } from '../api/posts';
 import { getPartyQuestions, getQuestions } from '../api/questions';
 import { getProfileAnswers, saveProfileAnswers } from '../api/profile';
 import { CORE_QUESTION_IDS } from '../utils/preferenceQuestions';
@@ -661,6 +661,12 @@ export default function SocialMediaPostGenerator() {
   // back-navigation lands on the feed rather than reopening the story.
   const location = useLocation();
   const topStory = location.state?.topStory;
+
+  // Load the retrieval stack in the API while the user picks a story, so the
+  // first generate is not the one that pays for it (see /posts/warm).
+  useEffect(() => {
+    if (currentUser?.id) warmGenerator().catch(() => {});
+  }, [currentUser?.id]);
 
   // Each step into a story (feed -> preview -> generated) is its own history
   // entry, so the phone's back button steps back out of it - to the story, then
