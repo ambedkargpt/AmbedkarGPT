@@ -310,6 +310,27 @@ export default function BhimRadioPage() {
             to somebody a piece at a time. Only for the demo account, and only
             because that account is also off the clock - stepping through a
             broadcast that keeps moving would be unusable. */}
+        {/* Local only: which news is on air right now, and a way to it. Shown
+            while a story's own span is playing - not over the intro, the ads
+            or the music between stories, which are nobody's news. */}
+        {import.meta.env.DEV && onAir && story && at >= story.startSec && (story.endSec == null || at < story.endSec) && (
+          <button
+            type="button"
+            onClick={() => navigate('/generate/social-media', { state: { topStory: { storyId: story.id } } })}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10, width: '100%', marginTop: 16,
+              border: `2px solid ${RULE}`, background: SURFACE, color: INK, textAlign: 'left',
+              padding: '10px 14px', font: '600 13px/1.35 Inter, sans-serif', cursor: 'pointer',
+            }}
+          >
+            <span style={{ color: MUTED, whiteSpace: 'nowrap' }}>{t('radio.openNews')}</span>
+            <span lang="hi" style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {story.title}
+            </span>
+            <span aria-hidden="true">→</span>
+          </button>
+        )}
+
         {isDemo && showDemo && onAir && (
           <div style={{ borderTop: `2px solid ${RULE}`, padding: '18px 0 0', marginTop: 20 }}>
             <p style={{

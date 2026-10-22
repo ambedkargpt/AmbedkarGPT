@@ -400,6 +400,7 @@ export default {
   "radio.demoShow": "पूरी सैर",
   "radio.demoHide": "छिपाएँ",
   "radio.demoTitle": "बुलेटिन का हर हिस्सा, क्रम से",
+  "radio.openNews": "यह खबर खोलें",
   "radio.kind.intro": "शुरुआत",
   "radio.kind.headlines": "सुर्खियाँ",
   "radio.kind.story": "ख़बर",

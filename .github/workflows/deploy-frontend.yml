@@ -73,8 +73,11 @@ jobs:
             exit 1
           fi
 
+      # Pinned: vercel@latest once went out before one of its own packages
+      # (@vercel/h3) was on npm, and every deploy failed to install until it
+      # landed. Move this forward deliberately.
       - name: Install the Vercel CLI
-        run: npm install --global vercel@latest
+        run: npm install --global vercel@65.0.0
 
       - name: Set the target
         run: |
