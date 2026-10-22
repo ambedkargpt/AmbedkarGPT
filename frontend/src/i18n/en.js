@@ -396,6 +396,7 @@ export default {
   "radio.demoShow": "Walk-through",
   "radio.demoHide": "Hide",
   "radio.demoTitle": "Every part of the bulletin, in order",
+  "radio.openNews": "Open this news",
   "radio.kind.intro": "Open",
   "radio.kind.headlines": "Headlines",
   "radio.kind.story": "Story",

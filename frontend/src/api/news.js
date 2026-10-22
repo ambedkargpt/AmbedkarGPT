@@ -25,3 +25,10 @@ export async function getNewsById(id) {
   const { data } = await client.get(`/news/${id}`);
   return data;
 }
+
+// GET /news/by-news-id/:newsId - by the story's own id ("news_001258"), the one
+// the radio manifest carries, rather than the database id.
+export async function getNewsByStoryId(newsId) {
+  const { data } = await client.get(`/news/by-news-id/${encodeURIComponent(newsId)}`);
+  return data;
+}

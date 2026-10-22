@@ -16,7 +16,7 @@ import ScrollRow from '../components/ui/ScrollRow';
 import PostContent from '../components/generate/PostContent';
 import logoSrc from '../assets/images/logo-animation.webp';
 import { useAuth } from '../context/AuthContext';
-import { getNews, getNewsById, getTenants } from '../api/news';
+import { getNews, getNewsById, getNewsByStoryId, getTenants } from '../api/news';
 import { adaptNews, resolveTenantForUser } from '../utils/newsTenants';
 import { generatePostForNews, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion, warmGenerator } from '../api/posts';
 import { getPartyQuestions, getQuestions } from '../api/questions';
@@ -696,11 +696,13 @@ export default function SocialMediaPostGenerator() {
   const handoffDone = useRef(false);
 
   useEffect(() => {
-    if (handoffDone.current || !topStory?.newsId || !currentUser?.id) return;
+    if (handoffDone.current || !(topStory?.newsId || topStory?.storyId) || !currentUser?.id) return;
     handoffDone.current = true;
-    const { newsId, section } = topStory;
+    // newsId is the database id (the dashboard's top story); storyId is the
+    // story's own id, which is what the radio knows it by.
+    const { newsId, storyId, section } = topStory;
     navigate(location.pathname, { replace: true, state: null });
-    getNewsById(newsId)
+    (newsId ? getNewsById(newsId) : getNewsByStoryId(storyId))
       .then((item) => {
         if (!item) return;
         const article = adaptNews(item);
