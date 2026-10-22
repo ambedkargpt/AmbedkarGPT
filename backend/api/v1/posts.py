@@ -152,6 +152,27 @@ def get_semrag_grounding(
     return query_semrag(query, top_chunks=6)
 
 
+@router.get("/warm")
+def warm_generator(current_user_id: str = Depends(get_current_user_id)) -> dict:
+    """Load the retrieval stack into this container ahead of a generate.
+
+    A container's first generate used to download ~200 MB of artifacts and
+    load them before writing anything: ~40 s, past the API gateway's 30 s, so
+    the browser got a 503 while the post was still being written. The
+    generator page calls this when it opens, so the loading happens while the
+    user is choosing a story. (A background thread at startup cannot do it:
+    Lambda freezes the process as soon as a response is sent.)
+    """
+    import time
+
+    from backend.core.config import settings
+    from backend.pipeline_cli import ensure_rag_stack
+
+    started = time.perf_counter()
+    ensure_rag_stack(settings)
+    return {"ready": True, "ms": round((time.perf_counter() - started) * 1000)}
+
+
 @router.get("/{post_id}", response_model=PostResponse)
 def get_post(post_id: str, current_user_id: str = Depends(get_current_user_id)) -> PostResponse:
     post = service.get(post_id)

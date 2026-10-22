@@ -23,8 +23,43 @@ export async function generatePostForNews({ userId, newsId, tone, temperature, l
     language,
     profile_overrides: profileOverrides,
   };
-  const { data } = await client.post('/posts/generate', payload);
+  const startedAt = Date.now();
+  try {
+    const { data } = await client.post('/posts/generate', payload);
+    return data;
+  } catch (err) {
+    // The gateway gives up at 30 s (502/503/504, or no response at all) while
+    // the server goes on writing and saves the post. Wait for that post rather
+    // than reporting a failure - and rather than generating again, which would
+    // cost a second post from the daily five.
+    const code = err?.response?.status;
+    if (code && ![502, 503, 504].includes(code)) throw err;
+    for (let i = 0; i < 15; i += 1) {
+      await new Promise((r) => setTimeout(r, 4000));
+      const post = await findPostWrittenSince(newsId, startedAt).catch(() => null);
+      if (post) return { post, references: [], recovered: true };
+    }
+    throw err;
+  }
+}
+
+// GET /posts/warm — load the retrieval stack into the API container before
+// the first generate, so that generate fits inside the gateway's 30 s.
+export async function warmGenerator() {
+  const { data } = await client.get('/posts/warm', { timeout: 60_000 });
   return data;
+}
+
+// The newest post for a story written since `sinceMs`, or null. A generate that
+// outlives the gateway's 30 s comes back as a 503 while the server finishes and
+// saves the post; this finds it instead of asking for (and charging) a second.
+export async function findPostWrittenSince(newsId, sinceMs) {
+  const { data } = await client.get('/posts/', { params: { news_id: newsId, limit: 5 } });
+  // The API writes UTC times without a zone; read them as UTC, not local time.
+  const at = (p) => Date.parse(/[zZ]|[+-]\d\d:\d\d$/.test(p.created_at) ? p.created_at : `${p.created_at}Z`);
+  const fresh = (data || []).filter((p) => at(p) >= sinceMs - 5000);
+  fresh.sort((a, b) => at(b) - at(a));
+  return fresh[0] || null;
 }
 
 // POST /posts/:id/regenerate — rerun LLM only using stored retrieval snapshot.
