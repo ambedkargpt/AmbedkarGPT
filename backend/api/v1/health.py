@@ -60,6 +60,20 @@ def liveness() -> dict:
     return {"status": "ok"}
 
 
+@router.get("/semrag")
+def semrag_status() -> JSONResponse:
+    """Can BheemBot reach the book passages? Booleans and a short reason - no address or credentials.
+
+    Without Memgraph, BheemBot still answers but shows no book references, and nothing else
+    reports it. Deliberately separate from /ready: a Memgraph outage should not take the API
+    out of rotation. 503 when not connected, so a monitor can alert on it.
+    """
+    from backend.semrag.memgraph_retriever import memgraph_status
+
+    status = memgraph_status()
+    return JSONResponse(status_code=200 if status["connected"] else 503, content=status)
+
+
 @router.get("/ready")
 def readiness() -> JSONResponse:
     """
