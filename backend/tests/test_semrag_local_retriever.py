@@ -165,12 +165,20 @@ def test_shipped_bundle_is_consistent():
     assert np.allclose(np.linalg.norm(b.vectors, axis=1), 1.0, atol=5e-3)    # float16 rounding only
 
 
-def test_every_shipped_passage_has_a_book_citation_for_volumes_one_and_two():
+def test_every_shipped_passage_has_a_book_citation_and_a_page_to_open():
     from backend.semrag.presentation import citation
 
     b = lr.load_bundle()
-    missing = [i for i, v in zip(b.ids, b.volumes) if v in (1, 2) and not citation(i)["pdf_page"]]
+    missing = [i for i, v in zip(b.ids, b.volumes) if not citation(i)["pdf_page"]]
     assert missing == []
+    untitled = [i for i in b.ids if not citation(i)["work"]]
+    assert len(untitled) <= 20, untitled[:5]      # only front matter before the first chapter lacks a title
+
+
+def test_volume_three_passages_never_show_debris_from_the_print_shop():
+    b = lr.load_bundle()
+    dirty = [i for i, t in b.passages.items() if ".indd" in t or ">YS>" in t or "__ABBR_" in t]
+    assert dirty == []
 
 
 def test_a_passage_finds_itself_in_the_shipped_bundle():

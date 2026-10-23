@@ -146,6 +146,17 @@ def test_front_matter_gets_no_negative_page_number():
     assert "p. -" not in pill_label("v1_chunk_0000") and "p=-" not in (book_link("v1_chunk_0000") or "")
 
 
+def test_volume_three_is_cited_by_chapter_with_a_working_page_link():
+    from backend.semrag.presentation import book_link
+    # The Buddha-vs-Marx passage: printed p. 450 is PDF page 463 (Volume 3's front matter is 13 pages).
+    assert reference("v3_chunk_0679") == "Buddha or Karl Marx, Vol. 3, pp. 450–451"
+    assert book_link("v3_chunk_0679") == "/book/3/463?p=450&t=Buddha+or+Karl+Marx"
+    assert pill_label("v3_chunk_0679") == "Buddha or Karl Marx · Vol 3 p. 450"
+    # A chapter in the middle of the volume, and the index after the plates (offset 13 becomes 17).
+    assert reference("v3_chunk_0261") == "Reformers and Their Fate, Vol. 3, pp. 173–174"
+    assert book_link("v3_chunk_0707").startswith("/book/3/496?p=479&")
+
+
 def test_unknown_passage_gets_no_link_rather_than_a_wrong_one():
     from backend.semrag.presentation import book_link
     assert book_link("not_a_real_chunk", 1) is None
