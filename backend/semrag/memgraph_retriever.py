@@ -307,6 +307,12 @@ def query_semrag(
         }
 
 
+_NO_CLOSE_PASSAGE = (
+    "(No passage in Dr. Ambedkar's Writings and Speeches is close enough to this question. "
+    "Say that the collection does not address it directly; do not answer from memory.)"
+)
+
+
 def retrieve_semrag_context(query: str, top_k: int = 5) -> Tuple[str, List[Dict[str, str]]]:
     """
     High-level entry point for BheemBot.
@@ -318,19 +324,32 @@ def retrieve_semrag_context(query: str, top_k: int = 5) -> Tuple[str, List[Dict[
     Knowledge-graph triples are not passed to the model: they are internal, sometimes noisy,
     and invite answers that talk about "the knowledge graph" instead of Dr. Ambedkar's words.
     """
+    from backend.semrag import local_retriever
     from backend.semrag.presentation import book_link, clean_passage, excerpt, pill_label, reference
 
-    try:
-        data = query_semrag(query, top_chunks=top_k)
-    except Exception as exc:
-        logger.warning("SemRAG retrieval encountered error: %s", exc)
-        return "", []
-
-    chunks = [c for c in data.get("chunks", []) if clean_passage(c.get("text") or "")]
-    communities = data.get("communities", [])
-
-    if not chunks:
-        return "", []
+    # Primary: search by meaning over the passages shipped with the backend - no database, so a
+    # lapsed Memgraph trial no longer takes the book references with it.
+    found = local_retriever.search(query, top_k=top_k)
+    communities: List[Dict[str, Any]] = []
+    if found is not None:
+        chunks = [c for c in found if clean_passage(c.get("text") or "")]
+        if not chunks:
+            # It searched and nothing was close. Say so, rather than returning "" - an empty
+            # context sends chat.py to the older transcript search, whose material is not
+            # Dr. Ambedkar's writings.
+            return _NO_CLOSE_PASSAGE, []
+    else:
+        # The search could not run (bundle missing, embedding call failed): try Memgraph, if
+        # it is configured and reachable.
+        try:
+            data = query_semrag(query, top_chunks=top_k)
+        except Exception as exc:
+            logger.warning("SemRAG retrieval encountered error: %s", exc)
+            return "", []
+        chunks = [c for c in data.get("chunks", []) if clean_passage(c.get("text") or "")]
+        communities = data.get("communities", [])
+        if not chunks:
+            return "", []
 
     # Numbered so the model can report, on a hidden last line, which material it used; the
     # number is never shown to a reader (see presentation.split_sources_line).

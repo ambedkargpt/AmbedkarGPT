@@ -129,14 +129,32 @@ def test_status_when_unreachable_never_exposes_the_address_or_credentials(fake, 
     assert "secret" not in repr(status)
 
 
-def test_health_route_is_503_until_connected_then_200(fake, monkeypatch):
+def _health_client():
     app = FastAPI()
     app.include_router(router, prefix="/api/v1")
-    client = TestClient(app)
+    return TestClient(app)
 
-    assert client.get("/api/v1/health/semrag").status_code == 503   # nothing configured
+
+def test_health_route_reports_the_shipped_passages_and_ignores_memgraph(fake):
+    # The passages ship with the backend, so a missing/expired Memgraph must not raise an alarm.
+    from backend.semrag import local_retriever
+
+    local_retriever.load_bundle.cache_clear()
+    res = _health_client().get("/api/v1/health/semrag")
+    assert res.status_code == 200
+    assert res.json() == {"passages": 3384, "volumes": [1, 2, 3], "source": "bundle"}
+    assert fake.calls == []                       # and it did not try to reach Memgraph
+
+
+def test_without_the_bundle_health_falls_back_to_memgraph_503_until_connected(fake, monkeypatch):
+    from backend.semrag import local_retriever
+
+    monkeypatch.setattr(local_retriever, "load_bundle", lambda: None)
+    client = _health_client()
+    res = client.get("/api/v1/health/semrag")
+    assert res.status_code == 503 and res.json()["source"] == "none"      # nothing configured
 
     monkeypatch.setenv("MEMGRAPH_URI", "bolt://db.example:7687")
     fake.reachable = {"bolt://db.example:7687"}
     ok = client.get("/api/v1/health/semrag")
-    assert ok.status_code == 200 and ok.json()["connected"] is True
+    assert ok.status_code == 200 and ok.json()["source"] == "memgraph" and ok.json()["memgraph"]["connected"] is True
