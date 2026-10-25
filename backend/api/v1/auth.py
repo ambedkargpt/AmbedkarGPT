@@ -65,8 +65,8 @@ def signup(payload: SignupRequest, request: Request) -> AuthResponse:
     )
 
 
-@router.post("/verify-otp", response_model=MessageResponse, responses={400: {"model": ErrorResponse}})
-def verify_otp(payload: VerifyOtpRequest, request: Request) -> MessageResponse:
+@router.post("/verify-otp", response_model=AuthResponse, responses={400: {"model": ErrorResponse}})
+def verify_otp(payload: VerifyOtpRequest, request: Request) -> AuthResponse:
     _check_rate_limit(request.client.host if request.client else "unknown", "verify-otp")
     result = service.verify_otp(
         target=payload.target.strip(),
@@ -74,7 +74,7 @@ def verify_otp(payload: VerifyOtpRequest, request: Request) -> MessageResponse:
         otp_code=payload.otp_code.strip(),
         purpose=payload.purpose,
     )
-    return MessageResponse(**result)
+    return result
 
 
 @router.post("/login", response_model=AuthResponse, responses={401: {"model": ErrorResponse}})

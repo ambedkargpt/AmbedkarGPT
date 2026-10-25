@@ -40,17 +40,14 @@ export async function signupWithEmail({ username, email, password, political_par
     ...(city ? { city } : {}),
     ...(date_of_birth ? { date_of_birth } : {}),
   });
-  // Backend issues tokens on signup (user starts unverified); save them now.
-  if (data.tokens) {
-    saveTokens(data.tokens);
-    saveUser(data.user);
-  }
-  return data; // includes dev_otp when AUTH_DEBUG_RETURN_OTP=true
+  // No session yet: it is issued by verify-otp once the code is entered.
+  return data; // { otp_required, otp_target, dev_otp? }
 }
 
 // ── Send phone OTP (signup or login) ─────────────────────────────────────────
 // purpose: 'signup_verify' | 'login_verify'
-// Returns AuthResponse shape (tokens + user + otp_required=true + dev_otp?)
+// Returns { otp_required: true, otp_target, dev_otp? }. No session yet:
+// verifyOtp below is what signs the user in.
 export async function sendPhoneOtp({ phone, purpose, username, political_party, party_position, state, city, date_of_birth }) {
   const { data } = await axios.post(`${BASE_URL}/auth/send-phone-otp`, {
     phone,
@@ -62,10 +59,6 @@ export async function sendPhoneOtp({ phone, purpose, username, political_party, 
     ...(city ? { city } : {}),
     ...(date_of_birth ? { date_of_birth } : {}),
   });
-  if (data.tokens) {
-    saveTokens(data.tokens);
-    saveUser(data.user);
-  }
   return data;
 }
 
@@ -80,7 +73,12 @@ export async function verifyOtp({ target, channel, otp_code, purpose }) {
     otp_code,
     purpose,
   });
-  return data; // { message: "OTP verified successfully." }
+  // Signing up and logging in end here, with the session.
+  if (data.tokens) {
+    saveTokens(data.tokens);
+    if (data.user) saveUser(data.user);
+  }
+  return data; // { message, tokens?, user? }
 }
 
 // ── Login with email/phone + password ────────────────────────────────────────

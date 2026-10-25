@@ -90,10 +90,7 @@ class AuthService:
         else:
             try_send_otp_sms(target or "", otp_code)
 
-        auth_response = self._issue_session(user, otp_required=True, otp_target=target)
-        if settings.auth_debug_return_otp and settings.app_env in {"development", "dev", "test", "testing"}:
-            auth_response.dev_otp = otp_code
-        return auth_response
+        return self._otp_pending(target, otp_code)
 
     def send_phone_otp(
         self,
@@ -150,10 +147,7 @@ class AuthService:
 
         try_send_otp_sms(phone, otp_code)
 
-        auth_response = self._issue_session(user, otp_required=True, otp_target=phone)
-        if settings.auth_debug_return_otp and settings.app_env in {"development", "dev", "test", "testing"}:
-            auth_response.dev_otp = otp_code
-        return auth_response
+        return self._otp_pending(phone, otp_code)
 
     def resend_otp(self, target: str, channel: str, purpose: str) -> dict:
         """Delete any existing OTP for this target/channel/purpose and issue a fresh one."""
@@ -185,7 +179,7 @@ class AuthService:
             result["dev_otp"] = otp_code
         return result
 
-    def verify_otp(self, target: str, channel: str, otp_code: str, purpose: str) -> dict:
+    def verify_otp(self, target: str, channel: str, otp_code: str, purpose: str) -> AuthResponse:
         otp_doc = self.otp_repo.get_active_otp(target=target, channel=channel, purpose=purpose)
         if not otp_doc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="OTP not found or expired.")
@@ -201,7 +195,15 @@ class AuthService:
         user_id = otp_doc.get("user_id")
         if user_id:
             self.users_repo.verify_channel(user_id, channel)
-        return {"message": "OTP verified successfully."}
+        # Signing up and logging in end in a session, issued here and only
+        # here, after the code has been checked. Resetting a password does not.
+        if purpose in {OTP_PURPOSE_SIGNUP_VERIFY, OTP_PURPOSE_LOGIN_VERIFY} and user_id:
+            user = self.users_repo.find_by_id(str(user_id))
+            if user:
+                session = self._issue_session(user)
+                session.message = "OTP verified successfully."
+                return session
+        return AuthResponse(message="OTP verified successfully.")
 
     def login(self, identifier: str, password: str | None) -> AuthResponse:
         if not password:
@@ -229,10 +231,11 @@ class AuthService:
                 max_attempts=settings.otp_max_attempts,
                 expires_at=otp_expiry_time(),
             )
-            auth_response = self._issue_session(user, otp_required=True, otp_target=target)
-            if settings.auth_debug_return_otp and settings.app_env in {"development", "dev", "test", "testing"}:
-                auth_response.dev_otp = otp_code
-            return auth_response
+            if channel == "email" and target:
+                try_send_otp_email(target, otp_code, kind="login")
+            else:
+                try_send_otp_sms(target or "", otp_code)
+            return self._otp_pending(target, otp_code)
 
         return self._issue_session(user)
 
@@ -332,6 +335,21 @@ class AuthService:
         if not user:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
         return self._to_user_public(user)
+
+    def _otp_pending(self, otp_target: str | None, otp_code: str) -> AuthResponse:
+        """
+        The answer to "send me a code": that one is on its way, and nothing else.
+
+        This used to be a full session with otp_required set, which the client
+        was trusted to honour. Nothing on the server checked verification, so
+        the session worked at once: send-phone-otp with login_verify returned
+        a live login for any registered number without the code ever being
+        entered, along with that account's name, email and party.
+        """
+        response = AuthResponse(otp_required=True, otp_target=otp_target, message="Verification code sent.")
+        if settings.auth_debug_return_otp and settings.app_env in {"development", "dev", "test", "testing"}:
+            response.dev_otp = otp_code
+        return response
 
     def _issue_session(self, user: dict, otp_required: bool = False, otp_target: str | None = None) -> AuthResponse:
         access_token, access_expires_at = create_access_token(str(user["_id"]))
