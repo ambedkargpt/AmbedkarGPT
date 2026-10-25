@@ -144,8 +144,12 @@ class AuthTokens(BaseModel):
 
 
 class AuthResponse(BaseModel):
-    user: UserPublic
-    tokens: AuthTokens
+    # Both are absent while an OTP is pending. A session is issued only once
+    # the code is verified, and the account's details are not handed to
+    # whoever typed a phone number or an email into the form.
+    user: Optional[UserPublic] = None
+    tokens: Optional[AuthTokens] = None
+    message: Optional[str] = None
     otp_required: bool = False
     otp_target: Optional[str] = None
     dev_otp: Optional[str] = None

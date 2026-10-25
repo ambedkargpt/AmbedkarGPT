@@ -105,8 +105,8 @@ export function AuthProvider({ children }) {
   // purpose: 'signup_verify' | 'login_verify'
   async function verifyOtp(code, target, channel, purpose) {
     const data = await authApi.verifyOtp({ target, channel, otp_code: code, purpose });
-    // Tokens were already saved on signup/login. Refresh user to get verified state.
-    const user = await authApi.getMe().catch(() => authApi.getStoredUser());
+    // verify-otp issued the session (and saved it); the user comes with it.
+    const user = data?.user || await authApi.getMe().catch(() => authApi.getStoredUser());
     if (user) setCurrentUser(user);
     trackEvent(purpose === 'signup_verify' ? 'sign_up' : 'login', { method: channel });
     return data;
