@@ -8,13 +8,22 @@ from backend.api.v1.chat import router as chat_router
 from backend.api.v1.contact import router as contact_router
 from backend.api.v1.health import router as health_router
 from backend.api.v1.integrations import router as integrations_router
+from backend.api.v1.monitoring import router as monitoring_router
 from backend.api.v1.news import router as news_router
 from backend.api.v1.posts import router as posts_router
 from backend.api.v1.profile import router as profile_router
 from backend.api.v1.questions import router as questions_router
 from backend.core.http import register_http_layer
+from backend.core.request_context import track_requests
 from backend.core.config import settings
 from backend.db.indexes import ensure_auth_indexes, ensure_phase2_indexes, ensure_phase3_indexes
+from backend.services.error_tracker import install_error_tracking
+from backend.services.error_tracker import is_active as is_error_monitor_active
+
+# Records errors for the admin Errors page (ERROR_TRACKING_ENABLED=true) and
+# for Grafana (the three GRAFANA_LOKI_* settings). Does nothing when neither
+# is set. See backend/services/error_tracker.py.
+install_error_tracking()
 
 
 def _warm_rag_cache() -> None:
@@ -76,6 +85,13 @@ async def app_lifespan(_: FastAPI):
 
 app = FastAPI(title="AmbedkarGPT Backend", lifespan=app_lifespan)
 register_http_layer(app)
+# Records 5xx answers and slow requests (API Gateway 503s) for the admin
+# Errors page. Only added when tracking is on, so with it off the request
+# path is exactly what it was before. The Lambda reads its environment once
+# at start-up, so changing the setting takes effect on the next deploy or
+# configuration update.
+if is_error_monitor_active():
+    app.middleware("http")(track_requests)
 app.include_router(health_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(news_router, prefix="/api/v1")
@@ -85,3 +101,4 @@ app.include_router(posts_router, prefix="/api/v1")
 app.include_router(chat_router, prefix="/api/v1")
 app.include_router(contact_router, prefix="/api/v1")
 app.include_router(integrations_router, prefix="/api/v1")
+app.include_router(monitoring_router, prefix="/api/v1")

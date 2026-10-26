@@ -27,6 +27,7 @@ const ACTIVE_BY_PATH = {
   '/profile-setup': 'profile',
   '/bhimbot': 'bheembot',
   '/bhimradio': 'radio',
+  '/admin/errors': 'errors',
 };
 
 export default function DashboardShell({ children, background, active: activeProp }) {

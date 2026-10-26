@@ -20,6 +20,7 @@ import logoSrc from '../../assets/images/logo-animation.webp';
 import { useI18n } from '../../i18n/index.jsx';
 import { useRadio } from '../../context/RadioContext';
 import { RADIO_REQUIRES_LOGIN } from '../../data/radioAccess';
+import AdminNavLink from './AdminNavLink';
 
 // Generating a post is the product's primary action, so it leads the nav and is
 // styled as a call to action rather than another list item.
@@ -281,6 +282,8 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
             </button>
           );
         })}
+        {/* Admins only; renders nothing for everyone else. */}
+        <AdminNavLink isActive={active === 'errors'} fade={fade} collapsed={collapsed} onClose={onClose} />
       </nav>
 
       <div className="px-4 pb-4 pt-2">

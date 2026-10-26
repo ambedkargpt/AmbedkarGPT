@@ -28,3 +28,12 @@ _PLACEHOLDERS = {
 # setdefault, so a developer running against their own .env keeps their values.
 for _name, _value in _PLACEHOLDERS.items():
     os.environ.setdefault(_name, _value)
+
+# Error monitoring is always off in tests, whatever backend/.env says. Many
+# tests make code log fake errors on purpose; with a developer's Grafana or
+# tracking settings loaded, every test run sent those fake errors to Grafana
+# as if they were real. Set here, before .env is loaded, because load_dotenv
+# never overwrites a variable that already exists. Tests that need these
+# switch them on themselves with monkeypatch.
+for _name in ("GRAFANA_LOKI_URL", "GRAFANA_LOKI_USER", "GRAFANA_LOKI_TOKEN", "ERROR_TRACKING_ENABLED"):
+    os.environ[_name] = ""
