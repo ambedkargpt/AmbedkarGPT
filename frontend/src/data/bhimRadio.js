@@ -26,7 +26,7 @@ const STATION_ART = {
   congress:  '/party-symbols/congress.png',   // the open hand
   samajwadi: '/party-symbols/samajwadi.png',  // the cycle
   bjp:       '/party-symbols/bjp.png',        // the lotus
-  general:   '/logo.png',
+  general:   '/icon-512.png',
 };
 
 /** Artwork for a station, falling back to the product mark. */

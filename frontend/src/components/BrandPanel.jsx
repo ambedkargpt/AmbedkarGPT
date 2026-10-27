@@ -11,37 +11,13 @@ import { useI18n } from '../i18n/index.jsx';
 // dropped in that folder afterwards joined them silently.
 import portraitSrc from '../assets/images/ambedkar-portrait.webp';
 import statueSrc from '../assets/images/ambedkar-statue.webp';
-import logoSrc from '../assets/images/logo-animation.webp';
-
-// Radar-ring logo image sourced from the design asset
-function LogoMark({ size = 44 }) {
-  return (
-    <span
-      className="relative flex items-center justify-center"
-      style={{ width: size, height: size }}
-    >
-      {logoSrc ? (
-        <img
-          src={logoSrc}
-          alt="AmbedkarGPT"
-          className="h-full w-full object-contain drop-shadow-[0_0_18px_rgba(63,159,255,0.55)]"
-        />
-      ) : (
-        <span className="h-3 w-3 rounded-full bg-[#3f9fff]" />
-      )}
-    </span>
-  );
-}
+import AgLogo from './brand/AgLogo';
 
 function BrandLogo() {
   const { t } = useI18n();
   return (
     <Link to="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-85">
-      <LogoMark />
-      <span className="text-[26px] font-semibold leading-none tracking-tight md:text-[30px]">
-        <span className="text-white">{t('brand.ambedkar')}</span>
-        <span className="gradient-text-cyan">GPT</span>
-      </span>
+      <AgLogo size={34} stacked tagline={t('brand.tagline')} />
     </Link>
   );
 }

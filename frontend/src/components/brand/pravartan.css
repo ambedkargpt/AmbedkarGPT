@@ -1,0 +1,46 @@
+/* Pravartan — see Pravartan.jsx. Only transform, opacity and stroke-dashoffset animate. */
+.pv .pv-hov, .pv .pv-idle, .pv .pv-spin, .pv .pv-spokes, .pv .pv-hub, .pv .pv-nib {
+  transform-box: view-box;
+  transform-origin: 50px 40px;
+}
+.pv .pv-nib { transform-origin: 50px 56px; }
+.pv .pv-rim { stroke-dasharray: 189; }
+
+/* ---------- once (default): 3.4s, then hold ---------- */
+.pv--once .pv-rim    { animation: pv-rim    3.4s cubic-bezier(.6,0,.2,1) both; }
+.pv--once .pv-hub    { animation: pv-hub    3.4s cubic-bezier(.34,1.56,.64,1) both; }
+.pv--once .pv-spokes { animation: pv-spokes 3.4s cubic-bezier(.2,.8,.2,1) both; }
+.pv--once .pv-spin   { animation: pv-spin   3.4s cubic-bezier(.15,.7,.2,1) both; }
+.pv--once .pv-nib    { animation: pv-nib    3.4s cubic-bezier(.2,.9,.25,1.15) both; }
+.pv--once .pv-idle   { animation: pv-idle 24s linear 3.4s infinite; }
+
+/* ---------- loop: 4.4s with a fade between cycles ---------- */
+.pv--loop            { animation: pv-all 4.4s ease-in-out infinite; }
+.pv--loop .pv-rim    { animation: pv-rim    4.4s cubic-bezier(.6,0,.2,1) infinite; }
+.pv--loop .pv-hub    { animation: pv-hub    4.4s cubic-bezier(.34,1.56,.64,1) infinite; }
+.pv--loop .pv-spokes { animation: pv-spokes 4.4s cubic-bezier(.2,.8,.2,1) infinite; }
+.pv--loop .pv-spin   { animation: pv-spin   4.4s cubic-bezier(.15,.7,.2,1) infinite; }
+.pv--loop .pv-nib    { animation: pv-nib    4.4s cubic-bezier(.2,.9,.25,1.15) infinite; }
+.pv--loop .pv-idle   { animation: pv-idle 24s linear infinite; }
+
+/* ---------- hover: one quick extra turn (nib never moves) ---------- */
+.pv--hover .pv-hov { transition: transform 1.2s cubic-bezier(.2,.8,.2,1); }
+.pv--hover:hover .pv-hov, a:hover > .pv--hover .pv-hov, .group:hover .pv--hover .pv-hov { transform: rotate(360deg); }
+
+@keyframes pv-all    { 0% { opacity: 0 } 4%, 90% { opacity: 1 } 100% { opacity: 0 } }
+@keyframes pv-rim    { 0%, 3% { stroke-dashoffset: 189 } 26%, 100% { stroke-dashoffset: 0 } }
+@keyframes pv-hub    { 0%, 6% { transform: scale(0) } 16%, 100% { transform: scale(1) } }
+@keyframes pv-spokes { 0%, 12% { transform: scale(0); opacity: 0 } 34%, 100% { transform: scale(1); opacity: 1 } }
+@keyframes pv-spin   { 0%, 12% { transform: rotate(-240deg) } 58%, 100% { transform: rotate(0) } }
+@keyframes pv-nib    { 0%, 44% { transform: translateY(-18px) scaleY(.4); opacity: 0 } 52% { opacity: 1 } 66%, 100% { transform: translateY(0) scaleY(1); opacity: 1 } }
+@keyframes pv-idle   { to { transform: rotate(360deg) } }
+
+/* wordmark + tagline reveal used by PravartanIntro (timed to the 3.4s "once" run) */
+.pv-word { display: inline-block; animation: pv-word 3.4s cubic-bezier(.2,.8,.2,1) both; }
+.pv-tag  { animation: pv-tag 3.4s ease-out both; }
+@keyframes pv-word { 0%, 58% { clip-path: inset(0 100% 0 0); transform: translateX(-10px) } 76%, 100% { clip-path: inset(0 0 0 0); transform: none } }
+@keyframes pv-tag  { 0%, 70% { opacity: 0; transform: translateY(8px) } 84%, 100% { opacity: 1; transform: none } }
+
+@media (prefers-reduced-motion: reduce) {
+  .pv, .pv *, .pv-word, .pv-tag { animation: none !important; transition: none !important; }
+}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import logoSrc from "../assets/images/logo-animation.webp";
+import AgLogo from "./brand/AgLogo";
 import LegalModal from "./LegalModal";
 import { FacebookIcon, InstagramIcon, LinkedinIcon, TwitterIcon, YoutubeIcon } from "./landing/SocialIcons";
 import { useI18n } from '../i18n/index.jsx';
@@ -97,15 +97,7 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <Link to="/" className="inline-flex items-center gap-2.5">
-              <img
-                src={logoSrc}
-                alt=""
-                className="h-9 w-9 object-contain drop-shadow-[0_0_12px_rgba(63,159,255,0.35)]"
-              />
-              <span className="text-[21px] font-semibold leading-none tracking-tight">
-                <span className="text-white">{t('brand.ambedkar')}</span>
-                <span className="gradient-text-cyan">GPT</span>
-              </span>
+              <AgLogo size={22} />
             </Link>
 
             <p className="mt-4 max-w-[46ch] text-[13.5px] leading-relaxed text-[#9fb2d1]">

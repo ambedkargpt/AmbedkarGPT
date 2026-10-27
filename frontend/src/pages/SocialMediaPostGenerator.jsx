@@ -14,7 +14,7 @@ import DevSourceTag from '../components/DevSourceTag';
 import PublishSheet from '../components/publish/PublishSheet';
 import ScrollRow from '../components/ui/ScrollRow';
 import PostContent from '../components/generate/PostContent';
-import logoSrc from '../assets/images/logo-animation.webp';
+import AgMark from '../components/brand/AgMark';
 import { useAuth } from '../context/AuthContext';
 import { getNews, getNewsById, getNewsByStoryId, getTenants } from '../api/news';
 import { adaptNews, resolveTenantForUser } from '../utils/newsTenants';
@@ -963,7 +963,7 @@ export default function SocialMediaPostGenerator() {
             title={t('gen.goToDashboard')}
             className="mb-3 flex items-center gap-2 rounded-lg transition hover:opacity-90"
           >
-            <img src={logoSrc} alt="AmbedkarGPT" className="h-8 w-8 object-contain drop-shadow-[0_0_10px_rgba(63,159,255,0.55)]" />
+            <AgMark size={28} color="#8FA8FF" />
             <span className="font-display text-[15px] font-bold gradient-text-blue">{t('brand.wordmark')}</span>
           </button>
           <button
@@ -2331,7 +2331,7 @@ export default function SocialMediaPostGenerator() {
             {/* Watermark */}
             {!generating && generatedPost && (
               <div className="mt-2 flex items-center gap-1.5 justify-end">
-                <img src={logoSrc} alt="" className="h-3.5 w-3.5 object-contain opacity-50" />
+                <AgMark size={14} variant="bold" color="#8FA8FF" decorative className="opacity-60" />
                 <span className="text-[10.5px] text-[#3a4e70]">{t('gen.generatedBy')}</span>
               </div>
             )}

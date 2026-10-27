@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Anybody:ital,wght@0,100..900;1,100..900&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Anybody:ital,wght@0,100..900;1,100..900&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Anek+Devanagari:wght@600..800&family=Mukta:wght@600&family=Tiro+Devanagari+Hindi&display=swap');
 @import "tailwindcss";
 
 @font-face {
@@ -16,6 +16,8 @@
   --font-display: 'Anybody', 'Inter', system-ui, sans-serif;
   --font-count: 'Poppins', 'Count', sans-serif;
   --font-hindi: 'Mangal', 'Noto Sans Devanagari', serif;
+  /* The AmbedkarGPT wordmark (brand/AgLogo.jsx). */
+  --font-brand: 'Anek Devanagari', 'Mukta', sans-serif;
 
   --color-navy-950: #05081a;
   --color-navy-900: #0a0e27;
@@ -301,6 +303,8 @@ html { scroll-behavior: smooth; }
 
 /* --- Spinner (see components/Spinner.jsx) --- */
 @keyframes spinnerRotate { to { transform: rotate(360deg); } }
+/* The wheel in Spinner.jsx: the logo's chakra, one turn every 1.1s. */
+.spinner-wheel { display: block; animation: spinnerRotate 1.1s linear infinite; }
 .spinner-ring {
   display: block;
   border-style: solid;
@@ -312,7 +316,7 @@ html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) {
   /* Still a progress indicator, just not a moving one: the ring keeps its
      lighter top segment so it does not read as an empty circle. */
-  .spinner-ring { animation-duration: 2.4s; }
+  .spinner-ring, .spinner-wheel { animation-duration: 2.4s; }
 }
 
 @keyframes pulseGlow {
@@ -770,15 +774,6 @@ html { scroll-behavior: smooth; }
 }
 
 /* --- Opening splash --- */
-@keyframes splashLogoIn {
-  0%   { opacity: 0; transform: scale(0.7) rotate(0deg); filter: blur(10px); }
-  60%  { opacity: 1; transform: scale(1.05) rotate(0deg); filter: blur(0); }
-  100% { opacity: 1; transform: scale(1) rotate(0deg); filter: blur(0); }
-}
-@keyframes splashLogoSpin {
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-}
 @keyframes splashFadeUp {
   0%   { opacity: 0; transform: translateY(18px); }
   100% { opacity: 1; transform: translateY(0); }
@@ -921,9 +916,6 @@ html { scroll-behavior: smooth; }
   .lbg-edge-node { animation: none; opacity: 0.7; }
 }
 
-.splash-logo     { animation: splashLogoIn 900ms ease-out both, splashLogoSpin 1.8s linear 900ms infinite; }
-.splash-wordmark { animation: splashFadeUp  800ms ease-out 600ms both; }
-.splash-tagline  { animation: splashFadeUp  600ms ease-out 1200ms both; }
 .splash-glow     { animation: splashGlowPulse 2.4s ease-in-out infinite; }
 .splash-bar      { animation: splashBarGrow 800ms ease-out 1400ms both; }
 .splash-estd     { animation: splashFadeUp  500ms ease-out 1500ms both; }
@@ -946,7 +938,6 @@ html { scroll-behavior: smooth; }
 .splash-ring--3 { animation-delay: 1200ms; }
 
 @media (prefers-reduced-motion: reduce) {
-  .splash-logo, .splash-wordmark, .splash-tagline,
   .splash-glow, .splash-bar, .splash-ring {
     animation: none;
   }
@@ -1136,12 +1127,6 @@ html { scroll-behavior: smooth; }
   box-shadow: 0 0 18px rgba(63,159,255,0.30);
 }
 
-/* The navbar mark, breathing slowly. */
-.logo-pulse { animation: logoPulse 6s ease-in-out infinite; }
-@keyframes logoPulse {
-  0%, 100% { filter: drop-shadow(0 0 12px rgba(63,159,255,0.45)); }
-  50%      { filter: drop-shadow(0 0 22px rgba(63,159,255,0.72)); }
-}
 
 /* The seam between two sections: a hairline that fades out at both ends, with
    a wide soft glow above it. Light, not a rule across the page. */
@@ -1164,7 +1149,7 @@ html { scroll-behavior: smooth; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pill-premium, .logo-pulse { animation: none; }
+  .pill-premium { animation: none; }
   .card-premium, .icon-btn { transition: none; }
   .card-premium:hover, .icon-btn:hover { transform: none; }
   .reveal-section { transition: none; }

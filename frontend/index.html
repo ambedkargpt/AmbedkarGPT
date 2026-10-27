@@ -2,13 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/logo.png" />
-    <link rel="icon" type="image/png" sizes="48x48" href="/logo.png" />
-    <link rel="icon" type="image/png" sizes="96x96" href="/logo.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/logo.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#05081a" />
     <title>AmbedkarGPT</title>
+    <meta property="og:title" content="AmbedkarGPT" />
+    <meta property="og:image" content="https://www.ambedkargpt.in/brand/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="https://www.ambedkargpt.in/brand/og-image.png" />
     <!--
       Painted before any JavaScript runs. The shell is otherwise an empty div,
       so the whole boot showed a dead navy screen: on a slow connection that
@@ -35,7 +41,7 @@
         letter-spacing: -0.01em;
         color: #ffffff;
       }
-      #boot-mark span { color: #3f9fff; }
+      #boot-mark span { color: #8FA8FF; }
       #boot-bar {
         width: 132px;
         height: 2px;
@@ -66,6 +72,7 @@
   <body>
     <div id="root"></div>
     <div id="boot" role="status" aria-label="Loading AmbedkarGPT">
+      <svg id="boot-logo" width="56" height="56" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><mask id="a" maskUnits="userSpaceOnUse" x="-10" y="-10" width="120" height="120"><rect x="-10" y="-10" width="120" height="120" fill="#fff"/><path d="M33 56 H67 L50 98 Z" fill="#000" stroke="#000" stroke-width="6" stroke-linejoin="round"/></mask><g mask="url(#a)"><g stroke="#8FA8FF" stroke-width="2.3" stroke-linecap="round"><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(0 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(15 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(30 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(45 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(60 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(75 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(90 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(105 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(120 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(135 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(150 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(165 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(180 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(195 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(210 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(225 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(240 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(255 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(270 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(285 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(300 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(315 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(330 50 40)"/><line x1="50" y1="30.5" x2="50" y2="12" transform="rotate(345 50 40)"/></g><circle cx="50" cy="40" r="30" fill="none" stroke="#8FA8FF" stroke-width="6"/></g><circle cx="50" cy="40" r="6" fill="#8FA8FF"/><path d="M33 56 H67 L50 98 Z M46 63 A4 4 0 1 0 54 63 A4 4 0 1 0 46 63 Z M48.6 68 H51.4 V88 H48.6 Z" fill="#8FA8FF" fill-rule="evenodd"/></svg>
       <div id="boot-mark">Ambedkar<span>GPT</span></div>
       <div id="boot-bar"></div>
     </div>
