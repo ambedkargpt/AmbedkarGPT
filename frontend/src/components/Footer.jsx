@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import AgLogo from "./brand/AgLogo";
+import AgMark from "./brand/AgMark";
 import LegalModal from "./LegalModal";
 import { FacebookIcon, InstagramIcon, LinkedinIcon, TwitterIcon, YoutubeIcon } from "./landing/SocialIcons";
 import { useI18n } from '../i18n/index.jsx';
@@ -17,7 +17,6 @@ const PRODUCT_LINKS = [
 
 const COMPANY_LINKS = [
   { key: "foot.about", to: "/about" },
-  { key: "foot.ourTeam", to: "/#charity" },
   { key: "foot.dalitCorpus", to: "/#ambedkarverse" },
   { key: "foot.resources", to: "/resources" },
   { key: "foot.contactUs", to: "/contact" },
@@ -80,27 +79,12 @@ export default function Footer() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(63,159,255,0.45),transparent)]" />
       <div className="pointer-events-none absolute -top-40 left-1/2 h-72 w-[65%] -translate-x-1/2 rounded-full bg-[#2d7dfb]/10 blur-[120px]" />
 
-      {/* The brand set once, very large and outlined, sitting behind the
-          columns. Editorial rather than decorative: it names the place you
-          have arrived at as you reach the end of the page. */}
-      <span
-        className="bg-word hidden sm:block"
-        style={{ fontSize: 'clamp(40px, 8.5vw, 112px)', bottom: '10px', opacity: 0.45 }}
-        aria-hidden="true"
-      >
-        AMBEDKARGPT
-      </span>
-
       <div className="relative mx-auto max-w-[1280px] px-5 py-12 sm:px-6 sm:py-14 md:py-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr] lg:gap-14">
 
           {/* Brand */}
           <div>
-            <Link to="/" className="inline-flex items-center gap-2.5">
-              <AgLogo size={22} />
-            </Link>
-
-            <p className="mt-4 max-w-[46ch] text-[13.5px] leading-relaxed text-[#9fb2d1]">
+            <p className="max-w-[46ch] text-[13.5px] leading-relaxed text-[#9fb2d1]">
               {t('landing.footerTagline')}
             </p>
 
@@ -139,6 +123,25 @@ export default function Footer() {
         <div className="relative mt-12 h-px w-full bg-[#1a2c55]/60">
           <span className="absolute left-1/2 top-1/2 h-[2px] w-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[linear-gradient(90deg,transparent,rgba(63,159,255,0.85),transparent)] blur-[0.5px]" />
         </div>
+
+        {/* The name set once, edge to edge, as the last thing on the page.
+            An SVG with textLength so it fills the column exactly at every
+            width, whatever the font's own metrics. */}
+        <Link to="/" aria-label="AmbedkarGPT" className="mt-10 flex items-center gap-[2.5%]">
+          <AgMark color="#8FA8FF" decorative className="h-auto w-[13%] shrink-0" />
+          <svg viewBox="0 0 1000 126" className="block min-w-0 flex-1 select-none" aria-hidden="true">
+            <text
+              x="0"
+              y="120"
+              textLength="1000"
+              lengthAdjust="spacingAndGlyphs"
+              style={{ fontFamily: "var(--font-brand)", fontWeight: 750, fontSize: 155 }}
+              fill="#EDEEF2"
+            >
+              Ambedkar<tspan fill="#8FA8FF">GPT</tspan>
+            </text>
+          </svg>
+        </Link>
 
         {/* One legal row. There were two competing groups before, one of which
             was plain text, and every link in both went nowhere. */}
