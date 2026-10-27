@@ -10,7 +10,6 @@ import KnowledgeSection    from '../components/landing/KnowledgeSection';
 import UseCasesGrid        from '../components/landing/UseCasesGrid';
 import DalitHistoryMakers  from '../components/landing/DalitHistoryMakers';
 import DalitCorpusSection  from '../components/landing/DalitCorpusSection';
-import TeamSection         from '../components/landing/TeamSection';
 import ContactSection      from '../components/landing/ContactSection';
 import FourIdeasSection    from '../components/landing/FourIdeasSection';
 
@@ -61,10 +60,6 @@ export default function Home({ splashDone = true }) {
 
       <RevealOnScroll delayMs={60}>
         <UseCasesGrid />
-      </RevealOnScroll>
-
-      <RevealOnScroll delayMs={60}>
-        <TeamSection />
       </RevealOnScroll>
 
       <div className="section-seam" aria-hidden="true" />
