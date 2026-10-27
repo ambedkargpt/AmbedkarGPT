@@ -6,10 +6,15 @@ const EXIT_MS = 180;
 // How long the splash holds before handing off to the landing page: the
 // length of one Pravartan run, so the slogan has landed before it goes.
 const HOLD_MS = 3400;
+// The logo at its largest: 240px, or half a narrow phone so the wordmark
+// under it still fits across the screen.
+const LOGO_MAX = 240;
+const LOGO_SHARE = 0.5;
 
 export default function OpeningSplash({ onDone }) {
   const { t } = useI18n();
   const [phase, setPhase] = useState('enter');
+  const [logoSize] = useState(() => Math.round(Math.min(LOGO_MAX, window.innerWidth * LOGO_SHARE)));
 
   // Lock body scroll while splash is visible
   useEffect(() => {
@@ -57,23 +62,10 @@ export default function OpeningSplash({ onDone }) {
       }`}
       style={{ background: 'radial-gradient(ellipse at 50% 30%, #0e1d4a 0%, #080e22 45%, #04080f 100%)' }}
     >
-      {/* Spotlight */}
-      <div
-        className="splash-glow pointer-events-none absolute left-1/2 top-[22%] h-[500px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full blur-[90px]"
-        style={{ background: 'radial-gradient(ellipse, rgba(30,90,210,0.45) 0%, rgba(10,40,130,0.25) 45%, transparent 75%)' }}
-      />
-
-      {/* Rings */}
-      <div className="pointer-events-none absolute left-1/2 top-[30%] -translate-x-1/2 -translate-y-1/2">
-        <span className="splash-ring splash-ring--1" />
-        <span className="splash-ring splash-ring--2" />
-        <span className="splash-ring splash-ring--3" />
-      </div>
-
       {/* Logo: the rim draws, the spokes spin in, the nib comes out, then the
           wordmark writes in and the slogan lands (see brand/Pravartan.jsx). */}
       <div className="relative z-10">
-        <PravartanIntro size={160} tagline={t('brand.tagline')} />
+        <PravartanIntro size={logoSize} tagline={t('brand.tagline')} />
       </div>
 
       {/* ESTD */}
