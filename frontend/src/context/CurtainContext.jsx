@@ -23,7 +23,9 @@ export function CurtainProvider({ children }) {
     const id1 = requestAnimationFrame(() => {
       const id2 = requestAnimationFrame(() => {
         navigate(to, opts);
-        timerRef.current = setTimeout(() => setActive(false), 1000);
+        // Long enough for Pravartan to bring the nib out before the
+        // curtain lifts; any sooner and the logo is cut off mid-build.
+        timerRef.current = setTimeout(() => setActive(false), 2300);
       });
       rafIds.current = [id2];
     });

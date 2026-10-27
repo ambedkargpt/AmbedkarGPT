@@ -973,6 +973,8 @@ export default {
   "bot.slowReply": "BhimBot is taking too long to respond. Please try again.",
   "bot.disclaimer": "BhimBot may occasionally make mistakes. Always verify important information.",
   "brand.wordmark": "AmbedkarGPT",
+  "brand.tagline": "Educate · Agitate · Organise",
+  "loader.dashboard": "Getting your dashboard ready",
   "party.indiannationalcongress": "Indian National Congress",
   "party.samajwadiparty": "Samajwadi Party",
   "party.bharatiyajanataparty": "Bharatiya Janata Party",

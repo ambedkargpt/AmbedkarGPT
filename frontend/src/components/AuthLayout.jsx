@@ -1,12 +1,10 @@
 import { Link } from 'react-router-dom';
+import AgLogo from './brand/AgLogo';
 import BrandPanel from './BrandPanel';
 import BackgroundDecorations from './BackgroundDecorations';
-import { useI18n } from '../i18n/index.jsx';
 
-const logoSrc = new URL('../assets/images/logo-animation.webp', import.meta.url).href;
 
 export default function AuthLayout({ children, brandSide = 'right', brandVariant = 'login' }) {
-  const { t } = useI18n();
   const brandPanel = (
     <div className="hidden md:block md:w-[52%] relative">
       <BrandPanel variant={brandVariant} />
@@ -33,15 +31,7 @@ export default function AuthLayout({ children, brandSide = 'right', brandVariant
       {/* Logo — always pinned top-left regardless of brand panel side */}
       <div className="absolute left-6 top-7 z-20 md:left-10 md:top-8">
         <Link to="/" className="inline-flex items-center gap-2.5 transition-opacity hover:opacity-85">
-          <img
-            src={logoSrc}
-            alt="AmbedkarGPT"
-            className="h-10 w-10 object-contain drop-shadow-[0_0_16px_rgba(63,159,255,0.6)]"
-          />
-          <span className="font-display text-[22px] font-bold leading-none tracking-tight">
-            <span className="text-white">{t('brand.ambedkar')}</span>
-            <span className="gradient-text-cyan">GPT</span>
-          </span>
+          <AgLogo size={22} />
         </Link>
       </div>
       <div

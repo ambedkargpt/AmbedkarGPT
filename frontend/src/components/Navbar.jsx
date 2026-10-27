@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useRef, useState } from 'react';
 import { Menu, X } from 'lucide-react';
-import logoSrc from '../assets/images/logo-animation.webp';
+import AgLogo from './brand/AgLogo';
 import { useAuth } from '../context/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
 import { useI18n } from '../i18n/index.jsx';
@@ -156,15 +156,8 @@ export default function Navbar() {
             if (location.pathname === '/') window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
         >
-          <img
-            src={logoSrc}
-            alt="AmbedkarGPT"
-            className="logo-pulse h-10 w-10 object-contain md:h-12 md:w-12"
-          />
-          <span className="font-display text-[18px] font-bold leading-none tracking-tight md:text-[24px]">
-            <span className="hidden text-white sm:inline">{t('brand.ambedkar')}</span>
-            <span className="gradient-text-cyan">GPT</span>
-          </span>
+          <span className="md:hidden"><AgLogo size={20} animated /></span>
+          <span className="hidden md:inline-flex"><AgLogo size={24} animated /></span>
         </Link>
 
         {/* ── Desktop nav ──────────────────────── */}

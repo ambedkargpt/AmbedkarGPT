@@ -12,7 +12,7 @@ import { INDIAN_STATES, CITIES_BY_STATE } from '../utils/indianStatesCities';
 import PhoneField  from '../components/PhoneField';
 import DashboardShell from '../layouts/DashboardShell';
 import DrawerButton from '../components/dashboard/DrawerButton';
-import logoSrc     from '../assets/images/logo-animation.webp';
+import AgMark      from '../components/brand/AgMark';
 import ambedkarSrc from '../assets/images/qna-ambedkar.webp';
 import { useI18n } from '../i18n/index.jsx';
 import { partyLabel, levelLabel } from '../utils/displayLabel';
@@ -212,7 +212,7 @@ export default function ProfileSetup() {
         {isOnboarding ? (
           <>
             <div className="flex items-center gap-2.5">
-              <img src={logoSrc} alt="AmbedkarGPT" className="h-9 w-9 object-contain drop-shadow-[0_0_12px_rgba(63,159,255,0.5)]" />
+              <AgMark size={28} color="#8FA8FF" />
               <span className="font-display text-[20px] font-bold leading-none tracking-tight">
                 <span className="text-white">{t('brand.ambedkar')}</span>
                 <span className="gradient-text-cyan">GPT</span>

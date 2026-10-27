@@ -16,7 +16,7 @@ import {
   ChevronRight,
   ChevronLeft,
 } from 'lucide-react';
-import logoSrc from '../../assets/images/logo-animation.webp';
+import AgMark from '../brand/AgMark';
 import { useI18n } from '../../i18n/index.jsx';
 import { useRadio } from '../../context/RadioContext';
 import { RADIO_REQUIRES_LOGIN } from '../../data/radioAccess';
@@ -117,19 +117,8 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
           aria-label={collapsed && onToggleCollapse ? t('side.expand') : t('nav.dashboard')}
           title={collapsed && onToggleCollapse ? t('side.expand') : undefined}
         >
-          <span
-            className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#3f7fd8]/45"
-            style={{
-              background: 'radial-gradient(70% 70% at 50% 35%, rgba(45,111,255,0.3) 0%, rgba(8,14,36,0.9) 70%)',
-              boxShadow: 'inset 0 1px 0 rgba(160,205,255,0.22), 0 0 16px rgba(63,159,255,0.2)',
-            }}
-          >
-            <img
-              src={logoSrc}
-              alt=""
-              className="h-[27px] w-[27px] object-contain"
-              style={{ filter: 'brightness(1.7) saturate(1.25)' }}
-            />
+          <span className="relative flex h-9 w-9 shrink-0 items-center justify-center">
+            <AgMark size={32} color="#8FA8FF" decorative />
             {collapsed && onToggleCollapse && (
               <span className="absolute inset-0 flex items-center justify-center rounded-full bg-[#0c1330]/90 text-white opacity-0 transition-opacity duration-150 group-hover/mark:opacity-100">
                 <ChevronRight size={16} strokeWidth={2.2} />
@@ -140,9 +129,9 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
               {/* 14px rather than 16. With the line underneath it the two read
                   as one mark; at 16 the name was a few pixels from losing its
                   GPT to the truncation whenever the toggle sat beside it. */}
-              <span className="block truncate font-display text-[14px] font-bold leading-none tracking-tight">
-                <span className="text-white">{t('brand.ambedkar')}</span>
-                <span className="gradient-text-cyan">GPT</span>
+              <span className="block truncate font-brand text-[15px] leading-none" style={{ fontWeight: 750 }}>
+                <span className="text-[#EDEEF2]">Ambedkar</span>
+                <span className="text-[#8FA8FF]">GPT</span>
               </span>
               <span className="mt-[3px] block truncate text-[10.5px] font-medium leading-none text-[#5f7099]">
                 {t('splash.tagline')}

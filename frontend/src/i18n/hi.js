@@ -978,6 +978,8 @@ export default {
   "bot.slowReply": "भीमबॉट को जवाब देने में बहुत समय लग रहा है। कृपया दोबारा कोशिश कीजिए।",
   "bot.disclaimer": "भीमबॉट कभी-कभी ग़लती कर सकता है। ज़रूरी जानकारी हमेशा जाँच लीजिए।",
   "brand.wordmark": "अंबेडकरGPT",
+  "brand.tagline": "शिक्षित बनो · संगठित रहो · संघर्ष करो",
+  "loader.dashboard": "आपका डैशबोर्ड तैयार हो रहा है",
   "party.indiannationalcongress": "भारतीय राष्ट्रीय कांग्रेस",
   "party.samajwadiparty": "समाजवादी पार्टी",
   "party.bharatiyajanataparty": "भारतीय जनता पार्टी",
