@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import AgLogo from "./brand/AgLogo";
+import AgMark from "./brand/AgMark";
 import LegalModal from "./LegalModal";
 import { FacebookIcon, InstagramIcon, LinkedinIcon, TwitterIcon, YoutubeIcon } from "./landing/SocialIcons";
 import { useI18n } from '../i18n/index.jsx';
@@ -84,11 +84,7 @@ export default function Footer() {
 
           {/* Brand */}
           <div>
-            <Link to="/" className="inline-flex items-center gap-2.5">
-              <AgLogo size={22} />
-            </Link>
-
-            <p className="mt-4 max-w-[46ch] text-[13.5px] leading-relaxed text-[#9fb2d1]">
+            <p className="max-w-[46ch] text-[13.5px] leading-relaxed text-[#9fb2d1]">
               {t('landing.footerTagline')}
             </p>
 
@@ -131,22 +127,21 @@ export default function Footer() {
         {/* The name set once, edge to edge, as the last thing on the page.
             An SVG with textLength so it fills the column exactly at every
             width, whatever the font's own metrics. */}
-        <svg
-          viewBox="0 0 1000 126"
-          className="mt-10 block w-full select-none"
-          aria-hidden="true"
-        >
-          <text
-            x="0"
-            y="120"
-            textLength="1000"
-            lengthAdjust="spacingAndGlyphs"
-            style={{ fontFamily: "var(--font-brand)", fontWeight: 750, fontSize: 155 }}
-            fill="#EDEEF2"
-          >
-            Ambedkar<tspan fill="#8FA8FF">GPT</tspan>
-          </text>
-        </svg>
+        <Link to="/" aria-label="AmbedkarGPT" className="mt-10 flex items-center gap-[2.5%]">
+          <AgMark color="#8FA8FF" decorative className="h-auto w-[13%] shrink-0" />
+          <svg viewBox="0 0 1000 126" className="block min-w-0 flex-1 select-none" aria-hidden="true">
+            <text
+              x="0"
+              y="120"
+              textLength="1000"
+              lengthAdjust="spacingAndGlyphs"
+              style={{ fontFamily: "var(--font-brand)", fontWeight: 750, fontSize: 155 }}
+              fill="#EDEEF2"
+            >
+              Ambedkar<tspan fill="#8FA8FF">GPT</tspan>
+            </text>
+          </svg>
+        </Link>
 
         {/* One legal row. There were two competing groups before, one of which
             was plain text, and every link in both went nowhere. */}

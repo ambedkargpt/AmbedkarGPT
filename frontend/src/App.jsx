@@ -41,7 +41,6 @@ const BhimRadio = lazy(() => import('./pages/BhimRadio'));
 // Admin only. The page itself checks with the API and shows nothing to others.
 const AdminErrors = lazy(() => import('./pages/AdminErrors'));
 const AdminErrorDetail = lazy(() => import('./pages/AdminErrorDetail'));
-import CustomCursor        from './components/CustomCursor';
 import ScrollProgress      from './components/ScrollProgress';
 import OpeningSplash       from './components/OpeningSplash';
 import LanguagePopup       from './components/LanguagePopup';
@@ -141,7 +140,6 @@ export default function App() {
           <AnalyticsPageViews />
           <TransitionCurtain />
           <ScrollProgress />
-          <CustomCursor />
 
           <PageTransition>
           {/* Route chunks load on navigation. The fallback matches the page

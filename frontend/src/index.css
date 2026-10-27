@@ -704,60 +704,6 @@ html { scroll-behavior: smooth; }
   to   { opacity: 1; transform: translateX(0); }
 }
 
-/* --- Custom cursor --- */
-.custom-cursor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  z-index: 9999;
-  will-change: transform;
-}
-.custom-cursor--dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 9999px;
-  background: #3f9fff;
-  box-shadow: 0 0 12px rgba(63, 159, 255, 0.85);
-}
-.custom-cursor--outline {
-  width: 34px;
-  height: 34px;
-  border: 1.5px solid rgba(159, 195, 255, 0.7);
-  border-radius: 9999px;
-  transition:
-    width 180ms ease,
-    height 180ms ease,
-    background-color 180ms ease,
-    border-color 180ms ease,
-    opacity 180ms ease;
-}
-.custom-cursor--outline.cursor--hover {
-  width: 56px;
-  height: 56px;
-  background: rgba(63, 159, 255, 0.1);
-  border-color: rgba(159, 195, 255, 0.95);
-}
-.custom-cursor--outline.cursor--active {
-  width: 24px;
-  height: 24px;
-  background: rgba(63, 159, 255, 0.2);
-}
-.custom-cursor--dot.cursor--active {
-  transform-origin: center;
-  opacity: 0.8;
-}
-
-@media (pointer: fine) {
-  html.has-custom-cursor,
-  html.has-custom-cursor * {
-    cursor: none !important;
-  }
-}
-@media (pointer: coarse) {
-  .custom-cursor { display: none; }
-}
-
 /* --- Page transition curtain --- */
 @keyframes curtainReveal {
   0%   { opacity: 1; }
