@@ -38,6 +38,9 @@ const BheemBot = lazy(() => import('./pages/BheemBot'));
 // Opened in a new tab from a BheemBot source pill; carries pdf.js, so it is its own chunk.
 const BookPage = lazy(() => import('./pages/BookPage'));
 const BhimRadio = lazy(() => import('./pages/BhimRadio'));
+// Admin only. The page itself checks with the API and shows nothing to others.
+const AdminErrors = lazy(() => import('./pages/AdminErrors'));
+const AdminErrorDetail = lazy(() => import('./pages/AdminErrorDetail'));
 import CustomCursor        from './components/CustomCursor';
 import ScrollProgress      from './components/ScrollProgress';
 import OpeningSplash       from './components/OpeningSplash';
@@ -196,6 +199,8 @@ export default function App() {
               <Route path="/preferences" element={<Preferences />} />
               <Route path="/posts" element={<PostHistory />} />
               {RADIO_REQUIRES_LOGIN && <Route path="/bhimradio" element={<BhimRadio />} />}
+              <Route path="/admin/errors" element={<AdminErrors />} />
+              <Route path="/admin/errors/:id" element={<AdminErrorDetail />} />
             </Route>
             <Route path="/generate/social-media" element={
               <ProtectedRoute><OnboardingGate><SocialMediaPostGenerator /></OnboardingGate></ProtectedRoute>

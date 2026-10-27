@@ -5,6 +5,10 @@ import App from './App.jsx'
 import { getSiteLanguage } from './utils/siteLanguage.js'
 import { DEFAULT_LANGUAGE } from './i18n/index.jsx'
 import { purgeLegacySession } from './api/sessionStore.js'
+import { startErrorReporting } from './utils/errorReporter.js'
+
+// Send browser errors to the admin Errors page (production builds only).
+startErrorReporting()
 
 // Sessions moved from localStorage to sessionStorage so closing the tab
 // signs you out. Anyone signed in under the old build has tokens sitting in
