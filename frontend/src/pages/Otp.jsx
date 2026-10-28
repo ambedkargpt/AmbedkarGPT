@@ -132,10 +132,8 @@ export default function Otp() {
     try {
       const purpose = mode === 'signup' ? 'signup_verify' : 'login_verify';
       await verifyOtp(otp, identifier, type, purpose);
-      // Phone signup → profile setup → questionnaire; all other paths → questionnaire or dashboard
-      const dest = (mode === 'signup' && type === 'phone') ? '/profile-setup'
-                 : mode === 'signup' ? '/questionnaire'
-                 : '/dashboard';
+      // A new account goes on to give its details; a login is done.
+      const dest = mode === 'signup' ? '/signup/details' : '/dashboard';
       curtainGo(dest, { replace: true });
     } catch (err) {
       setOtpError(friendlyError(err));

@@ -13,12 +13,11 @@ class SignupRequest(BaseModel):
     # A key from backend.pipeline.party_roles. Optional: a signup should not be
     # gated on someone knowing their exact title.
     party_position: Optional[str] = Field(default=None, max_length=60)
-    # state/city are mandatory (the frontend's city list cascades off the
-    # chosen state); a phone given alongside an email signup — or vice versa —
-    # and date_of_birth stay optional, stored unverified like any other detail
-    # supplied here.
-    state: str = Field(min_length=1, max_length=100)
-    city: str = Field(min_length=1, max_length=100)
+    # Optional here: sign-up now asks only for the email or phone, and the
+    # name, the other contact, state, city, party and role are filled in on
+    # the details screen after the code is verified (PATCH /me).
+    state: Optional[str] = Field(default=None, max_length=100)
+    city: Optional[str] = Field(default=None, max_length=100)
     date_of_birth: Optional[str] = Field(default=None, max_length=10, description="YYYY-MM-DD")
 
     @model_validator(mode="after")
@@ -50,21 +49,11 @@ class SendPhoneOtpRequest(BaseModel):
     # Signup by phone creates the account here rather than in signup(), so the
     # position has to travel this path too or it is lost for phone users.
     party_position: Optional[str] = Field(default=None, max_length=60)
-    # Optional at the field level because login_verify reuses this schema and
-    # never creates a user; validate_signup_fields below requires state/city
-    # when purpose is actually signup_verify, matching SignupRequest.
+    # Optional, like SignupRequest: they are asked for after the code is
+    # verified, on the details screen.
     state: Optional[str] = Field(default=None, max_length=100)
     city: Optional[str] = Field(default=None, max_length=100)
     date_of_birth: Optional[str] = Field(default=None, max_length=10, description="YYYY-MM-DD")
-
-    @model_validator(mode="after")
-    def validate_signup_fields(self) -> "SendPhoneOtpRequest":
-        if self.purpose == "signup_verify":
-            if not self.state or not self.state.strip():
-                raise ValueError("State is required.")
-            if not self.city or not self.city.strip():
-                raise ValueError("City is required.")
-        return self
 
 
 class SendPhoneOtpResponse(BaseModel):
@@ -153,6 +142,9 @@ class AuthResponse(BaseModel):
     otp_required: bool = False
     otp_target: Optional[str] = None
     dev_otp: Optional[str] = None
+    # Set by Google sign-in when this call created the account, so the client
+    # can ask a new user for their details instead of opening the dashboard.
+    is_new_user: bool = False
 
 
 class MessageResponse(BaseModel):

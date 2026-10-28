@@ -28,6 +28,7 @@ const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const Questionnaire = lazy(() => import('./pages/Questionnaire'));
 const ProfileSetup = lazy(() => import('./pages/ProfileSetup'));
+const SignupDetails = lazy(() => import('./pages/SignupDetails'));
 const ServiceSelection = lazy(() => import('./pages/ServiceSelection'));
 const SocialMediaPostGenerator = lazy(() => import('./pages/SocialMediaPostGenerator'));
 const MusicGeneration = lazy(() => import('./pages/MusicGeneration'));
@@ -181,6 +182,9 @@ export default function App() {
             )}
 
             {/* protected */}
+            <Route path="/signup/details" element={
+              <ProtectedRoute><SignupDetails /></ProtectedRoute>
+            } />
             <Route path="/profile-setup" element={
               <ProtectedRoute><ProfileSetup /></ProtectedRoute>
             } />
