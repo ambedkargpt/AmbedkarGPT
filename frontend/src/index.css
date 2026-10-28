@@ -42,6 +42,36 @@
   --color-text-link: #6b8aff;
 }
 
+/* Tailwind v4's preflight gives buttons the default arrow, so almost nothing
+   clickable showed a hand. Everything clickable gets the pointer back here;
+   disabled controls keep "not-allowed" so they read as unavailable. In the
+   base layer, so a cursor-* utility on an element still wins. */
+@layer base {
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  a[href],
+  summary,
+  select,
+  label[for],
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="range"],
+  input[type="file"],
+  input[type="submit"],
+  input[type="button"] {
+    cursor: pointer;
+  }
+  button:disabled,
+  select:disabled,
+  input:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+}
+
 * { box-sizing: border-box; }
 
 /* Prevent Tailwind's img reset from breaking Leaflet map tiles */
