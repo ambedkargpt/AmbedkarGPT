@@ -273,14 +273,18 @@ class AuthService:
         email = payload.get("email")
         if not email:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Google account email missing.")
+        is_new_user = self.users_repo.find_by_email(email) is None
         user = self.users_repo.upsert_google_user(
             email=email,
             username_seed=payload.get("name") or email.split("@")[0],
             political_party=political_party,
+            full_name=(payload.get("name") or "").strip() or None,
         )
         if AUTH_PROVIDER_GOOGLE not in user.get("auth_providers", []):
             user["auth_providers"] = sorted(set(user.get("auth_providers", []) + [AUTH_PROVIDER_GOOGLE]))
-        return self._issue_session(user)
+        session = self._issue_session(user)
+        session.is_new_user = is_new_user
+        return session
 
     def refresh(self, refresh_token: str) -> AuthResponse:
         session_doc = self.sessions_repo.find_active_by_refresh(refresh_token)

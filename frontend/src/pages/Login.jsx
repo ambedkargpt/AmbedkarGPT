@@ -103,7 +103,14 @@ export default function Login() {
     setAuthError('');
     setLoading(true);
     try {
-      await loginWithGoogle(tokenResponse.access_token);
+      const data = await loginWithGoogle(tokenResponse.access_token);
+      // A Google account we had never seen was just created by this press.
+      // It is asked only for a name and a phone here; the rest of the
+      // sign-up details are for the sign-up page.
+      if (data?.is_new_user) {
+        curtainGo('/signup/details?quick=1', { replace: true });
+        return;
+      }
       const redirect = sessionStorage.getItem('auth_redirect') || '/dashboard';
       sessionStorage.removeItem('auth_redirect');
       curtainGo(redirect, { replace: true });

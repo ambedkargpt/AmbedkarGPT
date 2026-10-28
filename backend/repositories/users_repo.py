@@ -87,7 +87,9 @@ class UsersRepository:
         self.collection.update_one({"_id": user_id}, {"$set": fields})
         return self.find_by_id(str(user_id))
 
-    def upsert_google_user(self, email: str, username_seed: str, political_party: Optional[str] = None) -> dict:
+    def upsert_google_user(
+        self, email: str, username_seed: str, political_party: Optional[str] = None, full_name: Optional[str] = None,
+    ) -> dict:
         existing = self.find_by_email(email)
         now = datetime.now(timezone.utc)
         if existing:
@@ -107,7 +109,7 @@ class UsersRepository:
         while self.find_by_username(username):
             i += 1
             username = f"{base_username}{i}"
-        return self.create_user(
+        user = self.create_user(
             username=username,
             password_hash=None,
             email=email,
@@ -117,3 +119,8 @@ class UsersRepository:
             is_email_verified=True,
             is_phone_verified=False,
         )
+        # Google's name pre-fills the details screen; the user can correct it.
+        if full_name:
+            self.collection.update_one({"_id": user["_id"]}, {"$set": {"full_name": full_name}})
+            user["full_name"] = full_name
+        return user
