@@ -59,8 +59,8 @@ def signup(payload: SignupRequest, request: Request) -> AuthResponse:
         phone=payload.phone.strip() if payload.phone else None,
         political_party=payload.political_party.strip() if payload.political_party else None,
         party_position=payload.party_position,
-        state=payload.state.strip(),
-        city=payload.city.strip(),
+        state=payload.state.strip() if payload.state else None,
+        city=payload.city.strip() if payload.city else None,
         date_of_birth=payload.date_of_birth,
     )
 

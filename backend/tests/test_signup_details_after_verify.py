@@ -53,3 +53,20 @@ def test_first_google_sign_in_is_flagged_new_and_keeps_the_name(google):
 def test_a_returning_google_user_is_not_new(google):
     google.google_login("token")
     assert google.google_login("token").is_new_user is False
+
+
+def test_the_signup_route_accepts_no_state_or_city(monkeypatch):
+    # The route used to call .strip() on both, which a schema test alone
+    # did not catch: the request validated and then failed with a 500.
+    from fastapi.testclient import TestClient
+
+    from backend.api.v1 import auth as route
+    from backend.main import app
+
+    seen = {}
+    monkeypatch.setattr(route.service, "signup", lambda **kw: seen.update(kw) or route.AuthResponse(otp_required=True))
+    res = TestClient(app).post("/api/v1/auth/signup", json={
+        "username": "mail_user", "email": "m@example.com", "password": "password123",
+    })
+    assert res.status_code == 200, res.text
+    assert seen["state"] is None and seen["city"] is None
