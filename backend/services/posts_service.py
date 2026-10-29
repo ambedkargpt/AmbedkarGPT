@@ -33,7 +33,7 @@ from backend.schemas.posts import (
     RetrievedChunkReference,
 )
 from backend.pipeline_cli import _retrieval_cfg_from_settings, ensure_rag_stack
-from backend.pipeline.generator import fit_to_platform, generate_post, platform_content_length
+from backend.pipeline.generator import fit_to_platform, generate_post, platform_content_length, tidy_hashtags
 from backend.pipeline.profiles import PROFILE_FIELDS, get_user_profiles
 from backend.pipeline.post_validation import ValidationReport, validate_post
 from backend.pipeline.retriever import retrieve_relevant_chunks
@@ -775,7 +775,8 @@ class PostsService:
             translated = _danda_normalise(translated)
         # A translation runs longer than the original; it still has to fit.
         profile_used = (doc.get("generation_meta") or {}).get("profile_used") or {}
-        translated = self._fit_platform(translated, profile_used.get("target_platform"))
+        platform = profile_used.get("target_platform")
+        translated = self._fit_platform(tidy_hashtags(translated, platform, target_language), platform)
 
         # Persist for future requests
         self.repo.save_translation(post_id, target_language, translated)
@@ -1313,7 +1314,8 @@ class PostsService:
                     self._trace_write(trace_dir, "10x_post_prompt_user.txt", user_content),
                 ),
             )
-            return self._fit_platform(text, profile.get("target_platform"))
+            platform = profile.get("target_platform")
+            return self._fit_platform(tidy_hashtags(text, platform, language), platform)
         except OpenAIRateLimitError as exc:
             import logging as _logging
             _logging.getLogger(__name__).warning("LLM rate limit reached: %s", exc)

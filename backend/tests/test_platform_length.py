@@ -1,5 +1,5 @@
 """The platform the user picks decides a post's length, and the post fits it."""
-from backend.pipeline.generator import fit_to_platform, platform_content_length
+from backend.pipeline.generator import fit_to_platform, platform_content_length, tidy_hashtags
 from backend.pipeline.post_validation import _word_ceiling
 from backend.services.posts_service import _apply_platform_length
 
@@ -54,3 +54,26 @@ def test_platforms_with_room_are_left_alone():
     assert fit_to_platform(LONG_HI, "WhatsApp") == LONG_HI
     assert fit_to_platform(LONG_HI, "Reddit") == LONG_HI
     assert fit_to_platform(LONG_HI, None) == LONG_HI
+
+
+POST = "ईवीएम हटाओ\n\nकांग्रेस का सवाल सीधा है।\n\n#ऐक्य #SaveDemocracy #VoterRights #मतदाता_अधिकार"
+
+
+def test_a_hindi_post_keeps_only_hindi_hashtags():
+    assert tidy_hashtags(POST, "WhatsApp", "hi").endswith("#ऐक्य #मतदाता_अधिकार")
+
+
+def test_a_line_of_english_hashtags_goes_entirely():
+    out = tidy_hashtags("ईवीएम हटाओ\n\nसवाल सीधा है।\n\n#SaveDemocracy #Congress", "Twitter / X", "hi")
+    assert out == "ईवीएम हटाओ\n\nसवाल सीधा है।"
+
+
+def test_reddit_takes_no_hashtags():
+    out = tidy_hashtags("शीर्षक\n\nयह #लोकतंत्र_बचाओ की बात है।\n\n#ऐक्य #Congress", "Reddit", "hi")
+    assert "#" not in out
+    assert out == "शीर्षक\n\nयह लोकतंत्र बचाओ की बात है।"
+
+
+def test_an_english_translation_keeps_english_hashtags():
+    text = "Remove EVMs\n\nThe question is simple.\n\n#SaveDemocracy"
+    assert tidy_hashtags(text, "WhatsApp", "en") == text
