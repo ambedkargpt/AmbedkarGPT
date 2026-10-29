@@ -246,6 +246,7 @@ def _build(args, settings, build_radio, engine_storage, state, publish_storage, 
     from pydantic import BaseModel
 
     from backend.worker.radio_live import publish
+    from backend.worker.radio_live.numbers import spell_out
     from backend.worker.radio_live.subject import similarity_matrix
     from bheem_radio.audio.mixer import Clip, Section
     from bheem_radio.daily.builder import (CO_ANCHOR, HEADLINE_BED_VOLUME, LEAD, MAX_HEADLINES,
@@ -390,7 +391,9 @@ def _build(args, settings, build_radio, engine_storage, state, publish_storage, 
     def voice(text, anchor=LEAD):
         counter[0] += 1
         path = wavs / f"v{counter[0]:04d}.wav"
-        path.write_bytes(services.cache.narrate(services.tts, text, lang=lang, style=style, anchor=anchor))
+        # A figure left as digits is read digit by digit ("2026" -> "दो शून्य दो छह").
+        said = spell_out(text) if lang == "hi" else text
+        path.write_bytes(services.cache.narrate(services.tts, said, lang=lang, style=style, anchor=anchor))
         return path
 
     plan, sections, clock = [], [], [0.0]
