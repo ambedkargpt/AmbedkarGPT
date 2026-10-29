@@ -5,7 +5,6 @@ import { FileText, Send, SlidersHorizontal, Bot, Sparkles, Music, ChevronRight, 
 import { useAuth } from '../context/AuthContext';
 import { getPosts, getDailyQuota } from '../api/posts';
 import { getProfileAnswers } from '../api/profile';
-import MilestoneBanner from '../components/MilestoneBanner';
 import DailyQuotaWidget from '../components/dashboard/DailyQuotaWidget';
 import RevealOnScroll from '../components/ui/RevealOnScroll';
 
@@ -150,11 +149,9 @@ export default function Dashboard() {
 
   return (
     <>
-      <MilestoneBanner totalPosts={quota?.total_streak_posts} />
-
       <div className="relative px-4 sm:px-6 md:px-10">
-        {/* totalPosts comes from the same source the milestone banner counts
-            from, so the bell and the banner cannot disagree. */}
+        {/* totalPosts comes from the quota, the same count the milestones
+            use, so the bell cannot disagree with them. */}
         <Topbar
           user={topbarUser}
           totalPosts={quota?.total_streak_posts ?? totalPosts}

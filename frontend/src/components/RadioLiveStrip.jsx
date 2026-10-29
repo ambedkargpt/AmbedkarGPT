@@ -13,10 +13,8 @@ import { RADIO_REQUIRES_LOGIN } from '../data/radioAccess';
  * they can reach from their own sidebar — and it would push the whole landing
  * page down by another 48px to say so.
  *
- * Styled off MilestoneBanner rather than sharing it: the two say different
- * things and the milestone bar's amber is the reward colour, which is doing
- * its own work. This one carries the player's blue so a visitor who clicks
- * through recognises where they landed.
+ * It carries the player's blue so a visitor who clicks through recognises
+ * where they landed.
  */
 export default function RadioLiveStrip({ className = '', onHide }) {
   const { t } = useI18n();

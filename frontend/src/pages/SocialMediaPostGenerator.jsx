@@ -2065,9 +2065,7 @@ export default function SocialMediaPostGenerator() {
                     lang={showTranslated && translatedPost ? 'en' : 'hi'}
                   />
                 )}
-                {/* Translate. Icon-only on a phone and labelled from sm up,
-                    which is what regenerate, copy and publish beside it already
-                    do. It used to be removed below sm instead, so the one
+                {/* Translate. Icon-only on a phone and labelled from sm up. It used to be removed below sm instead, so the one
                     control that turns a Hindi post into one the reader can
                     actually read was missing from the screen most people are
                     on. An icon costs the same 32px as its neighbours. */}
@@ -2093,64 +2091,6 @@ export default function SocialMediaPostGenerator() {
                   </button>
                 )}
 
-                {/* Regenerate — icon on mobile, icon+label on sm+ */}
-                <button
-                  type="button"
-                  onClick={handleRegenerate}
-                  // Needs the note, but only once a post exists: with no saved
-                  // post this button is the retry for a generation that failed,
-                  // and that path must stay clickable.
-                  disabled={
-                    generating
-                    || Boolean(refinedAt)
-                    || (Boolean(selectedPostId) && !refinementNote.trim())
-                  }
-                  title={
-                    refinedAt
-                      ? t('gen.refineAlreadyUsed')
-                      : selectedPostId && !refinementNote.trim()
-                        ? t('gen.refineNeedsNote')
-                        : t('gen.regenerate')
-                  }
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#1e3260]/70 bg-[#0d1531]/60 text-[#8b94b8] transition hover:border-[#3f9fff]/60 hover:text-white disabled:opacity-40 sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-2"
-                >
-                  <RefreshCw size={12} strokeWidth={2} className={generating ? 'animate-spin' : ''} />
-                  <span className="hidden text-[12px] font-medium sm:inline">{t('gen.regenerate')}</span>
-                </button>
-
-                {/* Copy */}
-                <button
-                  type="button"
-                  onClick={handleCopy}
-                  title="Copy"
-                  className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#1e3260]/70 bg-[#0d1531]/60 text-[#8b94b8] transition hover:border-[#3f9fff]/60 hover:text-white sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-2"
-                  style={{ color: copied ? '#22c55e' : undefined, borderColor: copied ? 'rgba(34,197,94,0.4)' : undefined }}
-                >
-                  {copied ? <Check size={12} strokeWidth={2.4} /> : <Copy size={12} strokeWidth={2} />}
-                  <span className="hidden text-[12px] font-medium sm:inline">{copied ? 'Copied' : 'Copy'}</span>
-                </button>
-
-                {/* Publish */}
-                {selectedPostId && !generating && (
-                  <button
-                    type="button"
-                    onClick={handlePublish}
-                    disabled={postStatus === 'published' || charOverLimit}
-                    title={postStatus === 'published' ? t('gen.published') : t(`gen.postTo.${platform}`)}
-                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border transition disabled:cursor-default disabled:opacity-70 sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-2"
-                    style={{
-                      borderColor: postStatus === 'published' ? 'rgba(34,197,94,0.5)' : 'rgba(34,197,94,0.35)',
-                      backgroundColor: postStatus === 'published' ? 'rgba(34,197,94,0.12)' : 'rgba(34,197,94,0.08)',
-                      color: postStatus === 'published' ? '#22c55e' : '#4ade80',
-                    }}
-                  >
-                    <Check size={12} strokeWidth={2.4} />
-                    <span className="hidden text-[12px] font-medium sm:inline">
-                      {/* Named for the platform the post was written for, like rssgpt. */}
-                      {postStatus === 'published' ? t('gen.published') : t(`gen.postTo.${platform}`)}
-                    </span>
-                  </button>
-                )}
               </div>
             </div>
 
@@ -2251,6 +2191,56 @@ export default function SocialMediaPostGenerator() {
                     content={showTranslated && translatedPost ? translatedPost : generatedPost}
                     lang={showTranslated && translatedPost ? 'en' : 'hi'}
                   />
+              </div>
+            )}
+
+            {/* Under the post, as on rssgpt: one wide button named for the
+                platform the post was written for, then copy and regenerate as
+                icons. Regenerate needs the note once a post exists; with no
+                saved post it is the retry for a generation that failed, so
+                that path stays clickable. */}
+            {!generating && !translating && generatedPost && (
+              <div className="mt-3 flex flex-wrap items-center gap-2.5">
+                {selectedPostId && (
+                  <button
+                    type="button"
+                    onClick={handlePublish}
+                    disabled={postStatus === 'published' || charOverLimit}
+                    className="inline-flex min-h-11 min-w-0 flex-[1_1_200px] items-center justify-center gap-2 rounded-xl border px-5 text-[14px] font-semibold transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:brightness-100"
+                    style={postStatus === 'published'
+                      ? { borderColor: 'rgba(34,197,94,0.5)', backgroundColor: 'rgba(34,197,94,0.12)', color: '#22c55e' }
+                      : { borderColor: activePlatform.color, backgroundColor: activePlatform.color, color: '#05081a' }}
+                  >
+                    {postStatus === 'published' ? <Check size={16} strokeWidth={2.4} /> : <Share size={16} strokeWidth={2.2} />}
+                    {postStatus === 'published' ? t('gen.published') : t(`gen.postTo.${platform}`)}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={handleCopy}
+                  title={copied ? 'Copied' : 'Copy'}
+                  aria-label={copied ? 'Copied' : 'Copy'}
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#1e3260]/70 bg-[#0d1531]/60 text-[#8b94b8] transition hover:border-[#3f9fff]/60 hover:text-white"
+                  style={{ color: copied ? '#22c55e' : undefined, borderColor: copied ? 'rgba(34,197,94,0.4)' : undefined }}
+                >
+                  {copied ? <Check size={18} strokeWidth={2.4} /> : <Copy size={18} strokeWidth={2} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRegenerate}
+                  disabled={Boolean(refinedAt) || (Boolean(selectedPostId) && !refinementNote.trim())}
+                  title={
+                    refinedAt
+                      ? t('gen.refineAlreadyUsed')
+                      : selectedPostId && !refinementNote.trim()
+                        ? t('gen.refineNeedsNote')
+                        : t('gen.regenerate')
+                  }
+                  aria-label={t('gen.regenerate')}
+                  className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#1e3260]/70 bg-[#0d1531]/60 text-[#8b94b8] transition hover:border-[#3f9fff]/60 hover:text-white disabled:opacity-40"
+                >
+                  <RefreshCw size={18} strokeWidth={2} />
+                </button>
               </div>
             )}
 
