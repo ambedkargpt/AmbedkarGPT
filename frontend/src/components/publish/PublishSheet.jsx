@@ -51,9 +51,12 @@ function firstSentence(text = '') {
  * shared one: a subreddit where every author is the same bot reads as spam,
  * to Reddit and to anyone browsing it.
  */
-export default function PublishSheet({ post, onClose, onPublished }) {
+export default function PublishSheet({ post, initialTarget, onClose, onPublished }) {
   const { t } = useI18n();
-  const [target, setTarget] = useState('reddit');
+  // Opens on the platform the post was written for; Reddit otherwise.
+  const [target, setTarget] = useState(
+    DESTINATIONS.some((d) => d.id === initialTarget && d.live) ? initialTarget : 'reddit',
+  );
   const [status, setStatus] = useState(null);      // reddit connection status
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
