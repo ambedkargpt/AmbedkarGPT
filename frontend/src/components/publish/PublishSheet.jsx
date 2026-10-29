@@ -7,20 +7,34 @@ import {
   getRedditStatus,
   publishPostToReddit,
 } from '../../api/integrations';
+import { updatePost } from '../../api/posts';
 import { useI18n } from '../../i18n/index.jsx';
 
 // Reddit caps a post title here, and it is the one limit the user has to work
 // inside rather than one we can paper over.
 const TITLE_MAX = 300;
 
-// Reddit is the only destination that works today. The other two are listed
-// because the user asked where a post can go, and the honest answer includes
-// "not yet" — a platform missing from the list reads as never coming.
+// Reddit posts through the user's connected account. X, WhatsApp and
+// Facebook open in a new tab with the post ready: X and WhatsApp take the
+// text in the link; Facebook lets no site fill in a post, so the text goes on
+// the clipboard to paste. LinkedIn is listed as "not yet" — a platform missing
+// from the list reads as never coming.
 const DESTINATIONS = [
   { id: 'reddit', labelKey: 'pub.reddit', live: true, accent: '#ff4500' },
-  { id: 'twitter', labelKey: 'pub.twitter', live: false, accent: '#1d9bf0' },
+  { id: 'twitter', labelKey: 'pub.twitter', live: true, accent: '#1d9bf0', link: true },
+  { id: 'whatsapp', labelKey: 'pub.whatsapp', live: true, accent: '#25d366', link: true },
+  { id: 'facebook', labelKey: 'pub.facebook', live: true, accent: '#1877f2', link: true, copy: true },
   { id: 'linkedin', labelKey: 'pub.linkedin', live: false, accent: '#0a66c2' },
 ];
+
+/** Where a link destination opens, with the post exactly as it reads on screen. */
+function shareUrl(id, text) {
+  const enc = encodeURIComponent;
+  if (id === 'twitter') return `https://twitter.com/intent/tweet?text=${enc(text)}`;
+  if (id === 'whatsapp') return `https://wa.me/?text=${enc(text)}`;
+  if (id === 'facebook') return 'https://www.facebook.com/';
+  return '';
+}
 
 /** The first sentence of the post, when there is no headline to fall back on. */
 function firstSentence(text = '') {
@@ -113,6 +127,41 @@ export default function PublishSheet({ post, onClose, onPublished }) {
     }
   }
 
+  // X, WhatsApp, Facebook. The tab is opened before the publish call, while
+  // the click still counts as one, or the browser blocks it as a popup; it is
+  // pointed at the platform only once the post is marked published, and
+  // closed if that is refused (the daily limit).
+  async function share(dest) {
+    if (posting) return;
+    setPosting(true);
+    setError('');
+    const text = post.content || '';
+    const url = shareUrl(dest.id, text);
+    if (dest.copy) navigator.clipboard?.writeText(text).catch(() => {});
+    const tab = window.open('', '_blank');
+    if (tab) tab.opener = null;
+    try {
+      await updatePost(post.id, { status: 'published' });
+      if (tab) tab.location.href = url;
+      setDone({ link: true, url, label: t(dest.labelKey), copied: Boolean(dest.copy), opened: Boolean(tab) });
+      // A blocked tab keeps the sheet open on its "Open" link; the caller
+      // hears of the publish when the sheet is closed.
+      if (tab) onPublished?.({ platform: dest.id, url });
+    } catch (err) {
+      tab?.close();
+      const detail = err?.response?.data?.detail;
+      setError((typeof detail === 'object' ? detail?.message : detail) || t('pub.failed'));
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  const dest = DESTINATIONS.find((d) => d.id === target) || DESTINATIONS[0];
+  const close = () => {
+    if (posting) return;
+    if (done?.link && !done.opened) onPublished?.({ platform: target, url: done.url });
+    else onClose();
+  };
   const connected = Boolean(status?.connected);
   const configured = status?.configured !== false;
   // The server's answer, never a guess. A hardcoded fallback here named a
@@ -127,7 +176,7 @@ export default function PublishSheet({ post, onClose, onPublished }) {
     <div className="fixed inset-0 z-[120] flex items-end justify-center sm:items-center" role="dialog" aria-modal="true">
       <div
         className="dash-backdrop absolute inset-0 bg-[#03060f]/78 backdrop-blur-[3px]"
-        onClick={() => !posting && onClose()}
+        onClick={close}
       />
 
       <div className="sheet-up relative w-full max-w-[520px] overflow-y-auto rounded-t-2xl border border-[#1e3260]/70 bg-[#07101f] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 sm:max-h-[86vh] sm:rounded-2xl sm:pb-6"
@@ -143,7 +192,7 @@ export default function PublishSheet({ post, onClose, onPublished }) {
           <button
             ref={closeRef}
             type="button"
-            onClick={() => !posting && onClose()}
+            onClick={close}
             aria-label={t('common.close')}
             className="dash-icon-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[#8b94b8]"
           >
@@ -152,7 +201,25 @@ export default function PublishSheet({ post, onClose, onPublished }) {
         </div>
 
         {/* ── Done ── */}
-        {done ? (
+        {done?.link ? (
+          <div className="flex flex-col items-center gap-3 py-8 text-center">
+            <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0e2a1d] text-[#5bdb90]">
+              <Check size={22} strokeWidth={2.5} />
+            </span>
+            <p className="font-display text-[16px] font-semibold text-white">{t('pub.shared', { platform: done.label })}</p>
+            {done.copied && <p className="max-w-[40ch] text-[12.5px] leading-relaxed text-[#8b94b8]">{t('pub.pasteNote')}</p>}
+            {/* If the browser blocked the new tab, this is the way there. */}
+            <a
+              href={done.url}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="mt-1 inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#2a4375]/80 bg-[#0d1531]/80 px-5 text-[13px] font-semibold text-white transition hover:border-[#4d8bff]/70"
+            >
+              {t('pub.open', { platform: done.label })}
+              <ExternalLink size={14} strokeWidth={2} />
+            </a>
+          </div>
+        ) : done ? (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0e2a1d] text-[#5bdb90]">
               <Check size={22} strokeWidth={2.5} />
@@ -220,7 +287,35 @@ export default function PublishSheet({ post, onClose, onPublished }) {
               })}
             </div>
 
-            {loading ? (
+            {dest.link ? (
+              <div className="mt-5 rounded-xl border border-[#1e3260]/60 bg-[#0a1130]/50 p-4">
+                <p className="text-[13.5px] font-semibold text-white">
+                  {dest.copy ? t('pub.copyTitle', { platform: t(dest.labelKey) }) : t('pub.linkTitle', { platform: t(dest.labelKey) })}
+                </p>
+                <p className="mt-1.5 text-[12.5px] leading-relaxed text-[#8b94b8]">
+                  {dest.copy ? t('pub.copyBody') : t('pub.linkBody')}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => share(dest)}
+                  disabled={posting}
+                  className="mt-3.5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+                  style={{ background: dest.accent }}
+                >
+                  {posting ? (
+                    <>
+                      <Loader2 size={15} className="animate-spin" />
+                      {t('pub.posting')}
+                    </>
+                  ) : (
+                    <>
+                      {dest.copy ? t('pub.copyOpen', { platform: t(dest.labelKey) }) : t('pub.open', { platform: t(dest.labelKey) })}
+                      <ArrowUpRight size={16} strokeWidth={2.2} />
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : loading ? (
               <div className="flex items-center justify-center gap-2 py-10 text-[13px] text-[#7d89ad]">
                 <Loader2 size={15} className="animate-spin" />
                 {t('common.loading')}

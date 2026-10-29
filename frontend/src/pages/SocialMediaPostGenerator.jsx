@@ -919,7 +919,8 @@ export default function SocialMediaPostGenerator() {
     if (!selectedPostId || postStatus === 'published') return;
     setPublishSheet({
       id: selectedPostId,
-      content: generatedPost,
+      // What is on screen goes out: the translation when it is showing.
+      content: showTranslated && translatedPost ? translatedPost : generatedPost,
       news_id: selectedArticle?._backendId ?? selectedArticle?.id ?? '',
     });
   }
