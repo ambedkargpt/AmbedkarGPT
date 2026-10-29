@@ -460,6 +460,82 @@ def _platform_char_limit(profile: Dict[str, str]) -> Optional[int]:
     return limit if limit <= 5000 else None
 
 
+# How long a post for each platform should be. This replaces the content
+# length preference: the platform the user picks decides the length, as on
+# rssgpt. Each option names a word ceiling so post validation can check it.
+_PLATFORM_LENGTHS = {
+    "twitter": "One tweet: at most 280 characters in total, hashtags and line breaks included (max 45 words). One sharp point with one fact, at most two hashtags.",
+    "reddit": "A Reddit post: a headline line, then two to four short paragraphs that make the case plainly with the facts (150-250 words).",
+    "whatsapp": "A WhatsApp forward: four to six short sentences that read well on a phone (80-120 words).",
+}
+_PLATFORM_ALIASES = {"twitter / x": "twitter", "x": "twitter"}
+
+
+def platform_content_length(platform: Optional[str]) -> Optional[str]:
+    """The content_length for a platform, or None for one with no set length."""
+    key = str(platform or "").strip().lower()
+    return _PLATFORM_LENGTHS.get(_PLATFORM_ALIASES.get(key, key))
+
+
+_SENTENCE_END = re.compile(r"[।.!?](?=\s|$)")
+
+
+def _trim_to_limit(text: str, limit: int) -> str:
+    """
+    Cut a post to `limit` characters without leaving half a sentence.
+
+    Hashtags go first, last tag first, since the post still reads without
+    them. Then the body is cut at the last sentence end that fits. Only a post
+    with no sentence end at all is cut at a word.
+    """
+    text = text.strip()
+    if len(text) <= limit:
+        return text
+    lines = text.split("\n")
+    while lines and len("\n".join(lines).strip()) > limit:
+        words = lines[-1].split()
+        if words and all(w.startswith("#") for w in words):
+            lines[-1] = " ".join(words[:-1])
+            if not lines[-1]:
+                lines.pop()
+            continue
+        break
+    text = "\n".join(lines).strip()
+    if len(text) <= limit:
+        return text
+    head = text[:limit]
+    ends = list(_SENTENCE_END.finditer(head))
+    if ends and ends[-1].end() > limit // 3:
+        return head[: ends[-1].end()].strip()
+    cut = head.rsplit(" ", 1)[0].rstrip(" ,;:-")
+    return cut + "…" if len(cut) < limit else cut[: limit - 1] + "…"
+
+
+def fit_to_platform(text: str, platform: Optional[str], shorten=None) -> str:
+    """
+    Make a post fit what its platform accepts, so "Post to X" opens a tweet
+    that can be sent as it is.
+
+    The prompt asks for the limit, but a model does not count characters
+    reliably. `shorten(text, limit)` gets one try at a proper rewrite; whatever
+    it returns that is still over, and any failure, falls back to trimming.
+    """
+    limit = _platform_char_limit({"target_platform": platform})
+    if not limit or not text or len(text.strip()) <= limit:
+        return text
+    if shorten is not None:
+        try:
+            shorter = (shorten(text, limit) or "").strip()
+        except Exception as exc:  # noqa: BLE001
+            _log.warning("post shortening failed, trimming instead: %s", exc)
+            shorter = ""
+        if shorter and len(shorter) <= limit:
+            return shorter
+        if shorter:
+            text = shorter
+    return _trim_to_limit(text, limit)
+
+
 def generate_post(
     client: OpenAI,
     model: str,

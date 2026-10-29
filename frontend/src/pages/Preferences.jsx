@@ -13,9 +13,8 @@ import { CORE_QUESTION_IDS, labelWithSize } from '../utils/preferenceQuestions';
 //
 // Six of them describe who the writer is - their role, their audience, their
 // perspective - and the party and position sets now cover that ground in the
-// writer's own vocabulary. The seventh, content_length, is not hidden so much
-// as moved: it changes from one post to the next and lives in the generator's
-// side panel, which is where it is actually reached for.
+// writer's own vocabulary. The seventh, content_length, is no longer asked
+// anywhere: the platform picked in the generator decides a post's length.
 //
 // They are still seeded, still active, and still answered by anyone who went
 // through the questionnaire; only this page stops showing them. Their stored

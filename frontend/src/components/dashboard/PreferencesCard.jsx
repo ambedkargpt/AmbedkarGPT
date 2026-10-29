@@ -11,7 +11,6 @@ const DISPLAY_MAP = {
   profile_language:                'prefrow.language',
   profile_target_platform:         'prefrow.platform',
   profile_ambedkarite_perspective: 'prefrow.lens',
-  profile_content_length:          'prefrow.length',
   profile_formality_level:         'prefrow.style',
 };
 
