@@ -397,15 +397,15 @@ class AuthService:
             if existing and str(existing["_id"]) != str(user["_id"]):
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken.")
             fields["username"] = username
-        # Party and position are both set once and then fixed.
+        # The party is set once and then fixed.
         #
         # Every answer is stored against an id that names the party -
         # party_inc_q1, pos_inc_national_q3 - so moving to another party leaves
         # all fifteen behind at once and the posts quietly change character
-        # with nothing on screen to explain it. The position is the same story
-        # one level down: the five answers are written for one level, so
-        # changing it silently retires them and the writing shifts without
-        # anything on screen saying why.
+        # with nothing on screen to explain it.
+        #
+        # The role can be changed. Its five answers are written for one level,
+        # so a new level brings its own five questions; the party's ten stay.
         #
         # Re-sending the same value is allowed, so saving the form again is not
         # an error. Setting one that was never set is allowed too: this locks a
@@ -431,16 +431,10 @@ class AuthService:
             from backend.pipeline.party_roles import ROLES
 
             pos = party_position.strip()
-            pos = pos if pos in ROLES else ""
-            current_pos = str(user.get("party_position") or "").strip()
-            # An unknown key arriving as "" must not read as "clear it": that
-            # would unlock the field for anyone who can send a bad id.
-            if current_pos and pos != current_pos:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Your role is already set and cannot be changed.",
-                )
-            fields["party_position"] = pos
+            # An unknown key leaves the role as it was rather than clearing it;
+            # an empty one is a real choice to have no role.
+            if not pos or pos in ROLES:
+                fields["party_position"] = pos
         if email is not None:
             email = email.strip().lower()
             if email and (existing := self.users_repo.find_by_email(email)) and str(existing["_id"]) != str(user["_id"]):
