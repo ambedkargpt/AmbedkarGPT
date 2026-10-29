@@ -33,7 +33,7 @@ from backend.schemas.posts import (
     RetrievedChunkReference,
 )
 from backend.pipeline_cli import _retrieval_cfg_from_settings, ensure_rag_stack
-from backend.pipeline.generator import generate_post
+from backend.pipeline.generator import fit_to_platform, generate_post, platform_content_length
 from backend.pipeline.profiles import PROFILE_FIELDS, get_user_profiles
 from backend.pipeline.post_validation import ValidationReport, validate_post
 from backend.pipeline.retriever import retrieve_relevant_chunks
@@ -57,6 +57,13 @@ _RESEARCH_CACHE: dict[str, dict[str, ClaimFinding]] = {}
 # Devanagari-only editorial standard the news pipeline enforces, and switching
 # the interface to English silently produced English posts.
 POST_OUTPUT_LANGUAGE = "hi"
+
+
+def _apply_platform_length(profile: dict[str, Any]) -> None:
+    """The platform decides the post's length, not a preference (as on rssgpt)."""
+    length = platform_content_length(profile.get("target_platform"))
+    if length:
+        profile["content_length"] = length
 
 
 class PostsService:
@@ -544,6 +551,7 @@ class PostsService:
                 field = qid.replace("profile_", "", 1) if qid.startswith("profile_") else qid
                 if field in PROFILE_FIELDS and value:
                     profile[field] = value
+        _apply_platform_length(profile)
 
         # The tenant's own stack, so a title lookup cannot pull another
         # channel's video summary into this post.
@@ -679,6 +687,35 @@ class PostsService:
             streak_broken=streak["streak_broken"],
         )
 
+    def _fit_platform(self, text: str, platform: str | None) -> str:
+        """The post, rewritten or trimmed to fit its platform (X: 280 characters)."""
+        if not text or not platform or not settings.deepseek_api_key:
+            return fit_to_platform(text, platform)
+
+        def shorten(post: str, limit: int) -> str:
+            client = OpenAI(api_key=settings.deepseek_api_key, base_url=settings.deepseek_base_url)
+            response = client.chat.completions.create(
+                model=settings.post_generation_model,
+                max_tokens=1200,
+                temperature=0.3,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            f"Shorten this social media post to at most {limit - 20} characters in total, "
+                            "counting line breaks and hashtags. Keep its language, its voice and its "
+                            "strongest point; drop the weaker points rather than cutting sentences off. "
+                            "Keep at most two hashtags. Never add a fact that is not already in it. "
+                            "Output ONLY the shortened post."
+                        ),
+                    },
+                    {"role": "user", "content": post},
+                ],
+            )
+            return response.choices[0].message.content or ""
+
+        return fit_to_platform(text, platform, shorten=shorten)
+
     def translate_post(self, *, post_id: str, current_user_id: str, target_language: str) -> PostTranslateResponse:
         self._ensure_object_id(post_id, "post_id")
         doc = self.repo.get_by_id(post_id)
@@ -736,6 +773,9 @@ class PostsService:
         translated = _strip_ai_tells(translated)
         if target_language != "en":
             translated = _danda_normalise(translated)
+        # A translation runs longer than the original; it still has to fit.
+        profile_used = (doc.get("generation_meta") or {}).get("profile_used") or {}
+        translated = self._fit_platform(translated, profile_used.get("target_platform"))
 
         # Persist for future requests
         self.repo.save_translation(post_id, target_language, translated)
@@ -860,6 +900,7 @@ class PostsService:
                     default_profile[field] = value
         if tone and tone.strip():
             default_profile["tone"] = tone.strip()
+        _apply_platform_length(default_profile)
 
         # Party position lives on the user record rather than in the answers,
         # because it is chosen on the profile screen alongside the party. What
@@ -1251,7 +1292,7 @@ class PostsService:
                     detail="DEEPSEEK_API_KEY is not set for post generation.",
                 )
             client = OpenAI(api_key=settings.deepseek_api_key, base_url=settings.deepseek_base_url)
-            return generate_post(
+            text = generate_post(
                 client=client,
                 model=self._current_generation_model(),
                 news=article,
@@ -1272,6 +1313,7 @@ class PostsService:
                     self._trace_write(trace_dir, "10x_post_prompt_user.txt", user_content),
                 ),
             )
+            return self._fit_platform(text, profile.get("target_platform"))
         except OpenAIRateLimitError as exc:
             import logging as _logging
             _logging.getLogger(__name__).warning("LLM rate limit reached: %s", exc)

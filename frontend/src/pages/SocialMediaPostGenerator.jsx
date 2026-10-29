@@ -19,7 +19,7 @@ import { useAuth } from '../context/AuthContext';
 import { getNews, getNewsById, getNewsByStoryId, getTenants } from '../api/news';
 import { adaptNews, resolveTenantForUser } from '../utils/newsTenants';
 import { generatePostForNews, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion, warmGenerator } from '../api/posts';
-import { getPartyQuestions, getQuestions } from '../api/questions';
+import { getPartyQuestions } from '../api/questions';
 import { getProfileAnswers, saveProfileAnswers } from '../api/profile';
 import { CORE_QUESTION_IDS } from '../utils/preferenceQuestions';
 import { getSiteLanguage, SITE_LANGUAGES } from '../utils/siteLanguage';
@@ -101,17 +101,10 @@ function getPageItems(current, total) {
   return items;
 }
 
-// The only profile question the side panel still carries.
-//
-// It used to show all seven core questions, but six of them describe who the
-// writer is — their role, their audience, their perspective — and those do not
-// change from one post to the next. Setting them per post was work with no
-// answer. Length does change post to post, so it stays, and the ten party
-// questions take the rest of the panel: those are the ones worth reaching for
-// when a particular story needs a different stance.
-//
-// The seven are still on the Preferences page, where a profile belongs.
-const PREF_QUESTION_IDS = ['profile_content_length'];
+// The side panel carries the ten party questions only. The seven profile
+// questions describe who the writer is and live on the Preferences page; the
+// post's length is not asked at all, because the platform picked decides it
+// (280 characters for X, as on rssgpt).
 
 // adaptNews and resolveTenantForUser live in utils/newsTenants, shared with the
 // dashboard's top-story card so both read the same party and story shape.
@@ -392,7 +385,6 @@ export default function SocialMediaPostGenerator() {
     if (!currentUser?.id) return;
 
     Promise.all([
-      getQuestions(25),
       getProfileAnswers(currentUser.id).catch(() => []),
       // The ten written for this party. They ask what the writer wants said
       // about their party, which is the thing a particular story most often
@@ -406,13 +398,10 @@ export default function SocialMediaPostGenerator() {
       // shape every post: the generator reads the saved answers, and the
       // questionnaire is where they are set.
       getPartyQuestions(currentUser.political_party || '').catch(() => []),
-    ]).then(([allQs, saved, partyQs]) => {
-      const qMap = Object.fromEntries(allQs.map((q) => [q.question_id, q]));
-      // Length, then the ten for this writer's party. The party list is empty
-      // for a party with no set written for it, and the panel then shows
-      // length alone rather than breaking.
+    ]).then(([saved, partyQs]) => {
+      // The ten for this writer's party. The list is empty for a party with
+      // no set written for it, and the panel is then empty rather than broken.
       const qs = [
-        ...PREF_QUESTION_IDS.map((id) => qMap[id]).filter(Boolean),
         // The question text is localised here rather than in the panel, so the
         // panel keeps taking one string per question. options_hi travels
         // untouched: the panel draws it but still writes back the English
@@ -632,24 +621,6 @@ export default function SocialMediaPostGenerator() {
   const charPct = activePlatform.limit ? chars / activePlatform.limit : 0;
   const charOverLimit = chars > activePlatform.limit;
   const charWarning = charPct > 0.85 && !charOverLimit;
-
-  // Whether the writer's chosen length can fit this destination at all.
-  //
-  // The two settings can contradict: Extended asks for 250-400 words, Twitter
-  // takes 280 characters. The server resolves it by letting the platform win,
-  // which is the only workable answer - a 1626 character tweet is not a tweet.
-  // But a length setting that silently stops applying is worse than one that
-  // says so, which is what this line is for.
-  //
-  // Six characters a word is deliberately generous; Devanagari runs longer. If
-  // it does not fit at six, it will not fit.
-  const lengthMaxWords = (() => {
-    const label = preferences['profile_content_length'] || '';
-    const numbers = label.match(/\d+/g);
-    return numbers ? Math.max(...numbers.map(Number)) : 0;
-  })();
-  const lengthOverriddenByPlatform =
-    Boolean(activePlatform.limit) && lengthMaxWords * 6 > activePlatform.limit;
 
   // A story handed over by the dashboard's top-story card. The card names the
   // story it was showing when Generate Post was clicked, and this opens that
@@ -1974,7 +1945,6 @@ export default function SocialMediaPostGenerator() {
                       profile_target_audience: 'Target audience',
                       profile_primary_focus: 'Primary focus',
                       profile_ambedkarite_perspective: 'Perspective',
-                      profile_content_length: 'Content length',
                       profile_call_to_action: 'Call to action',
                     };
                     return (
@@ -2340,15 +2310,6 @@ export default function SocialMediaPostGenerator() {
                 </div>
               </button>
             </div>
-
-            {lengthOverriddenByPlatform && (
-              <p className="mt-2 text-[11.5px] leading-relaxed text-[#8b94b8]">
-                {t('gen.lengthCappedByPlatform', {
-                  platform: activePlatform.label,
-                  limit: activePlatform.limit.toLocaleString(),
-                })}
-              </p>
-            )}
 
           </div>
         )}
