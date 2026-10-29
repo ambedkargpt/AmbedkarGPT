@@ -106,16 +106,12 @@ export default function ProfileSetup() {
   // already chosen, rather than asking someone to find it again.
   const [partyLevel, setPartyLevel] = useState(() => groupForId(currentUser?.party_position || ''));
 
-  // Party and position are each set once and then fixed: every answer is
-  // stored against an id that names them, so changing either orphans the
-  // answers written for it. The server refuses both; these disable the
-  // controls so nobody fills in a form that is going to be rejected.
-  //
-  // They lock independently, because they are not always chosen together: a
-  // supporter with no office picks a party and leaves the position empty, and
-  // has to be able to fill it in later without the party being in the way.
+  // The party is set once and then fixed: every answer is stored against an
+  // id that names it, so changing it orphans all of them. The server refuses
+  // it; this disables the control so nobody fills in a form that is going to
+  // be rejected. The position stays editable: a new level brings its own five
+  // questions.
   const partyLocked = Boolean(currentUser?.political_party);
-  const positionLocked = Boolean(currentUser?.party_position);
 
   function handleLevelChange(level) {
     setPartyLevel(level);
@@ -450,7 +446,7 @@ export default function ProfileSetup() {
                 meets as a rejected save is a trap; this is the Instagram
                 pattern for a username or a date of birth. It disappears once
                 both are set, because by then it is advice about nothing. */}
-            {(!partyLocked || !positionLocked) && (
+            {!partyLocked && (
               <div
                 className="flex gap-3 rounded-xl px-4 py-3.5"
                 style={{ backgroundColor: 'rgba(240,160,75,0.08)', border: '1px solid rgba(240,160,75,0.28)' }}
@@ -524,7 +520,7 @@ export default function ProfileSetup() {
                   <select
                     value={partyLevel}
                     onChange={(e) => handleLevelChange(e.target.value)}
-                    disabled={!politicalParty || positionLocked}
+                    disabled={!politicalParty}
                     aria-label={t('profile.levelLabel')}
                     className="w-full appearance-none rounded-xl px-4 py-3.5 pr-10 text-[14px] outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
                     style={{
@@ -554,7 +550,7 @@ export default function ProfileSetup() {
                   <select
                     value={partyPosition}
                     onChange={(e) => setPartyPosition(e.target.value)}
-                    disabled={!partyLevel || positionLocked}
+                    disabled={!partyLevel}
                     aria-label={t('profile.positionLabel')}
                     className="w-full appearance-none rounded-xl px-4 py-3.5 pr-10 text-[14px] outline-none transition disabled:cursor-not-allowed disabled:opacity-50"
                     style={{
@@ -584,8 +580,8 @@ export default function ProfileSetup() {
               {errors.partyPosition
                 ? <p className="mt-1.5 text-[12px]" style={{ color: '#ef4444' }}>{errors.partyPosition}</p>
                 : (
-                  <p className="mt-1.5 text-[12px]" style={{ color: positionLocked ? '#8b94b8' : '#5a6e9a' }}>
-                    {positionLocked ? t('profile.roleLocked') : t('profile.positionHint')}
+                  <p className="mt-1.5 text-[12px]" style={{ color: '#5a6e9a' }}>
+                    {t('profile.positionHint')}
                   </p>
                 )}
             </div>

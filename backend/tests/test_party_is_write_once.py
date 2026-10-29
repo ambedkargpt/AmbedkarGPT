@@ -1,12 +1,10 @@
 """
-The party and the position are each set once and then fixed.
+The party is set once and then fixed; the position can be changed.
 
-Every answer is stored against an id that names both - `party_inc_q1`,
-`pos_inc_national_q3` - so a writer who moves leaves those answers behind at
-once, and the posts change character with nothing on screen to explain it.
-
-Correcting a genuine mistake is a database edit, deliberately: it should
-involve someone who can also clear the answers left behind.
+Every answer is stored against an id that names the party - `party_inc_q1`,
+`pos_inc_national_q3` - so a writer who moves party leaves all of them behind
+at once, and the posts change character with nothing on screen to explain it.
+A new position only brings the five questions for its level.
 """
 from __future__ import annotations
 
@@ -101,16 +99,20 @@ def test_a_position_can_be_set_when_there_is_none(service):
     assert service.users_repo.saved["party_position"] == POSITION
 
 
-def test_the_position_cannot_be_changed_once_set(service):
-    """The five position answers are written for one level and one level only."""
+def test_the_position_can_be_changed_once_set(service):
     service.users_repo.row = {"_id": "u1", "political_party": INC, "party_position": POSITION}
 
-    with pytest.raises(HTTPException) as caught:
-        _update(service, party_position="national_president")
+    _update(service, party_position="national_president")
 
-    assert caught.value.status_code == 409
-    assert "cannot be changed" in caught.value.detail
-    assert service.users_repo.saved == {}
+    assert service.users_repo.saved["party_position"] == "national_president"
+
+
+def test_the_position_can_be_cleared(service):
+    service.users_repo.row = {"_id": "u1", "political_party": INC, "party_position": POSITION}
+
+    _update(service, party_position="")
+
+    assert service.users_repo.saved["party_position"] == ""
 
 
 def test_resending_the_same_position_is_not_an_error(service):
@@ -122,21 +124,13 @@ def test_resending_the_same_position_is_not_an_error(service):
     assert service.users_repo.saved["party_position"] == POSITION
 
 
-def test_an_unknown_position_cannot_clear_one_that_is_set(service):
-    """
-    The way the lock could have been picked open.
-
-    An unrecognised id is normalised to "". Storing that would empty the field
-    and leave it free to be set again, so anyone able to send a bad id could
-    unlock it. It has to be refused like any other change.
-    """
+def test_an_unknown_position_leaves_the_set_one_alone(service):
+    """A stale or bad id must not clear a role the writer chose."""
     service.users_repo.row = {"_id": "u1", "political_party": INC, "party_position": POSITION}
 
-    with pytest.raises(HTTPException) as caught:
-        _update(service, party_position="not_a_real_role")
+    _update(service, party_position="not_a_real_role")
 
-    assert caught.value.status_code == 409
-    assert service.users_repo.saved == {}
+    assert "party_position" not in service.users_repo.saved
 
 
 def test_changing_the_position_does_not_let_the_party_move_with_it(service):
@@ -150,10 +144,8 @@ def test_changing_the_position_does_not_let_the_party_move_with_it(service):
     assert service.users_repo.saved == {}
 
 
-def test_an_unknown_position_is_still_dropped_rather_than_stored(service):
+def test_an_unknown_position_is_never_stored(service):
     """
-    The existing rule survives the new one.
-
     A stale id would sit on the user forever and resolve to no guidance at
     generation time, which looks like the setting silently doing nothing.
     """
@@ -161,20 +153,11 @@ def test_an_unknown_position_is_still_dropped_rather_than_stored(service):
 
     _update(service, party_position="not_a_real_role")
 
-    assert service.users_repo.saved["party_position"] == ""
-
-
-def test_a_position_can_be_set_after_an_unknown_one_was_dropped(service):
-    """An id that was dropped to "" leaves the writer free to choose again."""
-    service.users_repo.row = {"_id": "u1", "political_party": INC, "party_position": ""}
-
-    _update(service, party_position=POSITION)
-
-    assert service.users_repo.saved["party_position"] == POSITION
+    assert "party_position" not in service.users_repo.saved
 
 
 def test_other_profile_fields_are_still_editable(service):
-    """This locks two fields, not the whole profile."""
+    """This locks one field, not the whole profile."""
     service.users_repo.row = {"_id": "u1", "political_party": INC, "party_position": POSITION}
 
     _update(service, state="Uttar Pradesh", city="Lucknow")
