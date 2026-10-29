@@ -23,6 +23,7 @@ const DESTINATIONS = [
   { id: 'reddit', labelKey: 'pub.reddit', live: true, accent: '#ff4500' },
   { id: 'twitter', labelKey: 'pub.twitter', live: true, accent: '#1d9bf0', link: true },
   { id: 'whatsapp', labelKey: 'pub.whatsapp', live: true, accent: '#25d366', link: true },
+  { id: 'instagram', labelKey: 'pub.instagram', live: true, accent: '#e1306c', link: true, copy: true },
   { id: 'facebook', labelKey: 'pub.facebook', live: true, accent: '#1877f2', link: true, copy: true },
   { id: 'linkedin', labelKey: 'pub.linkedin', live: false, accent: '#0a66c2' },
 ];
@@ -33,6 +34,7 @@ function shareUrl(id, text) {
   if (id === 'twitter') return `https://twitter.com/intent/tweet?text=${enc(text)}`;
   if (id === 'whatsapp') return `https://wa.me/?text=${enc(text)}`;
   if (id === 'facebook') return 'https://www.facebook.com/';
+  if (id === 'instagram') return 'https://www.instagram.com/';
   return '';
 }
 
@@ -296,7 +298,7 @@ export default function PublishSheet({ post, initialTarget, onClose, onPublished
                   {dest.copy ? t('pub.copyTitle', { platform: t(dest.labelKey) }) : t('pub.linkTitle', { platform: t(dest.labelKey) })}
                 </p>
                 <p className="mt-1.5 text-[12.5px] leading-relaxed text-[#8b94b8]">
-                  {dest.copy ? t('pub.copyBody') : t('pub.linkBody')}
+                  {dest.copy ? t('pub.copyBody', { platform: t(dest.labelKey) }) : t('pub.linkBody')}
                 </p>
                 <button
                   type="button"

@@ -13,11 +13,11 @@ LONG_HI = (
 
 
 def test_each_platform_has_a_length_with_a_word_ceiling():
-    for label in ("Twitter / X", "Reddit", "WhatsApp"):
+    for label in ("Twitter / X", "Reddit", "WhatsApp", "Instagram"):
         length = platform_content_length(label)
         assert length
         assert _word_ceiling(length) > 0
-    assert platform_content_length("Instagram") is None
+    assert platform_content_length("LinkedIn") is None
     assert platform_content_length("") is None
 
 

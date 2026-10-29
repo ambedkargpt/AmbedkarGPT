@@ -58,6 +58,9 @@ const PLATFORMS = [
   // rather than a rounder number that would be a guess.
   { id: 'reddit',    label: 'Reddit',        short: 'r/',  limit: 40000, color: '#ff4500' },
   { id: 'whatsapp',  label: 'WhatsApp',      short: 'WA',  limit: 5000, color: '#25d366' },
+  // Instagram's caption limit. It has no web composer, so publishing copies
+  // the caption and opens Instagram.
+  { id: 'instagram', label: 'Instagram',     short: 'IG',  limit: 2200, color: '#e1306c' },
 ];
 
 
