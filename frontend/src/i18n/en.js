@@ -112,6 +112,7 @@ export default {
   'gen.postTo.reddit': 'Post to Reddit',
   'gen.postTo.whatsapp': 'Share on WhatsApp',
   'gen.postTo.instagram': 'Copy for Instagram',
+  'gen.pasteIn': 'Caption copied. Open {platform} and paste it (Ctrl+V, or long-press and Paste).',
   'gen.listen': 'Listen',
   'gen.stop': 'Stop',
   'gen.showHindi': 'Show Hindi',

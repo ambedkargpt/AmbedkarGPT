@@ -118,6 +118,7 @@ export default {
   'gen.postTo.reddit': 'Reddit पर पोस्ट करें',
   'gen.postTo.whatsapp': 'WhatsApp पर भेजें',
   'gen.postTo.instagram': 'Instagram के लिए कॉपी करें',
+  'gen.pasteIn': 'कैप्शन कॉपी हो गया। {platform} खोलकर पेस्ट कीजिए (Ctrl+V, या दबाकर रखें और पेस्ट करें)।',
   'gen.listen': 'सुनें',
   'gen.stop': 'रोकें',
   'gen.showHindi': 'हिंदी में देखें',
