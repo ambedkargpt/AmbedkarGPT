@@ -11,14 +11,13 @@ import {
 
 import PreferencesPanel from '../components/generate/PreferencesPanel';
 import DevSourceTag from '../components/DevSourceTag';
-import PublishSheet from '../components/publish/PublishSheet';
 import ScrollRow from '../components/ui/ScrollRow';
 import PostContent from '../components/generate/PostContent';
 import AgMark from '../components/brand/AgMark';
 import { useAuth } from '../context/AuthContext';
 import { getNews, getNewsById, getNewsByStoryId, getTenants } from '../api/news';
 import { adaptNews, resolveTenantForUser } from '../utils/newsTenants';
-import { generatePostForNews, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion, warmGenerator } from '../api/posts';
+import { generatePostForNews, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion, updatePost, warmGenerator } from '../api/posts';
 import { getPartyQuestions } from '../api/questions';
 import { getProfileAnswers, saveProfileAnswers } from '../api/profile';
 import { CORE_QUESTION_IDS } from '../utils/preferenceQuestions';
@@ -58,7 +57,26 @@ const PLATFORMS = [
   // rather than a rounder number that would be a guess.
   { id: 'reddit',    label: 'Reddit',        short: 'r/',  limit: 40000, color: '#ff4500' },
   { id: 'whatsapp',  label: 'WhatsApp',      short: 'WA',  limit: 5000, color: '#25d366' },
+  // Instagram's caption limit. It has no web composer, so publishing copies
+  // the caption and opens Instagram.
+  { id: 'instagram', label: 'Instagram',     short: 'IG',  limit: 2200, color: '#e1306c' },
 ];
+
+/**
+ * Where "Post to …" opens, with the text exactly as shown (as on rssgpt).
+ * Reddit takes the first line, the headline, as its title (300 characters at
+ * most) and the rest as the body. Instagram has no web composer: null.
+ */
+function shareUrl(platform, text) {
+  const enc = encodeURIComponent;
+  if (platform === 'twitter') return `https://twitter.com/intent/tweet?text=${enc(text)}`;
+  if (platform === 'whatsapp') return `https://wa.me/?text=${enc(text)}`;
+  if (platform === 'reddit') {
+    const [first = '', ...rest] = text.trim().split('\n');
+    return `https://www.reddit.com/submit?type=TEXT&title=${enc(first.trim().slice(0, 300))}&text=${enc(rest.join('\n').trim())}`;
+  }
+  return null;
+}
 
 
 const MIN_PANEL = 220;
@@ -272,7 +290,8 @@ export default function SocialMediaPostGenerator() {
   const [tenants,         setTenants]         = useState([]);
   const [newsSection,     setNewsSection]     = useState('party'); // 'party' | 'opposition' | 'general'
   const [toneOpen,        setToneOpen]        = useState(false);   // phones: the tone row starts closed
-  const [publishSheet,    setPublishSheet]    = useState(null);   // the post whose destination is being chosen
+  const [sharing,         setSharing]         = useState(false);  // a share is marking the post published
+  const [shareMsg,        setShareMsg]        = useState('');     // "paste it in Instagram", or why the share failed
   const [articleOpen,     setArticleOpen]     = useState(false);   // phones: the article starts as a preview
   const [filterOpen,      setFilterOpen]      = useState(false);
   const [view,            setView]            = useState('feed'); // 'feed' | 'preview' | 'generated'
@@ -700,6 +719,7 @@ export default function SocialMediaPostGenerator() {
     setSelectedPostId(null);
     setRefinementNote('');
     setRefineHint('');
+    setShareMsg('');
     applyVersionState(null);
     goView('preview');
   }
@@ -708,6 +728,7 @@ export default function SocialMediaPostGenerator() {
     if (!selectedArticle) return;
     setGenerating(true);
     setGenSeconds(0);
+    setShareMsg('');
     goView('generated');
     const timer = setInterval(() => setGenSeconds((s) => s + 1), 1000);
     try {
@@ -880,22 +901,41 @@ export default function SocialMediaPostGenerator() {
     } catch { /* ignore */ }
   }
 
-  function handlePublish() {
-    if (!selectedPostId || postStatus === 'published') return;
-    setPublishSheet({
-      id: selectedPostId,
-      // What is on screen goes out: the translation when it is showing.
-      content: showTranslated && translatedPost ? translatedPost : generatedPost,
-      news_id: selectedArticle?._backendId ?? selectedArticle?.id ?? '',
-    });
-  }
-
-  function handlePublished() {
-    setPostStatus('published');
-    setPublishSheet(null);
-    // The quota and the streak moved, so the widgets that read them refresh.
-    getDailyQuota().then(setQuota).catch(() => {});
-    navigate('/generate/social-media');
+  // "Post to …" goes straight to the platform, as on rssgpt: no sheet, no
+  // connected account. What is on screen goes out, the translation when it is
+  // showing. The tab is opened before the publish call, while the click still
+  // counts as one, or the browser blocks it as a popup; it is pointed at the
+  // platform once the post is marked published, and closed if that is refused
+  // (the daily limit). Instagram has no web composer, so its caption is copied.
+  async function handlePublish() {
+    if (!selectedPostId || sharing) return;
+    const text = showTranslated && translatedPost ? translatedPost : generatedPost;
+    const url = shareUrl(platform, text);
+    setShareMsg('');
+    if (!url) {
+      await navigator.clipboard?.writeText(text).catch(() => {});
+      setShareMsg(t('gen.pasteIn', { platform: activePlatform.label }));
+    }
+    if (postStatus === 'published') {
+      if (url) window.open(url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+    const tab = url ? window.open('', '_blank') : null;
+    if (tab) tab.opener = null;
+    setSharing(true);
+    try {
+      await updatePost(selectedPostId, { status: 'published' });
+      if (tab) tab.location.href = url;
+      setPostStatus('published');
+      // The quota and the streak moved, so the widgets that read them refresh.
+      getDailyQuota().then(setQuota).catch(() => {});
+    } catch (err) {
+      tab?.close();
+      const detail = err?.response?.data?.detail;
+      setShareMsg((typeof detail === 'object' ? detail?.message : detail) || t('pub.failed'));
+    } finally {
+      setSharing(false);
+    }
   }
 
   async function handleCopy() {
@@ -2003,15 +2043,6 @@ export default function SocialMediaPostGenerator() {
           );
         })()}
 
-        {publishSheet && (
-          <PublishSheet
-            post={publishSheet}
-            initialTarget={platform}
-            onClose={() => setPublishSheet(null)}
-            onPublished={handlePublished}
-          />
-        )}
-
         {/* ── Generated post view ── */}
         {view === 'generated' && (
           <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
@@ -2175,7 +2206,7 @@ export default function SocialMediaPostGenerator() {
                   <button
                     type="button"
                     onClick={handlePublish}
-                    disabled={postStatus === 'published' || charOverLimit}
+                    disabled={sharing || charOverLimit}
                     className="inline-flex min-h-11 min-w-0 flex-[1_1_200px] items-center justify-center gap-2 rounded-xl border px-5 text-[14px] font-semibold transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:brightness-100"
                     style={postStatus === 'published'
                       ? { borderColor: 'rgba(34,197,94,0.5)', backgroundColor: 'rgba(34,197,94,0.12)', color: '#22c55e' }
@@ -2212,6 +2243,9 @@ export default function SocialMediaPostGenerator() {
                   <RefreshCw size={18} strokeWidth={2} />
                 </button>
               </div>
+            )}
+            {shareMsg && !generating && (
+              <p role="status" className="mt-2 text-[12px] text-[#fbbf24]">{shareMsg}</p>
             )}
 
             {/* Version switch — only while both the refinement and the text it

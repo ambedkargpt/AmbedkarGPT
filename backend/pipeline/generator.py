@@ -193,7 +193,7 @@ def _video_summaries_str(
 
 
 _LANGUAGE_INSTRUCTIONS: dict[str, str] = {
-    "hi": "LANGUAGE REQUIREMENT: Write the entire Social Media Post (and hashtags if included) in Hindi (Devanagari script). Do NOT write in English or Hinglish — pure Hindi only. IMPORTANT: Keep the section labels (Headline:, Social Media Post:, Hashtags:) in English exactly as shown — do NOT translate them.\nPUNCTUATION: End every sentence in the post body with a danda (।), never a full stop. A full stop is correct only inside an abbreviation (डॉ., जे.पी.) or a decimal number. Headlines take no trailing danda. Keep कि/की and है/हैं agreement correct, and retain nuqta and chandrabindu where standard usage requires them.",
+    "hi": "LANGUAGE REQUIREMENT: Write the entire Social Media Post (and hashtags if included) in Hindi (Devanagari script). Do NOT write in English or Hinglish — pure Hindi only. Every hashtag is in Devanagari too, words joined with an underscore (#लोकतंत्र_बचाओ, #मतदाता_अधिकार); never an English hashtag such as #SaveDemocracy or #Congress. IMPORTANT: Keep the section labels (Headline:, Social Media Post:, Hashtags:) in English exactly as shown — do NOT translate them.\nPUNCTUATION: End every sentence in the post body with a danda (।), never a full stop. A full stop is correct only inside an abbreviation (डॉ., जे.पी.) or a decimal number. Headlines take no trailing danda. Keep कि/की and है/हैं agreement correct, and retain nuqta and chandrabindu where standard usage requires them.",
     "en": "LANGUAGE REQUIREMENT: Write the entire Social Media Post (headline, body, and hashtags) in English. The source material may be in Hindi — synthesise ideas from it but express everything in English. Do NOT write in Hindi, Devanagari script, or Hinglish.",
 }
 
@@ -467,6 +467,7 @@ _PLATFORM_LENGTHS = {
     "twitter": "One tweet: at most 280 characters in total, hashtags and line breaks included (max 45 words). One sharp point with one fact, at most two hashtags.",
     "reddit": "A Reddit post: a headline line, then two to four short paragraphs that make the case plainly with the facts (150-250 words).",
     "whatsapp": "A WhatsApp forward: four to six short sentences that read well on a phone (80-120 words).",
+    "instagram": "An Instagram caption: a strong first line that stops the scroll, then three to five short lines (60-120 words), and four to six hashtags on their own line at the end.",
 }
 _PLATFORM_ALIASES = {"twitter / x": "twitter", "x": "twitter"}
 
@@ -509,6 +510,45 @@ def _trim_to_limit(text: str, limit: int) -> str:
         return head[: ends[-1].end()].strip()
     cut = head.rsplit(" ", 1)[0].rstrip(" ,;:-")
     return cut + "…" if len(cut) < limit else cut[: limit - 1] + "…"
+
+
+def _is_reddit(platform: Optional[str]) -> bool:
+    return str(platform or "").strip().lower() == "reddit"
+
+
+# A hashtag in Latin script only: #SaveDemocracy, #Congress, #2026.
+_LATIN_HASHTAG = re.compile(r"(?<!\S)#[A-Za-z0-9_]+(?=\s|$)")
+
+
+def _is_hashtag_line(line: str) -> bool:
+    words = line.split()
+    return bool(words) and all(w.startswith("#") for w in words)
+
+
+def tidy_hashtags(text: str, platform: Optional[str], language: Optional[str]) -> str:
+    """
+    The post's hashtags as its platform and language want them.
+
+    Reddit takes none: hashtag lines go and inline tags lose their #. A Hindi
+    post keeps only Devanagari tags. The prompt asks for both, and the model
+    still mixed in #SaveDemocracy and #VoterRights.
+    """
+    if not text:
+        return text
+    if _is_reddit(platform):
+        lines = [ln for ln in text.split("\n") if not _is_hashtag_line(ln)]
+        # [^\s#]+, not \w+: \w stops at Devanagari vowel signs and the virama.
+        text = re.sub(r"(?<!\S)#([^\s#]+)", lambda m: m.group(1).replace("_", " "), "\n".join(lines))
+    elif str(language or "").lower().startswith("hi"):
+        lines = []
+        for ln in text.split("\n"):
+            if _is_hashtag_line(ln):
+                ln = re.sub(r"[ \t]{2,}", " ", _LATIN_HASHTAG.sub("", ln)).strip()
+                if not ln:
+                    continue
+            lines.append(ln)
+        text = "\n".join(lines)
+    return re.sub(r"\n{3,}", "\n\n", text).strip()
 
 
 def fit_to_platform(text: str, platform: Optional[str], shorten=None) -> str:
@@ -623,6 +663,16 @@ def generate_post(
             f"Stay under {char_limit} characters. Where content_length asks for more than "
             "fits, the limit wins and you write a shorter post - fewer points made "
             "properly, not the same points cut off. Never end mid-sentence.\n\n---\n\n"
+            + system_msg
+        )
+
+    # Reddit is a discussion thread, not a feed: hashtags there read as spam.
+    # tidy_hashtags removes any the model writes anyway.
+    if _is_reddit(profile.get("target_platform")):
+        system_msg = (
+            "PLATFORM FORMAT - Reddit: the headline line, then two to four short paragraphs "
+            "that make the case plainly, with the facts. No hashtags anywhere in a Reddit "
+            "post: leave the Hashtags section as N/A.\n\n---\n\n"
             + system_msg
         )
 
