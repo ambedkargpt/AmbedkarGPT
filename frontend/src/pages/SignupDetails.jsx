@@ -136,7 +136,7 @@ export default function SignupDetails() {
         }),
       });
       if (quick) {
-        const redirect = sessionStorage.getItem('auth_redirect') || '/dashboard';
+        const redirect = sessionStorage.getItem('auth_redirect') || '/generate/social-media';
         sessionStorage.removeItem('auth_redirect');
         curtainGo(redirect, { replace: true });
       } else {

@@ -132,8 +132,8 @@ export default function Otp() {
     try {
       const purpose = mode === 'signup' ? 'signup_verify' : 'login_verify';
       await verifyOtp(otp, identifier, type, purpose);
-      // A new account goes on to give its details; a login is done.
-      const dest = mode === 'signup' ? '/signup/details' : '/dashboard';
+      // A new account goes on to give its details; a login lands on the news.
+      const dest = mode === 'signup' ? '/signup/details' : '/generate/social-media';
       curtainGo(dest, { replace: true });
     } catch (err) {
       setOtpError(friendlyError(err));
