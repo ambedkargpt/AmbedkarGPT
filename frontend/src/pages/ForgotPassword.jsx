@@ -57,7 +57,7 @@ export default function ForgotPassword() {
     setLoading(true);
     try {
       await loginWithGoogle(tokenResponse.access_token);
-      const redirect = sessionStorage.getItem('auth_redirect') || '/dashboard';
+      const redirect = sessionStorage.getItem('auth_redirect') || '/generate/social-media';
       sessionStorage.removeItem('auth_redirect');
       curtainGo(redirect, { replace: true });
     } catch (err) {

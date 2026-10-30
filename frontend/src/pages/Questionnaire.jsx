@@ -136,7 +136,7 @@ export default function Questionnaire() {
   function leave() {
     if (leftRef.current) return;
     leftRef.current = true;
-    const redirect = sessionStorage.getItem('auth_redirect') || '/dashboard';
+    const redirect = sessionStorage.getItem('auth_redirect') || '/generate/social-media';
     sessionStorage.removeItem('auth_redirect');
     curtainGo(redirect, { replace: true });
   }
@@ -260,7 +260,7 @@ export default function Questionnaire() {
       saveProfileAnswers(currentUser.id, toSave).catch(() => {});
       clearPendingQuestions();
     }
-    const redirect = sessionStorage.getItem('auth_redirect') || '/dashboard';
+    const redirect = sessionStorage.getItem('auth_redirect') || '/generate/social-media';
     sessionStorage.removeItem('auth_redirect');
     navigate(redirect);
   }

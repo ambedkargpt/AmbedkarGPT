@@ -88,7 +88,7 @@ export default function Signup() {
       if (data?.is_new_user) {
         curtainGo('/signup/details', { replace: true });
       } else {
-        const redirect = sessionStorage.getItem('auth_redirect') || '/dashboard';
+        const redirect = sessionStorage.getItem('auth_redirect') || '/generate/social-media';
         sessionStorage.removeItem('auth_redirect');
         curtainGo(redirect, { replace: true });
       }

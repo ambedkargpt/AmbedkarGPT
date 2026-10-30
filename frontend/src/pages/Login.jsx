@@ -87,7 +87,7 @@ export default function Login() {
             },
           });
         } else {
-          const redirect = sessionStorage.getItem('auth_redirect') || '/dashboard';
+          const redirect = sessionStorage.getItem('auth_redirect') || '/generate/social-media';
           sessionStorage.removeItem('auth_redirect');
           curtainGo(redirect, { replace: true });
         }
@@ -111,7 +111,7 @@ export default function Login() {
         curtainGo('/signup/details?quick=1', { replace: true });
         return;
       }
-      const redirect = sessionStorage.getItem('auth_redirect') || '/dashboard';
+      const redirect = sessionStorage.getItem('auth_redirect') || '/generate/social-media';
       sessionStorage.removeItem('auth_redirect');
       curtainGo(redirect, { replace: true });
     } catch (err) {
