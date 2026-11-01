@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Globe, Loader2, RotateCw } from 'lucide-react';
 import AgMark from '../brand/AgMark';
@@ -9,7 +9,7 @@ import {
   Label, ProgramLine, SignalMeter, StatusLine, Transcript, VolumeControl,
 } from './deskParts.jsx';
 import { MUTED, RULE, SURFACE, airTime, istClock, mmss } from './radioTokens';
-import { STATIONS, loadStation } from '../../data/bhimRadio';
+import { STATIONS } from '../../data/bhimRadio';
 import { useI18n } from '../../i18n/index.jsx';
 
 // Station colours, the same ones the news page gives each party.
@@ -25,29 +25,19 @@ const STATION_LOGO = {
 };
 
 /**
- * Stories and minutes for every station, from each one's manifest. null while
- * loading, false when the station has no bulletin.
+ * Stories and minutes each party has in this bulletin. The bulletin deals the
+ * parties' stories in turns, so these are shares of one broadcast, not
+ * separate stations.
  */
-function useStationStats() {
-  const [stats, setStats] = useState({});
-  useEffect(() => {
-    let alive = true;
-    for (const { slug } of STATIONS) {
-      loadStation(slug)
-        .then((s) => {
-          if (!alive) return;
-          setStats((prev) => ({
-            ...prev,
-            [slug]: s && s.tracks?.length
-              ? { stories: s.tracks.length, minutes: Math.max(1, Math.round((s.durationSec || 0) / 60)) }
-              : false,
-          }));
-        })
-        .catch(() => { if (alive) setStats((prev) => ({ ...prev, [slug]: false })); });
-    }
-    return () => { alive = false; };
-  }, []);
-  return stats;
+function partyShares(tracks) {
+  const out = {};
+  for (const tr of tracks) {
+    const slug = STATION_COLOR[tr.tenant] ? tr.tenant : 'general';
+    const row = out[slug] ?? (out[slug] = { stories: 0, seconds: 0 });
+    row.stories += 1;
+    row.seconds += Math.max(0, (tr.endSec ?? tr.startSec) - tr.startSec);
+  }
+  return out;
 }
 
 function StationIcon({ slug, color }) {
@@ -81,22 +71,23 @@ function MiniEq({ color, moving }) {
 }
 
 /**
- * Bhim Radio's desk from lg up: stations on the left, the dial and what is on
- * air in the middle, the transcript and the running order on the right.
- * The station list stays when the chosen station has no bulletin, so the
- * listener can always switch back.
+ * Bhim Radio's desk from lg up: the parties in this bulletin on the left, the
+ * dial and what is on air in the middle, the transcript and the running order
+ * on the right. The bulletin mixes every party's stories, so the left column
+ * is not a picker: the party whose story is on air lights up, and the dial
+ * takes its colour.
  */
 export default function RadioDeskV2({
-  tenant, onStation, status, configured, onRetry, onBack, headline, clockLabel,
+  tracks, status, configured, onRetry, onBack, headline, clockLabel,
   now, story, storyIndex, total, offsetInStory, storyDuration, textOffset, textDuration,
   upcoming, listening, onTune, canTune, nextInSec, progress, volume, onVolume, cycleLength,
 }) {
   const { t, lang } = useI18n();
-  const stats = useStationStats();
-  const color = STATION_COLOR[tenant] ?? STATION_COLOR.general;
+  const shares = useMemo(() => partyShares(tracks), [tracks]);
+  const live = story ? (STATION_COLOR[story.tenant] ? story.tenant : 'general') : null;
+  const color = STATION_COLOR[live] ?? STATION_COLOR.general;
   const onAir = status === 'ready';
   const next = upcoming.find((u) => u.state === 'next');
-  const current = stats[tenant];
   const hiCaps = lang === 'hi' ? '' : 'uppercase tracking-[0.16em]';
 
   return (
@@ -151,49 +142,47 @@ export default function RadioDeskV2({
       <div className="grid min-h-0 flex-1 gap-5 pt-6 lg:grid-cols-[260px_minmax(0,1fr)_340px] xl:grid-cols-[300px_minmax(0,1fr)_420px] xl:gap-7">
         {/* Stations */}
         <aside className="flex min-w-0 flex-col gap-3">
-          <p className="text-[13px] text-[#8b94b8]">{t('radio.stations')}</p>
-          <div role="radiogroup" aria-label={t('radio.stations')} className="flex flex-col gap-3">
+          <p className="text-[13px] text-[#8b94b8]">{t('radio.v2.parties')}</p>
+          <ul className="flex flex-col gap-3">
             {STATIONS.map(({ slug, labelKey }) => {
               const c = STATION_COLOR[slug];
-              const st = stats[slug];
-              const on = slug === tenant;
-              const unavailable = st === false && !on;
+              const share = shares[slug];
+              const on = slug === live;
               return (
-                <button
+                <li
                   key={slug}
-                  type="button"
-                  role="radio"
-                  aria-checked={on}
-                  disabled={unavailable}
-                  onClick={() => onStation(slug)}
-                  className="flex h-[70px] items-center gap-3 rounded-2xl border px-3 text-left transition-[transform,background-color,border-color] duration-200 hover:translate-x-[3px] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-x-0 motion-reduce:hover:translate-x-0"
+                  aria-current={on ? 'true' : undefined}
+                  className="flex h-[70px] items-center gap-3 rounded-2xl border px-3 transition-[background-color,border-color,opacity] duration-300"
                   style={{
                     borderLeft: `3px solid ${c}`,
                     borderColor: on ? c : '#1b2350',
                     borderLeftColor: c,
-                    backgroundColor: on ? `${c}1f` : SURFACE,
+                    backgroundColor: on ? `${c}26` : SURFACE,
+                    boxShadow: on ? `0 0 24px ${c}33` : 'none',
+                    opacity: share ? 1 : 0.45,
                   }}
                 >
                   <StationIcon slug={slug} color={c} />
                   <span className="min-w-0">
                     <span className="block truncate font-hindi text-[15px] font-bold text-white">{t(labelKey)}</span>
                     <span className="block truncate text-[12px] text-[#8b94b8]">
-                      {st ? t('radio.v2.stationStats', { n: st.stories, m: st.minutes })
-                        : st === false ? t('radio.v2.soon') : '—'}
+                      {share
+                        ? t('radio.v2.stationStats', { n: share.stories, m: Math.max(1, Math.round(share.seconds / 60)) })
+                        : t('radio.v2.notToday')}
                     </span>
                   </span>
                   {on && <MiniEq color={c} moving={listening} />}
-                </button>
+                </li>
               );
             })}
-          </div>
+          </ul>
 
           <div className="mt-2 rounded-2xl border border-[#1b2350] p-4" style={{ backgroundColor: SURFACE }}>
             <p className="text-[13px] text-[#c7d1eb]">{t('radio.v2.today')}</p>
             <div className="mt-3 grid grid-cols-2 gap-2.5">
               {[
-                { v: current ? current.stories : (onAir ? total : '—'), k: 'radio.v2.stories' },
-                { v: current ? current.minutes : (onAir ? Math.max(1, Math.round(cycleLength / 60)) : '—'), k: 'radio.v2.minutes' },
+                { v: onAir ? total : '—', k: 'radio.v2.stories' },
+                { v: onAir ? Math.max(1, Math.round(cycleLength / 60)) : '—', k: 'radio.v2.minutes' },
               ].map((x) => (
                 <div key={x.k} className="rounded-xl bg-[#0a0e27] px-3 py-2.5">
                   <p className="font-count text-[22px] font-bold text-white">{x.v}</p>
@@ -262,7 +251,7 @@ export default function RadioDeskV2({
                     colour while this listener hears it: the broadcast does not
                     stop because nobody is listening. */}
                 <SignalMeter active={listening} live={canTune} bars={22} color={color} />
-                <StatusLine listening={listening} nextInSec={nextInSec} progress={progress} />
+                <StatusLine listening={listening} nextInSec={nextInSec} progress={progress} compact />
                 <VolumeControl volume={volume} onChange={onVolume} listening={listening} disabled={!canTune} color={color} />
               </div>
             </>
@@ -276,8 +265,8 @@ export default function RadioDeskV2({
               <Label>{t('radio.transcript')}</Label>
               <span className="text-[11.5px] text-[#8b94b8]">{t('radio.v2.follows')}</span>
             </div>
-            <div className="max-h-[26vh] overflow-y-auto">
-              {onAir && <Transcript text={story?.text} offsetSec={textOffset} durationSec={textDuration} listening={listening} size={17} />}
+            <div data-transcript-scroll className="relative max-h-[26vh] overflow-y-auto">
+              {onAir && <Transcript text={story?.text} offsetSec={textOffset} durationSec={textDuration} listening={listening} size={17} follow />}
             </div>
           </div>
 
@@ -294,6 +283,7 @@ export default function RadioDeskV2({
                   style={{ backgroundColor: state === 'onair' ? `${color}14` : 'transparent' }}
                 >
                   {state === 'onair' && <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px]" style={{ backgroundColor: color }} />}
+                  <span aria-hidden="true" className="absolute left-2 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full" style={{ backgroundColor: STATION_COLOR[track.tenant] ?? STATION_COLOR.general }} />
                   <span className="font-count text-[12px] tabular-nums" style={{ color: state === 'aired' ? '#5a6789' : '#8fb6ff' }}>{istClock(at)}</span>
                   <span lang="hi" title={track.title} className="truncate font-hindi text-[13.5px]" style={{ color: state === 'aired' ? '#5a6789' : '#e5e7eb' }}>
                     {track.title}

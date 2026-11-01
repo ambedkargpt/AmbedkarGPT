@@ -79,7 +79,7 @@ export function AnchorTag() {
  * re-syncs at every story boundary. Good enough to follow, and honest about it
  * by never claiming a word is exact.
  */
-export function Transcript({ text, offsetSec, durationSec, listening, size = 23 }) {
+export function Transcript({ text, offsetSec, durationSec, listening, size = 23, follow = false }) {
   const { t } = useI18n();
   const words = String(text || '').split(/\s+/).filter(Boolean);
   const paraRef = useRef(null);
@@ -104,6 +104,10 @@ export function Transcript({ text, offsetSec, durationSec, listening, size = 23 
     const weights = words.map((w) => w.length + 1);
     const total = weights.reduce((x, y) => x + y, 0);
     const spans = para.children;
+    // In a box that scrolls, the word being said is kept in view: a third of
+    // the way down, so what comes next is visible below it.
+    const box = follow ? para.closest('[data-transcript-scroll]') : null;
+    let shown = -2;
     let frame = 0;
 
     function paint() {
@@ -129,11 +133,16 @@ export function Transcript({ text, offsetSec, durationSec, listening, size = 23 
       if (current >= 0 && current < spans.length) {
         spans[current].style.setProperty('--p', `${reduced ? 100 : Math.round(within * 100)}%`);
       }
+      if (box && current !== shown && current >= 0 && current < spans.length) {
+        shown = current;
+        const top = spans[current].offsetTop - para.offsetTop - box.clientHeight / 3;
+        box.scrollTo({ top: Math.max(0, top), behavior: reduced ? 'auto' : 'smooth' });
+      }
       frame = requestAnimationFrame(paint);
     }
     paint();
     return () => cancelAnimationFrame(frame);
-  }, [text, durationSec]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [text, durationSec, follow]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!words.length) return null;
 
@@ -295,7 +304,7 @@ export function VolumeControl({ volume, onChange, listening, disabled, color = A
 
 /* ── status line ──────────────────────────────────────────────────────────── */
 
-export function StatusLine({ listening, nextInSec, progress }) {
+export function StatusLine({ listening, nextInSec, progress, compact = false }) {
   const { t } = useI18n();
   return (
     <div style={{ minWidth: 0, flex: 1 }}>
@@ -305,12 +314,17 @@ export function StatusLine({ listening, nextInSec, progress }) {
           gap: 16, marginBottom: 8,
         }}
       >
-        <span style={{ fontSize: 15, color: listening ? INK : MUTED }}>
+        <span
+          style={{
+            fontSize: compact ? 13 : 15, color: listening ? INK : MUTED,
+            ...(compact ? { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {}),
+          }}
+        >
           {listening ? t('radio.listeningLive') : t('radio.runningTuneIn')}
         </span>
         <span
           style={{
-            font: '500 14px/1 ui-monospace, monospace',
+            font: `500 ${compact ? 12.5 : 14}px/1 ui-monospace, monospace`,
             color: MUTED, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
           }}
         >

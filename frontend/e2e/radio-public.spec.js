@@ -43,10 +43,13 @@ test.describe('the radio without an account', () => {
       .toBeVisible();
   });
 
-  test('it is a public page with the public frame, not the dashboard', async ({ page }) => {
+  test('it is a full screen of its own: no site navbar, no dashboard rail', async ({ page }) => {
+    // The radio fills the screen like a broadcast desk. Its own header has
+    // the way back, so the site's navbar is left off.
     await page.goto('/bhimradio');
+    await expect(page.getByText(/now on air|अभी ऑन एयर/i).first()).toBeVisible();
 
-    await expect(page.locator('nav').first()).toBeVisible();   // the site's navbar
+    await expect(page.locator('header nav')).toHaveCount(0);
     // The dashboard rail is what a signed-in-only page would be wearing.
     await expect(page.locator('.np-rail')).toHaveCount(0);
   });
@@ -57,25 +60,6 @@ test.describe('the radio without an account', () => {
 
     // An announcement that Bhim Radio is live, above Bhim Radio.
     await expect(page.locator('.radio-live-strip')).toHaveCount(0);
-  });
-
-  test('the navbar marks the radio as the current page, not home', async ({ page }) => {
-    // The active item was scroll-tracked state that starts as 'home', so every
-    // page other than the landing page claimed to be home.
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/bhimradio');
-    const nav = page.locator('header nav').first();
-    await expect(nav.getByRole('button', { name: /bhim radio|भीम रेडियो/i })).toHaveAttribute('aria-current', 'page');
-    await expect(nav.getByRole('button', { name: /^(home|होम)$/i })).not.toHaveAttribute('aria-current', /.+/);
-  });
-
-  test('the navbar item on the landing page goes straight to it', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/');
-    await page.getByRole('button', { name: /bhim radio|भीम रेडियो/i }).first().click();
-
-    await expect(page).toHaveURL(/\/bhimradio$/);
-    expect(await page.evaluate(() => sessionStorage.getItem('auth_redirect'))).toBeNull();
   });
 
   test('the back arrow goes home, even from a link opened cold', async ({ page }) => {

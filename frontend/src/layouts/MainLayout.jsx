@@ -14,7 +14,7 @@ const PINNED_PAD = ['md:pt-20', 'md:pt-[128px]'];
  * promoted - the radio - has no use for a bar announcing it.
  * The news crawl stays: it is content, not promotion.
  */
-export default function MainLayout({ children, bare = false }) {
+export default function MainLayout({ children, bare = false, noNav = false }) {
   const [radioStripVisible, setRadioStripVisible] = useState(true);
   const { pathname, hash } = useLocation();
   // Not on the landing page: a visitor being told what the product is should
@@ -49,7 +49,8 @@ export default function MainLayout({ children, bare = false }) {
         CSS spec: overflow != visible on an ancestor creates a containing block
         for fixed descendants — keeping them outside avoids that trap.
       */}
-      <Navbar />
+      {/* The radio is a full screen of its own, with its own way back. */}
+      {!noNav && <Navbar />}
       {/* Film grain over the whole page. Barely visible on its own; it stops
           the large flat navy areas from banding and gives the dark ground a
           printed texture. */}
@@ -58,7 +59,7 @@ export default function MainLayout({ children, bare = false }) {
           from md. The strip can be dismissed, so the offset follows it rather
           than being hard-coded: a fixed one left a 48px gap under the navbar. */}
       <main
-        className={`relative min-h-screen overflow-x-hidden bg-[#05081a] pt-[72px] text-white transition-all duration-300 ${PINNED_PAD[Number(showStrips && radioStripVisible)]} ${showTicker ? 'pb-[var(--ticker-h,0px)]' : ''}`}
+        className={`relative min-h-screen overflow-x-hidden bg-[#05081a] text-white transition-all duration-300 ${noNav ? '' : `pt-[72px] ${PINNED_PAD[Number(showStrips && radioStripVisible)]}`} ${showTicker ? 'pb-[var(--ticker-h,0px)]' : ''}`}
       >
         {/* In the flow on a phone, pinned from md.
             A strip's sentence needs three lines at 360px, and pinned under

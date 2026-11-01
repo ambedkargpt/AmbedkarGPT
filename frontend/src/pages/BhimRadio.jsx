@@ -93,7 +93,6 @@ export default function BhimRadioPage() {
   const { currentUser } = useAuth();
   const {
     primeStation, configured,
-    tenant, setTenant,
     station, status, retry,
     tracks, segments, broadcastNow,
     playing, play, pause, toggle,
@@ -288,8 +287,7 @@ export default function BhimRadioPage() {
           <RadioDeskV2
             {...shared}
             upcoming={upcoming}
-            tenant={tenant}
-            onStation={setTenant}
+            tracks={tracks}
             status={onAir ? 'ready' : status}
             configured={configured}
             onRetry={retry}
