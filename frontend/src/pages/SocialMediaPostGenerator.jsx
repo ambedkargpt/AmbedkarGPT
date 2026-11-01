@@ -26,11 +26,10 @@ import { parsePost, hashtagsText } from '../utils/parsePost';
 import Spinner from '../components/Spinner';
 import { useI18n } from '../i18n/index.jsx';
 import SpeakButton from '../components/generate/SpeakButton';
-import { partyLabel, toneLabel } from '../utils/displayLabel';
+import { partyLabel } from '../utils/displayLabel';
 import { partyLogo } from '../utils/politicalParties';
 import { trackEvent } from '../analytics/metrics';
 
-const TONES = ['Professional', 'Inspirational', 'Creative', 'Casual', 'Motivational'];
 const CATEGORIES = ['All', 'Legacy', 'Policy', 'Education', 'Research', 'Grassroots'];
 
 function useCountdown(resetAt) {
@@ -56,26 +55,28 @@ const PLATFORMS = [
   // Reddit's self-post body limit really is 40,000 — the counter says so
   // rather than a rounder number that would be a guess.
   { id: 'reddit',    label: 'Reddit',        short: 'r/',  limit: 40000, color: '#ff4500' },
-  { id: 'whatsapp',  label: 'WhatsApp',      short: 'WA',  limit: 5000, color: '#25d366' },
-  // Instagram's caption limit. It has no web composer, so publishing copies
-  // the caption and opens Instagram.
-  { id: 'instagram', label: 'Instagram',     short: 'IG',  limit: 2200, color: '#e1306c' },
+  // WhatsApp and Facebook accept far more than anyone writes (65,536 and
+  // 63,206 characters); the length the post aims for is set on the server.
+  { id: 'whatsapp',  label: 'WhatsApp',      short: 'WA',  limit: 65536, color: '#25d366' },
+  { id: 'facebook',  label: 'Facebook',      short: 'f',   limit: 63206, color: '#1877f2' },
 ];
 
 /**
  * Where "Post to …" opens, with the text exactly as shown (as on rssgpt).
  * Reddit takes the first line, the headline, as its title (300 characters at
- * most) and the rest as the body. Instagram has no web composer: null.
+ * most) and the rest as the body. Facebook lets no site fill in a post, so
+ * its text is copied (`copy`) and Facebook opens to paste it.
  */
-function shareUrl(platform, text) {
+function shareTarget(platform, text) {
   const enc = encodeURIComponent;
-  if (platform === 'twitter') return `https://twitter.com/intent/tweet?text=${enc(text)}`;
-  if (platform === 'whatsapp') return `https://wa.me/?text=${enc(text)}`;
+  if (platform === 'twitter') return { url: `https://twitter.com/intent/tweet?text=${enc(text)}` };
+  if (platform === 'whatsapp') return { url: `https://wa.me/?text=${enc(text)}` };
   if (platform === 'reddit') {
     const [first = '', ...rest] = text.trim().split('\n');
-    return `https://www.reddit.com/submit?type=TEXT&title=${enc(first.trim().slice(0, 300))}&text=${enc(rest.join('\n').trim())}`;
+    return { url: `https://www.reddit.com/submit?type=TEXT&title=${enc(first.trim().slice(0, 300))}&text=${enc(rest.join('\n').trim())}` };
   }
-  return null;
+  if (platform === 'facebook') return { url: 'https://www.facebook.com/', copy: true };
+  return { url: null, copy: true };
 }
 
 
@@ -281,7 +282,6 @@ export default function SocialMediaPostGenerator() {
   const [articles,        setArticles]        = useState([]);
   const [newsLoading,     setNewsLoading]     = useState(true);
   const [newsError,       setNewsError]       = useState(false);
-  const [tone,            setTone]           = useState('Professional');
   const [search,          setSearch]          = useState('');
   const [activeFilter,    setActiveFilter]    = useState('All');
   const [dateFilter,      setDateFilter]      = useState('all');
@@ -289,9 +289,8 @@ export default function SocialMediaPostGenerator() {
   const [page,            setPage]            = useState(1);
   const [tenants,         setTenants]         = useState([]);
   const [newsSection,     setNewsSection]     = useState('party'); // 'party' | 'opposition' | 'general'
-  const [toneOpen,        setToneOpen]        = useState(false);   // phones: the tone row starts closed
   const [sharing,         setSharing]         = useState(false);  // a share is marking the post published
-  const [shareMsg,        setShareMsg]        = useState('');     // "paste it in Instagram", or why the share failed
+  const [shareMsg,        setShareMsg]        = useState('');     // "paste it in Facebook", or why the share failed
   const [articleOpen,     setArticleOpen]     = useState(false);   // phones: the article starts as a preview
   const [filterOpen,      setFilterOpen]      = useState(false);
   const [view,            setView]            = useState('feed'); // 'feed' | 'preview' | 'generated'
@@ -743,7 +742,6 @@ export default function SocialMediaPostGenerator() {
       const response = await generatePostForNews({
         userId: currentUser.id,
         newsId: selectedArticle._backendId,
-        tone,
         language: siteLang,
         profileOverrides: { ...preferences, target_platform: platformObj?.label ?? platform },
       });
@@ -751,7 +749,7 @@ export default function SocialMediaPostGenerator() {
       if (!content.trim()) throw new Error('empty_content');
       // After the content check, not before: a response that came back empty
       // is a failure, and counting it would flatter the numbers.
-      trackEvent('generate_post', { platform, tone, language: siteLang });
+      trackEvent('generate_post', { platform, language: siteLang });
       setGeneratedPost(content);
       setPostFailed(false);
       setSelectedPostId(response?.post?.id || null);
@@ -906,13 +904,13 @@ export default function SocialMediaPostGenerator() {
   // showing. The tab is opened before the publish call, while the click still
   // counts as one, or the browser blocks it as a popup; it is pointed at the
   // platform once the post is marked published, and closed if that is refused
-  // (the daily limit). Instagram has no web composer, so its caption is copied.
+  // (the daily limit). Facebook lets no site fill in a post, so its text is copied.
   async function handlePublish() {
     if (!selectedPostId || sharing) return;
     const text = showTranslated && translatedPost ? translatedPost : generatedPost;
-    const url = shareUrl(platform, text);
+    const { url, copy } = shareTarget(platform, text);
     setShareMsg('');
-    if (!url) {
+    if (copy) {
       await navigator.clipboard?.writeText(text).catch(() => {});
       setShareMsg(t('gen.pasteIn', { platform: activePlatform.label }));
     }
@@ -1093,32 +1091,8 @@ export default function SocialMediaPostGenerator() {
           </div>
         </div>
 
-        {/* Select tone */}
-        <div className="flex-1 px-4 pb-2 pt-5">
-          <div className="rounded-2xl border border-[#1e2636]/80 bg-[#0e1320] p-4">
-            <p className="mb-3 text-[13px] font-semibold text-white">{t('gen.selectToneLabel')}</p>
-            <div className="space-y-2">
-              {TONES.map((tn) => {
-                const active = tone === tn;
-                return (
-                  <button
-                    key={tn}
-                    type="button"
-                    onClick={() => setTone(tn)}
-                    className="w-full rounded-lg border py-2.5 text-center text-[12.5px] font-medium transition"
-                    style={{
-                      borderColor: active ? '#3f9fff' : 'rgba(30,38,54,0.8)',
-                      backgroundColor: active ? 'rgba(63,159,255,0.12)' : '#0b0f18',
-                      color: active ? '#6aa8ff' : '#8b93a5',
-                    }}
-                  >
-                    {toneLabel(tn, lang)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        {/* Keeps the version line at the foot of the sidebar. */}
+        <div className="flex-1" />
 
         <div className="px-6 py-5 text-[11px] font-count text-[#4e5a80] tracking-wide">
           v1.0 · AmbedkarGPT
@@ -1236,39 +1210,6 @@ export default function SocialMediaPostGenerator() {
             )}
           </div>
         </header>
-
-        {/* ── Mobile tone selector (left sidebar is hidden on mobile) ── */}
-        <div className="mb-3 px-4 lg:hidden sm:px-6 md:px-8">
-          {/* Collapsed to the tone in force. Open, it is the same chip row as
-              before; closed it is one line, so a control most visits never
-              touch no longer stands between the filters and the headlines. */}
-          <button
-            type="button"
-            onClick={() => setToneOpen((o) => !o)}
-            aria-expanded={toneOpen}
-            className="inline-flex h-9 items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0a1130]/60 px-3.5 text-[12px] font-medium text-[#8b94b8] transition hover:border-[#3a6bc4]/60 hover:text-white"
-          >
-            <span className="text-[10.5px] font-semibold uppercase tracking-[0.12em] text-[#6aa8ff]">{t('gen.tone')}</span>
-            <span className="text-white">{toneLabel(tone, lang)}</span>
-            <ChevronDown size={13} strokeWidth={2} className={`transition-transform duration-200 ${toneOpen ? 'rotate-180' : ''}`} />
-          </button>
-          <ScrollRow className={`-mx-4 gap-2 px-4 sm:-mx-6 sm:px-6 md:-mx-8 md:px-8 ${toneOpen ? 'mt-2' : 'hidden'}`}>
-            {TONES.map((tn) => (
-              <button
-                key={tn}
-                type="button"
-                onClick={() => setTone(tn)}
-                className={`h-9 shrink-0 whitespace-nowrap rounded-full border px-4 text-[12.5px] font-medium transition ${
-                  tone === tn
-                    ? 'border-[#3f9fff]/60 bg-[#0d1a3a] text-[#3f9fff]'
-                    : 'border-[#1e3260]/60 bg-[#0a1130]/60 text-[#6b78a0] hover:text-white'
-                }`}
-              >
-                {toneLabel(tn, lang)}
-              </button>
-            ))}
-          </ScrollRow>
-        </div>
 
         {/* ── Feed view ── */}
         {view === 'feed' && (

@@ -111,15 +111,22 @@ def ensure_phase3_indexes() -> None:
         name="idx_posts_user_published_status",
         partialFilterExpression={"status": "published"},
     )
-    # One generated post per user per story per day. Unique rather than a read
-    # before the write, so two requests arriving together cannot both pass the
-    # check and insert. Partial on origin: posts written before this rule have
-    # no origin field, so they are outside the index and never collide.
+    # A story could once be written once a day. It can now be written five
+    # times in all, so the old one-a-day index has to go or it would refuse the
+    # second post.
+    try:
+        posts.drop_index("uq_posts_user_news_day")
+    except OperationFailure:
+        pass
+    # Five generated posts per user per story: each takes a slot from 1 to 5.
+    # Unique rather than a read before the write, so two requests arriving
+    # together cannot both take the last slot. Partial on the slot: posts
+    # written before this rule have none, so they never collide.
     _safe_create_index(posts,
-        [("user_id", ASCENDING), ("news_id", ASCENDING), ("created_day", ASCENDING)],
-        name="uq_posts_user_news_day",
+        [("user_id", ASCENDING), ("news_id", ASCENDING), ("story_slot", ASCENDING)],
+        name="uq_posts_user_news_slot",
         unique=True,
-        partialFilterExpression={"origin": "generate"},
+        partialFilterExpression={"origin": "generate", "story_slot": {"$exists": True}},
     )
     # Backs the all-time settings check. Not unique: the only way two posts
     # could race onto one fingerprint is within a single day, which the index

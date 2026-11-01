@@ -57,6 +57,8 @@ _RESEARCH_CACHE: dict[str, dict[str, ClaimFinding]] = {}
 # Devanagari-only editorial standard the news pipeline enforces, and switching
 # the interface to English silently produced English posts.
 POST_OUTPUT_LANGUAGE = "hi"
+# How many posts one user can generate from one story, in all.
+MAX_POSTS_PER_STORY = 5
 
 
 def _apply_platform_length(profile: dict[str, Any]) -> None:
@@ -326,13 +328,9 @@ class PostsService:
         # on origin "generate", so skipping the check alone would still leave
         # the insert to be refused by the index.
         unrestricted = self._is_test_account(user_id)
+        story_slot = None
         if not unrestricted:
-            self._refuse_duplicate_generation(
-                user_id=user_id,
-                news_id=news_id,
-                created_day=created_day,
-                fingerprint=fingerprint,
-            )
+            story_slot = self._next_story_slot(user_id, news_id)
 
         tenant = article.get("tenant_slug") or "general"
         embedder, store, context_by_title = self._rag_stack(tenant)
@@ -420,12 +418,19 @@ class PostsService:
                     "origin": "test" if unrestricted else "generate",
                     "created_day": created_day,
                     "fingerprint": fingerprint,
+                    "story_slot": story_slot,
                 }
             )
         except DuplicateKeyError:
-            # A second request for the same story got here first while this one
-            # was with the model. The index is the arbiter, not the check above.
-            raise self._duplicate_day_error(created_day)
+            # Another request for the same story took this slot while this one
+            # was with the model. The index is the arbiter, not the count above.
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "error": "story_busy",
+                    "message": "Another post for this story was being written at the same time. Please try again.",
+                },
+            )
         return PostGenerateResponse(
             post=self._to_response(doc),
             references=references,
@@ -450,52 +455,25 @@ class PostsService:
             return False
         return bool((user or {}).get("is_test_account"))
 
-    def _refuse_duplicate_generation(
-        self, *, user_id: str, news_id: str, created_day: str, fingerprint: str
-    ) -> None:
+    def _next_story_slot(self, user_id: str, news_id: str) -> int:
         """
-        The two rules that limit how often one story can be written.
-
-        Checked in this order because the messages are not equally useful: a
-        user who has already written this story today can do nothing about it
-        except come back tomorrow, so telling them to change a setting first
-        would send them to fiddle with preferences that will not help.
+        Which of the story's five posts the next one is (1-5), or a 409 when
+        all five are written. The settings no longer have to differ: the same
+        settings write a different post each time.
         """
-        if self.repo.find_same_day(user_id, news_id, created_day):
-            raise self._duplicate_day_error(created_day)
-
-        existing = self.repo.find_by_fingerprint(user_id, news_id, fingerprint)
-        if existing:
+        written = self.repo.count_for_story(user_id, news_id)
+        if written >= MAX_POSTS_PER_STORY:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail={
-                    "error": "duplicate_settings",
+                    "error": "story_limit",
                     "message": (
-                        "You have already written this story with these exact "
-                        "settings. Change your tone, platform or any preference "
-                        "to write a different post."
+                        f"You have already written {MAX_POSTS_PER_STORY} posts for this "
+                        "story. Pick another story."
                     ),
-                    "existing_post_id": str(existing["_id"]),
-                    "existing_created_day": existing.get("created_day"),
                 },
             )
-
-    def _duplicate_day_error(self, created_day: str) -> HTTPException:
-        next_midnight = (datetime.now(timezone.utc) + timedelta(days=1)).replace(
-            hour=0, minute=0, second=0, microsecond=0
-        )
-        return HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "error": "duplicate_news_today",
-                "message": (
-                    "You have already created a post for this story today. "
-                    "Pick another story, or come back tomorrow."
-                ),
-                "created_day": created_day,
-                "reset_at": next_midnight.isoformat(),
-            },
-        )
+        return written + 1
 
     def regenerate_from_snapshot(
         self,
