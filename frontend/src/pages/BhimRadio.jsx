@@ -76,7 +76,11 @@ function useWide() {
   return wide;
 }
 
+// The tape layout is kept for local comparison only; listeners get the desk.
+const TAPE_AVAILABLE = import.meta.env.DEV;
+
 function readLayout() {
+  if (!TAPE_AVAILABLE) return 'desk';
   // Per-viewer convenience. Blocked site data throws rather than returning
   // null, and a storage failure must not be why the page will not render.
   try {
@@ -243,7 +247,7 @@ export default function BhimRadioPage() {
               <span>{t('radio.home')}</span>
             </Link>
           )}
-          {['desk', 'tape'].map((id) => (
+          {TAPE_AVAILABLE && ['desk', 'tape'].map((id) => (
             <button
               key={id}
               type="button"

@@ -266,7 +266,7 @@ export function TuneButton({ listening, onClick, disabled, width = 220, height =
 
 /* ── volume ───────────────────────────────────────────────────────────────── */
 
-export function VolumeControl({ volume, onChange, listening, disabled, color = ACCENT }) {
+export function VolumeControl({ volume, onChange, listening, disabled, color = ACCENT, compact = false }) {
   const { t } = useI18n();
   const pct = `${Math.round(volume * 100)}%`;
   return (
@@ -277,7 +277,7 @@ export function VolumeControl({ volume, onChange, listening, disabled, color = A
         minWidth: 0,
       }}
     >
-      <Label>{t('radio.volume')}</Label>
+      {!compact && <Label>{t('radio.volume')}</Label>}
       <input
         type="range"
         min={0} max={1} step={0.01}
@@ -292,7 +292,7 @@ export function VolumeControl({ volume, onChange, listening, disabled, color = A
       />
       <span
         style={{
-          font: '500 14px/1 ui-monospace, monospace',
+          font: compact ? '500 13.5px/1 Inter, system-ui, sans-serif' : '500 14px/1 ui-monospace, monospace',
           color: MUTED, fontVariantNumeric: 'tabular-nums', minWidth: 34,
         }}
       >
@@ -316,7 +316,7 @@ export function StatusLine({ listening, nextInSec, progress, compact = false }) 
       >
         <span
           style={{
-            fontSize: compact ? 13 : 15, color: listening ? INK : MUTED,
+            fontSize: compact ? 14.5 : 15, color: listening ? INK : MUTED,
             ...(compact ? { minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {}),
           }}
         >
@@ -324,7 +324,7 @@ export function StatusLine({ listening, nextInSec, progress, compact = false }) 
         </span>
         <span
           style={{
-            font: `500 ${compact ? 12.5 : 14}px/1 ui-monospace, monospace`,
+            font: compact ? '500 14px/1 Inter, system-ui, sans-serif' : '500 14px/1 ui-monospace, monospace',
             color: MUTED, fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
           }}
         >
