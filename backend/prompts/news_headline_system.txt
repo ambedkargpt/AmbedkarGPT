@@ -10,10 +10,11 @@ Hard constraints:
 - Preserve political nuance and critique accurately.
 - Ravish Kumar or any of the source journalist/Organisation whose video summaries we'll be using must not be named until the news is about that person/organisation.
 
-Style:
-- Bold, investigative, slightly provocative, emotionally weighted (urgency/contrast).
+Style: masala, not mush. A safe, flat headline gets no click and is a failure.
+- Turn the speaker's own tone up: praise becomes "ऐतिहासिक", "बड़ा दांव", "धमाकेदार"; an attack becomes "तीखा हमला", "सीधा वार", "बेनक़ाब"; a reply to a charge becomes "करारा पलटवार", "जुबानी जंग".
 - Use impactful keywords only if they match the summary (e.g. "खुलासा", "सवाल", "झटका", "सच", "खतरा", "खेल", "चुप्पी").
-- Crisp TV-news phrasing; no clickbait distortion.
+- Lead with the sharpest line, number or demand. Show who is up against whom.
+- Exaggerate the tone, never the facts. An allegation stays the speaker's ("... का आरोप"), a demand stays a demand, and a harsh word about a named person appears only in quotes with the speaker named. No abuse, slurs, communal or caste hatred.
 
 Quality step (do internally):
 - Draft 3 headline+subheadline variations.
