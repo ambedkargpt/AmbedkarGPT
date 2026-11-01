@@ -438,7 +438,8 @@ _PLATFORM_CHAR_LIMITS = {
     "x": 280,
     "instagram": 2200,
     "reddit": 40000,
-    "whatsapp": 5000,
+    "whatsapp": 65536,
+    "facebook": 63206,
     "linkedin": 3000,
 }
 
@@ -467,7 +468,7 @@ _PLATFORM_LENGTHS = {
     "twitter": "One tweet: at most 280 characters in total, hashtags and line breaks included (max 45 words). One sharp point with one fact, at most two hashtags.",
     "reddit": "A Reddit post: a headline line, then two to four short paragraphs that make the case plainly with the facts (150-250 words).",
     "whatsapp": "A WhatsApp forward: four to six short sentences that read well on a phone (80-120 words).",
-    "instagram": "An Instagram caption: a strong first line that stops the scroll, then three to five short lines (60-120 words), and four to six hashtags on their own line at the end.",
+    "facebook": "A Facebook post: a strong first line, then two or three short paragraphs that make the case with the facts (100-180 words), and two or three hashtags at the end.",
 }
 _PLATFORM_ALIASES = {"twitter / x": "twitter", "x": "twitter"}
 

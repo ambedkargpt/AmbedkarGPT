@@ -47,6 +47,11 @@ class PostsRepository:
         if origin:
             doc["origin"] = origin
             doc["created_day"] = payload.get("created_day") or today_day_key()
+        # Which of the story's five posts this is (1-5). A unique index on it
+        # keeps two requests arriving together from both taking the last one.
+        story_slot = payload.get("story_slot")
+        if story_slot:
+            doc["story_slot"] = story_slot
         fingerprint = payload.get("fingerprint")
         if fingerprint:
             # An array, appended to on refine and never rewritten: the refined
@@ -57,28 +62,10 @@ class PostsRepository:
         doc["_id"] = result.inserted_id
         return doc
 
-    def find_same_day(self, user_id: str, news_id: str, created_day: str) -> Optional[dict]:
-        """An existing generated post for this story on this day, if any."""
-        return self.collection.find_one(
-            {
-                "user_id": ObjectId(user_id),
-                "news_id": ObjectId(news_id),
-                "created_day": created_day,
-                "origin": "generate",
-            },
-            {"_id": 1, "created_at": 1, "status": 1},
-        )
-
-    def find_by_fingerprint(self, user_id: str, news_id: str, fingerprint: str) -> Optional[dict]:
-        """Any earlier post for this story generated from these exact settings."""
-        return self.collection.find_one(
-            {
-                "user_id": ObjectId(user_id),
-                "news_id": ObjectId(news_id),
-                "fingerprints": fingerprint,
-                "origin": "generate",
-            },
-            {"_id": 1, "created_at": 1, "created_day": 1, "status": 1},
+    def count_for_story(self, user_id: str, news_id: str) -> int:
+        """How many posts this user has generated from this story."""
+        return self.collection.count_documents(
+            {"user_id": ObjectId(user_id), "news_id": ObjectId(news_id), "origin": "generate"}
         )
 
     def refine_in_place(
