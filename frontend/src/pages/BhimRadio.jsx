@@ -5,6 +5,7 @@ import { ArrowLeft, Loader2, RotateCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useRadio } from '../context/RadioContext';
 import RadioDesk from '../components/radio/RadioDesk';
+import RadioDeskV2 from '../components/radio/RadioDeskV2';
 import RadioMobile from '../components/radio/RadioMobile';
 import RadioTape from '../components/radio/RadioTape';
 import { INK, MUTED, RULE, SURFACE, mmss } from '../components/radio/radioTokens';
@@ -59,6 +60,22 @@ function usePhone() {
   return phone;
 }
 
+// From here up the desk is the v2 layout: stations, dial, running order. The
+// older desk stays for tablets, between the phone layout and this.
+const WIDE_QUERY = '(min-width: 1024px)';
+
+function useWide() {
+  const [wide, setWide] = useState(() => window.matchMedia?.(WIDE_QUERY).matches ?? false);
+  useEffect(() => {
+    const mq = window.matchMedia?.(WIDE_QUERY);
+    if (!mq) return undefined;
+    const onChange = () => setWide(mq.matches);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, []);
+  return wide;
+}
+
 function readLayout() {
   // Per-viewer convenience. Blocked site data throws rather than returning
   // null, and a storage failure must not be why the page will not render.
@@ -76,6 +93,7 @@ export default function BhimRadioPage() {
   const { currentUser } = useAuth();
   const {
     primeStation, configured,
+    tenant, setTenant,
     station, status, retry,
     tracks, segments, broadcastNow,
     playing, play, pause, toggle,
@@ -86,6 +104,8 @@ export default function BhimRadioPage() {
 
   const [layout, setLayout] = useState(readLayout);
   const phone = usePhone();
+  const wide = useWide();
+  const v2 = layout === 'desk' && wide;
   // Open from the start locally: the panel is what the flag is for.
   const [showDemo, setShowDemo] = useState(LOCAL_DEMO);
   const [now, setNow] = useState(() => new Date());
@@ -200,7 +220,7 @@ export default function BhimRadioPage() {
           standalone page the station sat on the public layout's flat navy,
           which read as an empty room. Full-bleed, static, behind the desk. */}
       <div className={STANDALONE ? 'bhim-ground' : undefined}>
-      <div className="bhim-station">
+      <div className={`bhim-station ${v2 ? 'bhim-station-v2' : ''}`}>
 
         {/* ── layout toggle ──
             Both layouts ship so they can be compared in production before one
@@ -211,7 +231,7 @@ export default function BhimRadioPage() {
               opened from WhatsApp has no page before it in the app (the
               router's first entry has the key "default"), so that one goes
               home instead of out of the site. */}
-          {STANDALONE && (
+          {STANDALONE && !v2 && (
             <Link
               to="/"
               className="bhim-back"
@@ -245,7 +265,7 @@ export default function BhimRadioPage() {
           ))}
 
           {/* The message and the link, to whichever app - see radioShare.js. */}
-          {STANDALONE && <ShareMenu headline={story?.title} className="bhim-share" />}
+          {STANDALONE && !v2 && <ShareMenu headline={story?.title} className="bhim-share" />}
 
           {isDemo && onAir && (
             <button
@@ -264,7 +284,22 @@ export default function BhimRadioPage() {
         </div>
 
         {/* ── what is on, or why it is not ── */}
-        {!onAir ? (
+        {v2 ? (
+          <RadioDeskV2
+            {...shared}
+            upcoming={upcoming}
+            tenant={tenant}
+            onStation={setTenant}
+            status={onAir ? 'ready' : status}
+            configured={configured}
+            onRetry={retry}
+            onBack={(e) => { if (location.key !== 'default') { e.preventDefault(); navigate(-1); } }}
+            headline={story?.title}
+            clockLabel={new Intl.DateTimeFormat('en-IN', {
+              timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false,
+            }).format(now)}
+          />
+        ) : !onAir ? (
           <div style={{ padding: '48px 0', color: MUTED, display: 'flex', alignItems: 'center', gap: 10 }}>
             {(status === 'idle' || status === 'loading') && (
               <><Loader2 size={16} className="animate-spin" />{t('radio.loading')}</>
@@ -407,6 +442,7 @@ export default function BhimRadioPage() {
           flex-direction: column;
         }
         @media (min-width: 768px) { .bhim-station { padding-inline: 32px; } }
+        .bhim-station-v2 { max-width: 1440px; padding-block: 8px 24px; }
         .bhim-back {
           display: inline-flex; align-items: center; gap: 8px;
           margin-right: 8px; padding: 6px 14px 6px 10px;

@@ -192,7 +192,7 @@ export function Transcript({ text, offsetSec, durationSec, listening, size = 23 
  * looks like sound sat still. The broadcast is running either way - what
  * changes is whether this person is receiving it, and that is the colour.
  */
-export function SignalMeter({ active, live, bars = 28 }) {
+export function SignalMeter({ active, live, bars = 28, color = ACCENT_HOVER }) {
   const moving = active || live;
   return (
     <span
@@ -208,7 +208,7 @@ export function SignalMeter({ active, live, bars = 28 }) {
             height: moving ? undefined : 3,
             // Bright while it is reaching this listener, dim while it is
             // going out past them.
-            background: active ? ACCENT_HOVER : moving ? '#2f4a7a' : RULE,
+            background: active ? color : moving ? '#2f4a7a' : RULE,
             animationDelay: `${(i % 7) * 0.13}s`,
             // Shorter throw when nobody is listening, so the two states read
             // differently at a glance rather than only by colour.
@@ -257,7 +257,7 @@ export function TuneButton({ listening, onClick, disabled, width = 220, height =
 
 /* ── volume ───────────────────────────────────────────────────────────────── */
 
-export function VolumeControl({ volume, onChange, listening, disabled }) {
+export function VolumeControl({ volume, onChange, listening, disabled, color = ACCENT }) {
   const { t } = useI18n();
   const pct = `${Math.round(volume * 100)}%`;
   return (
@@ -278,7 +278,7 @@ export function VolumeControl({ volume, onChange, listening, disabled }) {
         aria-label={t('radio.volume')}
         style={{
           width: 120, height: 3, appearance: 'none', cursor: 'pointer',
-          background: `linear-gradient(90deg, ${ACCENT} ${pct}, ${RULE} ${pct})`,
+          background: `linear-gradient(90deg, ${color} ${pct}, ${RULE} ${pct})`,
         }}
       />
       <span
