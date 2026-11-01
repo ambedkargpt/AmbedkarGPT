@@ -33,7 +33,7 @@ import pathlib
 import subprocess
 import sys
 import tempfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 log = logging.getLogger("radio_live")
@@ -47,6 +47,8 @@ BREAK_EVERY = 12 * 60          # ad break every twelve minutes of bulletin
 MAX_WORDS = 125                # a script over this is sent back once to be cut
 CUT_TO = "95 to 110"           # ...to this length (about a minute on air with its headline)
 SAME_SUBJECT = 0.15            # word overlap above which two stories count as one subject
+WINDOW_HOURS = 48              # every channel's stories from the last two days, rolling
+REPEAT_FLOOR = 0.30            # word overlap two stories need before they count as one write-up
 STATE_PREFIX = "_state/"       # in the radio bucket; never linked from the site
 LOCK_TTL_SEC = 100 * 60        # longer than the job's own timeout
 
@@ -154,6 +156,67 @@ def _acquire_lock(state: State, now: datetime) -> bool:
 
 # ── ordering ─────────────────────────────────────────────────────────────────
 
+def _window(now: datetime) -> tuple[datetime, datetime]:
+    """
+    The last WINDOW_HOURS up to now: first in, first out, for every channel.
+
+    It used to be two calendar days, midnight to midnight. That dropped a
+    whole day's stories at once at midnight and kept a story from 00:05 for
+    almost two days. Rolling, a channel's story leaves when it turns 48 hours
+    old, whatever the hour, and a new one comes in at the top.
+    """
+    return now - timedelta(hours=WINDOW_HOURS), now
+
+
+def _same_channel_groups(groups, channel_of):
+    """
+    Same-event groups split by channel, keeping those still two or more long.
+
+    Two channels covering one rally are two sides of it - Congress's account
+    and the BJP's answer - and both belong on air. The model grouped a whole
+    rally day across every channel as one event and 44 of 56 stories went.
+    """
+    out = []
+    for group in groups:
+        by_channel = {}
+        for story_id in group:
+            if story_id in channel_of:
+                by_channel.setdefault(channel_of[story_id], []).append(story_id)
+        out += [ids for ids in by_channel.values() if len(ids) > 1]
+    return out
+
+
+def _confirmed_repeats(groups, position, sim, floor=REPEAT_FLOOR):
+    """
+    The parts of each group whose stories really are the same write-up.
+
+    The model is asked for repeats and still put Mehbooba Mufti, Farooq
+    Abdullah, Tejashwi Yadav and Mamata Banerjee's speeches at one rally in a
+    single group, and gave different groups on two runs over the same list.
+    So it proposes and the text decides: two stories stay together only when
+    their words overlap by at least `floor` (TF-IDF cosine, see subject.py),
+    joined transitively. A group can split into several, or into none.
+    """
+    out = []
+    for group in groups:
+        parent = {i: i for i in group}
+
+        def find(x):
+            while parent[x] != x:
+                x = parent[x]
+            return x
+
+        for a in group:
+            for b in group:
+                if a < b and sim[position[a]][position[b]] >= floor:
+                    parent[find(a)] = find(b)
+        parts = {}
+        for i in group:
+            parts.setdefault(find(i), []).append(i)
+        out += [part for part in parts.values() if len(part) > 1]
+    return out
+
+
 def _newest_first(selected):
     return sorted(selected, key=lambda sel: sel.story.published_at, reverse=True)
 
@@ -252,7 +315,7 @@ def _build(args, settings, build_radio, engine_storage, state, publish_storage, 
     from bheem_radio.daily.builder import (CO_ANCHOR, HEADLINE_BED_VOLUME, LEAD, MAX_HEADLINES,
                                            STORY_BED_VOLUME, build_daily_services)
     from bheem_radio.daily.selection import select_stories
-    from bheem_radio.daily.sources import MongoStorySource, day_window
+    from bheem_radio.daily.sources import MongoStorySource
     from bheem_radio.pipeline.scripting import RadioScript, _check, story_payload, write_and_check
 
     # The agreed prompts, fully assembled (style guide, office-holder list and
@@ -274,7 +337,7 @@ def _build(args, settings, build_radio, engine_storage, state, publish_storage, 
     services = build_daily_services(settings, source, storage=engine_storage)
     lang, copy, music = settings.daily_lang, services.copy, services.assets.music
     style = services.prompts.voice_style.get(lang)
-    start, end = day_window(settings, today)
+    start, end = _window(now)
 
     selected = _newest_first(select_stories(source, settings, TENANT, start, end))
     ids = [sel.story.id for sel in selected]
@@ -302,13 +365,14 @@ def _build(args, settings, build_radio, engine_storage, state, publish_storage, 
             for sel in selected)
         result, _ = services.llm.generate(
             "script_writer",
-            system=("You are the news desk of a Hindi radio bulletin. You decide which stories in "
-                    "today's list report the same event - the same press conference, the same "
-                    "rally or protest on the same day, the same announcement or statement - so "
-                    "that only one of each is read on air. Stories that share a topic but report "
-                    "different events (a protest and a later court hearing; two different "
-                    "leaders' press conferences) are NOT the same event. Answer only with groups "
-                    "of two or more ids that are the same event; leave every other story out."),
+            system=("You are the news desk of a Hindi radio bulletin. You find stories in "
+                    "today's list that are repeat write-ups of one news item, so that only one "
+                    "of each is read on air. A repeat is the same speaker saying the same thing "
+                    "on the same occasion, written up twice. Different leaders speaking at one "
+                    "rally, press conference or protest are DIFFERENT stories, and so are two "
+                    "points made by one leader, a protest and a later court hearing, or a "
+                    "charge and the reply to it. When unsure, they are different. Answer only "
+                    "with groups of two or more ids that are repeats; leave every other story out."),
             user="Stories, one per line as `id | headline | summary`:\n\n" + listing,
             output_model=SameEvent,
         )
@@ -318,7 +382,10 @@ def _build(args, settings, build_radio, engine_storage, state, publish_storage, 
         state.put("same_event.json", dedupe)
     by_story = {sel.story.id: sel.story for sel in selected}
     drop = set()
-    for g in dedupe["groups"]:
+    channel_of = {sid: story.tenant for sid, story in by_story.items()}
+    position = {sel.story.id: k for k, sel in enumerate(selected)}
+    sim = similarity_matrix([sel.story for sel in selected])
+    for g in _confirmed_repeats(_same_channel_groups(dedupe["groups"], channel_of), position, sim):
         keep = max(g, key=lambda i: len((by_story[i].body or "") + (by_story[i].summary or "")))
         drop |= set(g) - {keep}
     selected = _spread_by_subject([sel for sel in selected if sel.story.id not in drop], similarity_matrix)
