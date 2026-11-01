@@ -64,7 +64,9 @@ test.describe('the broadcast desk', () => {
     await signedInAs(page, 'someone.else@example.com');
     await page.goto('/bhimradio');
 
-    const countdown = page.getByText(/next story in|अगली ख़बर/i).first();
+    // The status line's countdown, which carries the time with the label. The
+    // v2 desk's "up next" pill also says अगली ख़बर, as a label on its own.
+    const countdown = page.getByText(/(next story in|अगली ख़बर).*\d+:\d{2}/i).first();
     const first = await countdown.textContent();
     await page.waitForTimeout(2400);
     expect(await countdown.textContent()).not.toBe(first);
@@ -105,45 +107,36 @@ test.describe('the broadcast desk', () => {
     await expect(page.getByRole('slider', { name: /seek|आगे-पीछे/i })).toHaveCount(0);
   });
   test('the story sits left of the running order, both on screen', async ({ page }) => {
-    // The first build put a generated element in the middle grid column. It
-    // is a grid item, so the real children auto-placed around it: the story
-    // landed in the right-hand column and the running order left the row.
-    // Geometry rather than class names, because the classes were all correct.
+    // Geometry rather than class names: an earlier grid put a generated
+    // element in a column, the real children auto-placed around it, and the
+    // story landed on the right while every class was still correct. From lg
+    // the v2 desk has stations, then what is on air, then the running order.
     await page.setViewportSize({ width: 1440, height: 900 });
     await signedInAs(page, 'someone.else@example.com');
     await page.goto('/bhimradio');
     await expect(page).toHaveURL(/\/bhimradio/);
 
-    const story = await page.locator('.bhim-desk-body > section').boundingBox();
-    const order = await page.locator('.bhim-desk-order').boundingBox();
+    const story = await page.locator('[data-radio-now]').boundingBox();
+    const order = await page.locator('[data-radio-order]').boundingBox();
 
     expect(story.x).toBeLessThan(order.x);          // story on the left
-    // 1.45fr against 1fr: the ratio is what proves the columns took, and
-    // unlike an absolute x it does not depend on how wide the sidebar is.
     expect(story.width).toBeGreaterThan(order.width);
     expect(order.x + order.width).toBeLessThanOrEqual(1441);
-    // Side by side, not stacked.
-    expect(Math.abs(story.y - order.y)).toBeLessThan(80);
+    // Side by side, not stacked: the running order starts within the story's
+    // height rather than under it.
+    expect(order.y).toBeLessThan(story.y + story.height);
   });
-  test('the running order fills the column beside the story', async ({ page }) => {
-    // It used to show ten rows at their natural height, which left a third of
-    // the column blank on a desktop while hiding forty stories that were
-    // going out tonight. Geometry, because the markup looks the same either
-    // way: the column has to reach the story's depth, and the list has to
-    // carry more than fits in it.
+  test('the running order holds the whole bulletin and scrolls', async ({ page }) => {
+    // It used to show ten rows and hide forty stories that were going out
+    // tonight. The whole rest of the bulletin is listed, and the list scrolls
+    // inside its card instead of stretching the page.
     await page.setViewportSize({ width: 1440, height: 900 });
     await signedInAs(page, 'someone.else@example.com');
     await page.goto('/bhimradio');
     await expect(page).toHaveURL(/\/bhimradio/);
 
-    const story = await page.locator('.bhim-desk-body > section').boundingBox();
-    const order = await page.locator('.bhim-desk-order').boundingBox();
-
-    // Within a hair of the story's height rather than stopping short.
-    expect(order.height).toBeGreaterThan(story.height * 0.9);
-
-    // And the list actually overflows, which is what "fills" means here.
-    const list = page.locator('.bhim-order-list');
+    const list = page.locator('[data-radio-order]');
+    await expect(list.locator('li').nth(2)).toBeVisible();
     const { scrollHeight, clientHeight } = await list.evaluate((el) => ({
       scrollHeight: el.scrollHeight, clientHeight: el.clientHeight,
     }));

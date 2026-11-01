@@ -178,7 +178,7 @@ export default function App() {
                 bar and an announcement of the thing they are already
                 looking at. */}
             {!RADIO_REQUIRES_LOGIN && (
-              <Route path="/bhimradio" element={<MainLayout bare><BhimRadio /></MainLayout>} />
+              <Route path="/bhimradio" element={<MainLayout bare noNav><BhimRadio /></MainLayout>} />
             )}
 
             {/* protected */}
