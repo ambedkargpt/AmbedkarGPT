@@ -1136,4 +1136,8 @@ export default {
   "cmp.comment": "Comment",
   "cmp.share": "Share",
   "cmp.phonePreview": "Preview in phone",
+  "gen.newsSections": "News sections",
+  "gen.filterShort": "Filter",
+  "gen.sortShortLatest": "Latest",
+  "gen.sortShortOldest": "Oldest",
 };

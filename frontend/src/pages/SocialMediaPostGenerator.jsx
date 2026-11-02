@@ -5,14 +5,13 @@ import { clearPendingQuestions } from '../hooks/usePendingQuestions';
 import {
   ArrowLeft, Filter, Sparkles,
   Copy, Check, RefreshCw, ChevronDown, FileText, Star, Radio,
-  ArrowUpDown, List, LayoutGrid, Users, Globe, ArrowRight,
+  ArrowUpDown, List, LayoutGrid, Users, ArrowRight,
   CalendarDays, Clock, ChevronRight, X as XIcon,
   MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle, Smartphone,
 } from 'lucide-react';
 
 import PreferencesPanel from '../components/generate/PreferencesPanel';
 import DevSourceTag from '../components/DevSourceTag';
-import ScrollRow from '../components/ui/ScrollRow';
 import PostContent from '../components/generate/PostContent';
 import AgMark from '../components/brand/AgMark';
 import { useAuth } from '../context/AuthContext';
@@ -32,7 +31,7 @@ import NotificationBell from '../components/dashboard/NotificationBell';
 import ProfileMenu from '../components/dashboard/ProfileMenu';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { labelForId } from '../utils/partyRoles';
-import { GENERAL_NEWS_ENABLED, PREFERENCES_ENABLED } from '../data/features';
+import { PREFERENCES_ENABLED } from '../data/features';
 import PhonePreview from '../components/compose/PhonePreview';
 import { PLATFORM_LOOK } from '../components/compose/platformLook';
 import '../components/compose/compose.css';
@@ -393,7 +392,7 @@ export default function SocialMediaPostGenerator() {
     // Ask for the chosen party plus general and opposition news in one call;
     // the UI splits them into the three sections locally.
     const query = { limit: 100, language: siteLang };
-    if (selectedParty) { query.tenant = selectedParty; query.includeGeneral = true; query.includeOpposition = true; }
+    if (selectedParty) { query.tenant = selectedParty; query.includeGeneral = false; query.includeOpposition = true; }
     getNews(query)
       .then((data) => {
         if (data?.length) {
@@ -401,7 +400,7 @@ export default function SocialMediaPostGenerator() {
           setNewsLoading(false);
         } else {
           const fallback = { limit: 100 };
-          if (selectedParty) { fallback.tenant = selectedParty; fallback.includeGeneral = true; fallback.includeOpposition = true; }
+          if (selectedParty) { fallback.tenant = selectedParty; fallback.includeGeneral = false; fallback.includeOpposition = true; }
           getNews(fallback).then((all) => {
             if (all?.length) setArticles(all.map(adaptNews));
           }).catch(() => setNewsError(true)).finally(() => setNewsLoading(false));
@@ -526,17 +525,13 @@ export default function SocialMediaPostGenerator() {
     () => articles.filter((a) => a.tenantSlug === 'bjp'),
     [articles]
   );
-  const generalArticles = useMemo(
-    () => articles.filter((a) => a.tenantSlug === 'general'),
-    [articles]
-  );
-
-  // Without a party chosen there is only one list, so show everything.
+  // General news is no longer shown: two feeds, the party's and the
+  // opposition's. Without a party chosen there is only one list, so show
+  // everything except general.
   const sectionArticles = !activeParty
-    ? articles
-    : newsSection === 'party' ? partyArticles
+    ? articles.filter((a) => a.tenantSlug !== 'general')
     : newsSection === 'opposition' ? oppositionArticles
-    : generalArticles;
+    : partyArticles;
 
   // The three feeds, described once. Phones show them as a chip row and wider
   // screens as the three cards; both read this and both call chooseSection.
@@ -546,17 +541,15 @@ export default function SocialMediaPostGenerator() {
       count: partyArticles.length },
     { id: 'opposition', Icon: Users, label: t('gen.oppositionNews'),
       sub: t('gen.oppositionNewsSub'), count: oppositionArticles.length },
-    // General news is switched off for now (GENERAL_NEWS_ENABLED).
-    GENERAL_NEWS_ENABLED && { id: 'general', Icon: Globe, label: t('gen.generalNews'),
-      sub: t('gen.generalNewsSub'), count: generalArticles.length },
-  ].filter(Boolean);
+  ];
 
   function chooseSection(id) {
+    if (id === 'general') id = 'party';
     setNewsSection(id);
     setPage(1);
     // Neither general nor opposition has press conferences, so carrying that
     // filter across from the party tab would show an empty section.
-    if (id === 'general' || id === 'opposition') setTypeFilter('all');
+    if (id === 'opposition') setTypeFilter('all');
   }
 
   // Accent for the section currently on screen; falls back to the party colour
@@ -725,7 +718,7 @@ export default function SocialMediaPostGenerator() {
       .then((item) => {
         if (!item) return;
         const article = adaptNews(item);
-        if (section && (section !== 'general' || GENERAL_NEWS_ENABLED)) setNewsSection(section);
+        if (section) setNewsSection(section === 'general' ? 'party' : section);
         setSelectedArticle(article);
         setGeneratedPost('');
         setSelectedPostId(null);
@@ -1206,7 +1199,7 @@ export default function SocialMediaPostGenerator() {
             {/* On a phone the back button and the account share the first
                 line and the greeting gets the full width under them; from sm
                 up it is one row. */}
-            <div className="mb-7 mt-5 flex flex-wrap items-center gap-x-4 gap-y-4 sm:flex-nowrap sm:gap-5">
+            <div className="mb-5 mt-3 flex flex-wrap items-center gap-x-3.5 gap-y-4 sm:mb-7 sm:mt-5 sm:flex-nowrap sm:gap-5">
               <button
                 type="button"
                 onClick={goBack}
@@ -1218,26 +1211,31 @@ export default function SocialMediaPostGenerator() {
               </button>
               {welcomeLogo && (
                 <span
-                  className="relative order-4 inline-flex h-[60px] sm:order-2 w-[60px] shrink-0 items-center justify-center rounded-full bg-white shadow-[0_0_0_2px_rgba(63,159,255,0.45),0_0_30px_rgba(63,159,255,0.32)] sm:ml-2 sm:h-[76px] sm:w-[76px]"
+                  className="relative order-4 inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center self-start rounded-full bg-white shadow-[0_0_0_2px_rgba(63,159,255,0.45),0_0_24px_rgba(63,159,255,0.28)] sm:order-2 sm:ml-2 sm:h-[76px] sm:w-[76px] sm:self-center"
                   title={currentUser?.political_party || ''}
                 >
                   <img
                     src={welcomeLogo}
                     alt={currentUser?.political_party || 'Party'}
-                    className="h-[56px] w-[56px] object-contain sm:h-[70px] sm:w-[70px]"
+                    className="h-[46px] w-[46px] object-contain sm:h-[70px] sm:w-[70px]"
                     onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
                   />
-                  <span className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full border-[2.5px] border-[#070b1c] bg-[#22c55e]" />
+                  <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-[2.5px] border-[#070b1c] bg-[#22c55e] sm:bottom-0.5 sm:right-0.5 sm:h-4 sm:w-4" />
                 </span>
               )}
               <div className="order-5 min-w-0 flex-1 sm:order-3">
-                <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight sm:text-[28px] md:text-[32px]">
-                  <span className="text-white">{t('dash.welcomeBack')} </span>
+                {/* Phones: "Welcome back," is a small line above the name, so
+                    the name never breaks mid-greeting beside the logo. Sized
+                    in em: the Hindi type scale in index.css rewrites px tokens
+                    such as text-[13.5px] with a rule that beats sm:, which kept
+                    the greeting small on desktop in Hindi. */}
+                <h1 className="font-display text-[24px] font-bold leading-tight tracking-tight sm:text-[28px] md:text-[32px]">
+                  <span className="block text-[0.5625em] font-medium tracking-normal text-[#8b94b8] sm:inline sm:text-[1em] sm:font-bold sm:tracking-tight sm:text-white">{t('dash.welcomeBack')} </span>
                   <span className="gradient-text-blue">{welcomeName}</span>
                 </h1>
                 {(activeParty || roleName) && (
-                  <p className="mt-2 inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-[#2a4a8a]/60 bg-[#0d1838]/80 px-3 py-1 text-[13px] font-medium text-[#c7d6ee]">
-                    {activeParty && <span className="truncate">{partyLabel(activeParty.name, lang)}</span>}
+                  <p className="mt-1.5 flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] font-medium leading-snug text-[#9fb0d4] sm:mt-2 sm:inline-flex sm:gap-x-2 sm:rounded-full sm:border sm:border-[#2a4a8a]/60 sm:bg-[#0d1838]/80 sm:px-3 sm:py-1 sm:text-[#c7d6ee]">
+                    {activeParty && <span className="sm:truncate">{partyLabel(activeParty.name, lang)}</span>}
                     {activeParty && roleName && <span className="text-[#4f7fd4]" aria-hidden="true">·</span>}
                     {roleName && <span className="font-semibold text-white">{roleName}</span>}
                   </p>
@@ -1264,7 +1262,7 @@ export default function SocialMediaPostGenerator() {
                   a description each pushed the headlines most of a screen
                   down, and on a phone the description is not what picks the
                   feed — the name and the count are. */}
-              <ScrollRow className="-mx-4 mb-4 gap-2 px-4 sm:hidden">
+              <div role="group" aria-label={t('gen.newsSections')} className="mb-5 grid grid-cols-2 gap-1 rounded-2xl border border-[#1e2636]/90 bg-[#0b101c] p-1 sm:hidden">
                 {sectionTabs.map((s) => {
                   const active = newsSection === s.id;
                   const tint = SECTION_THEME[s.id].accent;
@@ -1274,22 +1272,28 @@ export default function SocialMediaPostGenerator() {
                       type="button"
                       onClick={() => chooseSection(s.id)}
                       aria-pressed={active}
-                      className="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-[12.5px] transition"
+                      aria-label={`${s.label} (${s.count})`}
+                      className="flex h-[52px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[13.5px] leading-tight transition"
                       style={{
-                        borderColor: active ? tint : 'rgba(30,38,54,0.9)',
-                        backgroundColor: active ? `${tint}18` : '#0b101c',
-                        color: active ? tint : '#8b94b8',
+                        backgroundColor: active ? `${tint}1f` : 'transparent',
+                        boxShadow: active ? `inset 0 0 0 1px ${tint}` : 'none',
+                        color: active ? '#ffffff' : '#8b94b8',
                         fontWeight: active ? 600 : 500,
                       }}
                     >
-                      {s.label}
-                      <span className="font-count text-[11px] opacity-70">{s.count}</span>
+                      <span className="truncate">{s.label}</span>
+                      <span
+                        className="font-count text-[11.5px] font-semibold leading-none"
+                        style={{ color: active ? tint : '#5a6e9a' }}
+                      >
+                        {s.count}
+                      </span>
                     </button>
                   );
                 })}
-              </ScrollRow>
+              </div>
 
-              <div className={`mb-6 hidden gap-3 sm:grid ${sectionTabs.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
+              <div className="mb-6 hidden gap-3 sm:grid sm:grid-cols-2">
                 {sectionTabs.map((s) => {
                   const active = newsSection === s.id;
                   const tint = SECTION_THEME[s.id].accent;
@@ -1415,44 +1419,53 @@ export default function SocialMediaPostGenerator() {
                   centred title leaves nowhere for them to sit. The accent bar
                   sits above the title, which is what a left-aligned block
                   wants. */}
-              <div className="mb-4 mt-1 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 sm:mb-6">
+              <div className="mb-4 mt-1 flex flex-wrap items-end justify-between gap-x-6 gap-y-3.5 sm:mb-6">
                 <div className="min-w-0">
                   <span
-                    className="mb-3 block h-[3px] w-14 rounded-full"
+                    className="mb-2.5 block h-[3px] w-12 rounded-full sm:mb-3 sm:w-14"
                     style={{ backgroundColor: theme.accent, boxShadow: `0 0 12px ${theme.accent}88` }}
                   />
-                  <h3 className="font-display text-[clamp(25px,7vw,30px)] font-bold leading-tight tracking-tight text-white md:text-[34px]">
+                  <h3 className="font-display text-[24px] font-bold leading-tight tracking-tight text-white sm:text-[30px] md:text-[34px]">
                     {t('gen.headlines')}
                   </h3>
-                  <p className="mt-1.5 text-[14px] text-[#7d8aa6]">
+                  <p className="mt-1 text-[13.5px] text-[#7d8aa6] sm:mt-1.5 sm:text-[14px]">
                     {t('gen.pickStory')}
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5">
+                {/* Phones: the count and the layout switch share the first
+                    line, and filter / type / sort split the second evenly, so
+                    nothing wraps into a stray half-row with loose dividers. */}
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-x-3 sm:gap-y-2.5">
                   {/* Counts the whole filtered feed, not the current page: it
                       answers "how much is here", which paging should not change. */}
-                  <span className="whitespace-nowrap font-count text-[13px] text-[#7d8aa6]">
+                  <span className="order-1 whitespace-nowrap font-count text-[13px] text-[#7d8aa6]">
                     <span className="font-semibold text-white">{orderedArticles.length}</span>{' '}
                     {t(orderedArticles.length === 1 ? 'gen.storyOne' : 'gen.storyMany')}
                   </span>
 
-                  <span className="h-5 w-px bg-[#1e2636]" />
+                  <span className="order-1 hidden h-5 w-px bg-[#1e2636] sm:block" />
+                  <span className="order-3 basis-full sm:hidden" aria-hidden="true" />
 
                   {/* Date filter. It sat in the page header beside a search
                       box; it belongs with the feed it filters. */}
-                    <div ref={filterRef} className="relative">
+                    <div ref={filterRef} className="relative order-4 min-w-0 flex-1 sm:order-1 sm:flex-none">
                       <button
                         type="button"
                         onClick={() => { setFilterOpen((p) => !p); goView('feed'); }}
-                        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-[12.5px] font-medium transition ${
+                        className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border px-3 text-[12.5px] font-medium transition sm:h-auto sm:w-auto sm:px-4 sm:py-2.5 ${
                           filtersActive
                             ? 'border-[#3f9fff]/60 bg-[#0d1a3a] text-[#6aa8ff]'
                             : 'border-[#1e3260]/70 bg-[#0d1531]/80 text-[#8b94b8] hover:border-[#3a6bc4]/60 hover:text-white'
                         }`}
                       >
-                        <Filter size={13} strokeWidth={2} />
-                        {selectedDayLabel ?? t('gen.filterNewsBtn')}
+                        <Filter size={13} strokeWidth={2} className="shrink-0" />
+                        <span className="truncate">{selectedDayLabel ?? (
+                          <>
+                            <span className="sm:hidden">{t('gen.filterShort')}</span>
+                            <span className="hidden sm:inline">{t('gen.filterNewsBtn')}</span>
+                          </>
+                        )}</span>
                         {filtersActive > 0 && (
                           <span className="rounded-full bg-[#3f9fff] px-1.5 py-0.5 font-count text-[10px] leading-none text-white">
                             {filtersActive}
@@ -1461,7 +1474,7 @@ export default function SocialMediaPostGenerator() {
                       </button>
 
                       {filterOpen && (
-                        <div className="absolute right-0 top-[calc(100%+6px)] z-40 w-64 overflow-hidden rounded-xl border border-[#1e3260]/70 bg-[#0d1531] shadow-xl">
+                        <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-64 max-w-[calc(100vw-2rem)] sm:left-auto sm:right-0 overflow-hidden rounded-xl border border-[#1e3260]/70 bg-[#0d1531] shadow-xl">
                           {/* Date */}
                           <p className="px-4 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#5a6e9a]">
                             {t('gen.date')}
@@ -1528,21 +1541,21 @@ export default function SocialMediaPostGenerator() {
                       chooser over one option is furniture: it is left out for
                       those sections rather than shown with nothing to pick. */}
                   {newsSection === 'party' && (
-                    <div ref={typeRef} className="relative">
+                    <div ref={typeRef} className="relative order-4 min-w-0 flex-1 sm:order-1 sm:flex-none">
                       <button
                         type="button"
                         onClick={() => setTypeOpen((p) => !p)}
                         aria-expanded={typeOpen}
-                        className="inline-flex items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/80 px-4 py-2 text-[12.5px] font-medium text-[#a3b0d4] transition hover:border-[#3a6bc4]/60 hover:text-white"
+                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/80 px-3 text-[12.5px] sm:h-auto sm:w-auto sm:px-4 sm:py-2 font-medium text-[#a3b0d4] transition hover:border-[#3a6bc4]/60 hover:text-white"
                       >
                         {typeFilter === 'press_conference'
                           ? <Radio size={13} strokeWidth={2} />
                           : <FileText size={13} strokeWidth={2} />}
-                        {t(TYPE_OPTIONS.find((o) => o.id === typeFilter)?.label ?? 'gen.all')}
-                        <ChevronDown size={13} strokeWidth={2} className="text-[#6b78a0]" />
+                        <span className="truncate">{t(TYPE_OPTIONS.find((o) => o.id === typeFilter)?.label ?? 'gen.all')}</span>
+                        <ChevronDown size={13} strokeWidth={2} className="hidden shrink-0 text-[#6b78a0] sm:block" />
                       </button>
                       {typeOpen && (
-                        <div className="absolute right-0 top-[calc(100%+6px)] z-40 w-56 overflow-hidden rounded-xl border border-[#1e3260]/70 bg-[#0d1531] shadow-xl">
+                        <div className="absolute left-1/2 top-[calc(100%+6px)] z-40 w-56 -translate-x-1/2 overflow-hidden sm:left-auto sm:right-0 sm:translate-x-0 rounded-xl border border-[#1e3260]/70 bg-[#0d1531] shadow-xl">
                           {TYPE_OPTIONS.map((o) => {
                             const on = typeFilter === o.id;
                             const count = o.id === 'all'
@@ -1572,19 +1585,20 @@ export default function SocialMediaPostGenerator() {
                     </div>
                   )}
 
-                  {newsSection === 'party' && <span className="h-5 w-px bg-[#1e2636]" />}
+                  {newsSection === 'party' && <span className="order-1 hidden h-5 w-px bg-[#1e2636] sm:block" />}
 
                   {/* Sort */}
-                  <div ref={sortRef} className="relative">
+                  <div ref={sortRef} className="relative order-4 min-w-0 flex-1 sm:order-1 sm:flex-none">
                     <button
                       type="button"
                       onClick={() => setSortOpen((p) => !p)}
                       aria-expanded={sortOpen}
-                      className="inline-flex items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/80 px-4 py-2 text-[12.5px] font-medium text-[#a3b0d4] transition hover:border-[#3a6bc4]/60 hover:text-white"
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/80 px-3 text-[12.5px] sm:h-auto sm:w-auto sm:px-4 sm:py-2 font-medium text-[#a3b0d4] transition hover:border-[#3a6bc4]/60 hover:text-white"
                     >
-                      <ArrowUpDown size={13} strokeWidth={2} />
-                      {t(sortOrder === 'oldest' ? 'gen.oldestFirst' : 'gen.latestFirst')}
-                      <ChevronDown size={13} strokeWidth={2} className="text-[#6b78a0]" />
+                      <ArrowUpDown size={13} strokeWidth={2} className="shrink-0" />
+                      <span className="truncate sm:hidden">{t(sortOrder === 'oldest' ? 'gen.sortShortOldest' : 'gen.sortShortLatest')}</span>
+                      <span className="hidden truncate sm:inline">{t(sortOrder === 'oldest' ? 'gen.oldestFirst' : 'gen.latestFirst')}</span>
+                      <ChevronDown size={13} strokeWidth={2} className="hidden shrink-0 text-[#6b78a0] sm:block" />
                     </button>
                     {sortOpen && (
                       <div className="absolute right-0 top-[calc(100%+6px)] z-40 w-44 overflow-hidden rounded-xl border border-[#1e3260]/70 bg-[#0d1531] shadow-xl">
@@ -1611,7 +1625,7 @@ export default function SocialMediaPostGenerator() {
                   </div>
 
                   {/* Layout */}
-                  <div className="flex items-center gap-1 rounded-xl border border-[#1e3260]/70 bg-[#0d1531]/80 p-1">
+                  <div className="order-2 ml-auto flex items-center gap-1 rounded-xl border border-[#1e3260]/70 bg-[#0d1531]/80 p-1 sm:order-1 sm:ml-0">
                     {[
                       { id: 'list', Icon: List,       label: 'gen.viewList' },
                       { id: 'grid', Icon: LayoutGrid, label: 'gen.viewGrid' },
@@ -1651,7 +1665,7 @@ export default function SocialMediaPostGenerator() {
                     <span className="h-px flex-1 bg-[#1e2636]/80" />
                   </div>
 
-                  <div className={cardView === 'list' ? 'flex flex-col gap-3' : 'grid gap-5 lg:grid-cols-2'}>
+                  <div className={cardView === 'list' ? 'flex flex-col gap-3' : 'grid gap-3.5 sm:gap-5 lg:grid-cols-2'}>
                 {group.items.map((article, ai) => {
                   const dateLabel = formatNewsDate(article.date);
                   // Where the card sits in the page, for the rise stagger.
@@ -1667,7 +1681,7 @@ export default function SocialMediaPostGenerator() {
                       type="button"
                       onClick={() => handlePreview(article)}
                       className={`ag-rise ag-card group flex flex-col overflow-hidden rounded-2xl border text-left hover:bg-[#111726] ${
-                        cardView === 'list' ? 'px-5 py-4' : 'p-6'
+                        cardView === 'list' ? 'px-4 py-3.5 sm:px-5 sm:py-4' : 'p-4 sm:p-6'
                       }`}
                       style={{
                         borderColor: 'rgba(30,38,54,0.8)',
@@ -1685,9 +1699,9 @@ export default function SocialMediaPostGenerator() {
                           the category is wider than a phone card, and clipping
                           a party's name to "BHARATIYA JANATA PA…" is worse
                           than giving it a second line. */}
-                      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <div className="mb-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-2 sm:mb-3 sm:gap-x-3">
                         <span
-                          className="inline-flex items-center gap-1.5 font-count text-[11px] font-semibold uppercase tracking-[0.18em]"
+                          className={`inline-flex items-center gap-1.5 font-count text-[11px] font-semibold uppercase ${lang === 'hi' ? 'tracking-normal text-[12px]' : 'tracking-[0.12em] sm:tracking-[0.18em]'}`}
                           style={{ color: (CONTENT_TYPES[article.contentType] ?? CONTENT_TYPES.news).color }}
                         >
                           {article.contentType === 'press_conference'
@@ -1698,7 +1712,7 @@ export default function SocialMediaPostGenerator() {
                             : t('gen.newsArticle')}
                         </span>
                         <span
-                          className="shrink-0 rounded-full border px-3 py-1 font-count text-[11px] uppercase tracking-wider"
+                          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[12px] sm:px-3 sm:py-1 ${/[\u0900-\u097F]/.test(article.category) ? 'font-hindi' : 'font-count uppercase tracking-wider text-[11px]'}`}
                           style={{
                             borderColor: `${cardAccent}55`,
                             backgroundColor: `${cardAccent}14`,
@@ -1724,14 +1738,14 @@ export default function SocialMediaPostGenerator() {
                       <p className={`font-hindi mt-2 flex-1 leading-[1.65] text-[#b9c8e4] ${
                         cardView === 'list'
                           ? 'line-clamp-1 text-[clamp(13px,0.7vw+10.3px,15px)]'
-                          : 'mt-3 line-clamp-3 text-[clamp(13.5px,0.9vw+10px,16.5px)]'
+                          : 'line-clamp-2 text-[clamp(13.5px,0.9vw+10px,16.5px)] sm:mt-3 sm:line-clamp-3'
                       }`}>
                         {truncateText(article.summary || article.content, cardView === 'list' ? 120 : 200)}
                       </p>
 
                       {/* Footer — short by {source} · date */}
                       <div className={`flex items-center justify-between gap-2 border-t border-[#141d3a]/70 ${
-                        cardView === 'list' ? 'mt-2.5 pt-2.5' : 'mt-4 pt-3'
+                        cardView === 'list' ? 'mt-2.5 pt-2.5' : 'mt-3 pt-2.5 sm:mt-4 sm:pt-3'
                       }`}>
                         <span className="min-w-0 truncate font-count text-[11.5px] text-[#5a6e9a]">
                           {dateLabel || 'AmbedkarGPT'}

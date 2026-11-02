@@ -1141,4 +1141,8 @@ export default {
   "cmp.comment": "टिप्पणी",
   "cmp.share": "शेयर",
   "cmp.phonePreview": "फ़ोन में देखें",
+  "gen.newsSections": "ख़बरों के हिस्से",
+  "gen.filterShort": "छाँटें",
+  "gen.sortShortLatest": "नई पहले",
+  "gen.sortShortOldest": "पुरानी पहले",
 };
