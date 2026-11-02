@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
 import DashboardShell from './DashboardShell';
 import Spinner from '../components/Spinner';
@@ -17,6 +17,7 @@ import Spinner from '../components/Spinner';
  * has to be passed down here.
  */
 export default function DashboardLayout() {
+  const { pathname } = useLocation();
   return (
     <DashboardShell>
       {/* Scoped to the content column on purpose. The app-wide Suspense sits
@@ -29,7 +30,11 @@ export default function DashboardLayout() {
           </div>
         )}
       >
-        <Outlet />
+        {/* Keyed on the path, so each screen settles in as it arrives while
+            the rail around it stays put. */}
+        <div key={pathname} className="ag-page-in">
+          <Outlet />
+        </div>
       </Suspense>
     </DashboardShell>
   );

@@ -5,7 +5,7 @@ import { clearPendingQuestions } from '../hooks/usePendingQuestions';
 import {
   ArrowLeft, Search, Filter, Sparkles,
   Copy, Check, RefreshCw, ChevronDown, FileText, Star, Radio,
-  ArrowUpDown, List, LayoutGrid, Users, Globe,
+  ArrowUpDown, List, LayoutGrid, Users, Globe, ArrowRight,
   CalendarDays, Clock, ChevronRight, X as XIcon,
   MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle, Smartphone,
 } from 'lucide-react';
@@ -625,6 +625,8 @@ export default function SocialMediaPostGenerator() {
 
   // Group the current page into day buckets, preserving the newest-first order
   // the API already applied.
+  // Changes whenever a different set of cards is shown, so they rise again.
+  const feedKey = `${newsSection}|${dateFilter}|${typeFilter}|${page}|${cardView}`;
   const pagedGroups = useMemo(() => {
     const groups = [];
     let current = null;
@@ -1032,7 +1034,7 @@ export default function SocialMediaPostGenerator() {
 
   return (
     <div
-      className="relative flex min-h-screen text-[#e5e7eb]"
+      className="ag-page-in relative flex min-h-screen text-[#e5e7eb]"
       style={{ background: 'radial-gradient(1200px 700px at 50% -10%, #0c111e 0%, #080b13 55%, #06080e 100%)' }}
     >
       {/* The dashboard's own navigation, closed to icons; it opens over the
@@ -1249,7 +1251,7 @@ export default function SocialMediaPostGenerator() {
 
         {/* ── Feed view ── */}
         {view === 'feed' && (
-          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+          <div className="ag-page-in flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
             {/* Three news sections: chosen party, opposition (BJP, empty
                 until it is scraped), and general (neutral) news. Underlined
                 tabs rather than pills, and each section carries its own
@@ -1561,8 +1563,8 @@ export default function SocialMediaPostGenerator() {
                 </div>
               </div>
 
-              {pagedGroups.map((group) => (
-                <div key={group.label} className="mb-7 last:mb-0">
+              {pagedGroups.map((group, gi) => (
+                <div key={`${feedKey}|${group.label}`} className="mb-7 last:mb-0">
                   {/* Day heading */}
                   <div className="mb-3 flex items-center gap-3">
                     <h4 className="font-count text-[11.5px] font-semibold uppercase tracking-[0.2em] text-[#8a9ac0]">
@@ -1573,8 +1575,10 @@ export default function SocialMediaPostGenerator() {
                   </div>
 
                   <div className={cardView === 'list' ? 'flex flex-col gap-3' : 'grid gap-5 lg:grid-cols-2'}>
-                {group.items.map((article) => {
+                {group.items.map((article, ai) => {
                   const dateLabel = formatNewsDate(article.date);
+                  // Where the card sits in the page, for the rise stagger.
+                  const riseIndex = pagedGroups.slice(0, gi).reduce((n, g) => n + g.items.length, 0) + ai;
                   // Colour follows the article's own tenant, so a mixed list
                   // still reads correctly rather than following the active tab.
                   const cardAccent = article.tenantSlug === 'general'
@@ -1585,7 +1589,7 @@ export default function SocialMediaPostGenerator() {
                       key={article.id}
                       type="button"
                       onClick={() => handlePreview(article)}
-                      className={`group flex flex-col overflow-hidden rounded-2xl border text-left transition duration-200 hover:-translate-y-0.5 hover:bg-[#111726] hover:shadow-[0_12px_32px_rgba(0,0,0,0.45)] ${
+                      className={`ag-rise ag-card group flex flex-col overflow-hidden rounded-2xl border text-left hover:bg-[#111726] ${
                         cardView === 'list' ? 'px-5 py-4' : 'p-6'
                       }`}
                       style={{
@@ -1593,6 +1597,8 @@ export default function SocialMediaPostGenerator() {
                         backgroundColor: '#0e1320',
                         // Accent rail marks which feed the card belongs to
                         borderLeft: `3px solid ${cardAccent}`,
+                        '--i': riseIndex,
+                        '--cat': cardAccent,
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${cardAccent}70`; e.currentTarget.style.borderLeftColor = cardAccent; }}
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(30,38,54,0.8)'; e.currentTarget.style.borderLeftColor = cardAccent; }}
@@ -1659,6 +1665,7 @@ export default function SocialMediaPostGenerator() {
                         >
                           <Sparkles size={12} strokeWidth={2} />
                           {t('gen.generate')}
+                          <ArrowRight size={12} strokeWidth={2.2} className="ag-arrow" />
                         </span>
                       </div>
                     </button>
@@ -1733,7 +1740,7 @@ export default function SocialMediaPostGenerator() {
             .trim().split(/[\s।]+/).filter(Boolean).length;
           const readingMinutes = Math.max(1, Math.round(words / 200));
           return (
-          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+          <div className="ag-page-in flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
             {renderPartyBanner()}
             <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
               <span className="inline-block rounded-full border border-[#1e3a6e]/60 bg-[#0d1840]/60 px-2.5 py-0.5 font-count text-[10px] uppercase tracking-widest text-[#6aa8ff]">
@@ -1961,7 +1968,7 @@ export default function SocialMediaPostGenerator() {
 
         {/* ── Generated post view ── */}
         {view === 'generated' && (
-          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+          <div className="ag-page-in flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
             {renderPartyBanner()}
             {/* Header: title on left, actions on right (icon-only on mobile
                 to prevent overflow). The way back is the page's single back
@@ -2047,8 +2054,24 @@ export default function SocialMediaPostGenerator() {
             )}
 
             {(generating || translating) ? (
-              <div className="flex min-h-[260px] flex-col items-center justify-center gap-4 rounded-2xl border border-[#1e3260]/60 bg-[#0a1130]/70 p-5">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1e3260] border-t-[#3f9fff]" />
+              <div className="ag-page-in flex min-h-[260px] flex-col items-center justify-center gap-4 rounded-2xl border border-[#1e3260]/60 bg-[#0a1130]/70 p-5">
+                {/* A skeleton of the post being written, the way rssgpt shows it. */}
+                <div className="w-full" aria-hidden="true">
+                  <div className="ag-progress h-1 w-full rounded-full bg-[#14224a]" />
+                  <div className="ag-shimmer mt-5 flex items-center gap-3">
+                    <span className="h-10 w-10 rounded-full bg-[#1e2a4f]" />
+                    <span className="flex flex-col gap-2">
+                      <span className="h-2.5 w-28 rounded-full bg-[#1e2a4f]" />
+                      <span className="h-2 w-20 rounded-full bg-[#18223f]" />
+                    </span>
+                  </div>
+                  <div className="ag-shimmer mt-5 flex flex-col gap-3">
+                    <span className="h-3 w-full rounded-full bg-[#1e2a4f]" />
+                    <span className="h-3 w-[92%] rounded-full bg-[#1e2a4f]" />
+                    <span className="h-3 w-[96%] rounded-full bg-[#1e2a4f]" />
+                    <span className="h-3 w-[60%] rounded-full bg-[#1e2a4f]" />
+                  </div>
+                </div>
                 <div className="text-center">
                   <p className="text-[13px] font-medium text-[#6aa8ff]">
                     {generating ? 'Generating your post…' : 'Translating…'}
@@ -2095,6 +2118,7 @@ export default function SocialMediaPostGenerator() {
                 </div>
                 <div className="border-t border-[#141d3a]/60 pt-4">
                   <PostContent
+                    animate
                     content={showTranslated && translatedPost ? translatedPost : generatedPost}
                     lang={showTranslated && translatedPost ? 'en' : 'hi'}
                   />
@@ -2121,6 +2145,7 @@ export default function SocialMediaPostGenerator() {
               /* ── Styled post text ── */
               <div className="min-h-[260px] rounded-2xl border border-[#1e3260]/60 bg-[#0a1130]/70 p-5">
                 <PostContent
+                    animate
                     content={showTranslated && translatedPost ? translatedPost : generatedPost}
                     lang={showTranslated && translatedPost ? 'en' : 'hi'}
                   />
@@ -2310,9 +2335,9 @@ export default function SocialMediaPostGenerator() {
           stacking context the page column makes. */}
       {phoneOpen && generatedPost && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6" role="dialog" aria-modal="true" aria-label={t('cmp.phonePreview')}>
-          <div className="absolute inset-0 bg-[#03060f]/78 backdrop-blur-[3px]" onClick={() => setPhoneOpen(false)} />
+          <div className="ag-fade absolute inset-0 bg-[#03060f]/78 backdrop-blur-[3px]" onClick={() => setPhoneOpen(false)} />
           <div
-            className="cmp-fadein relative h-[min(620px,calc(100vh-96px))]"
+            className="ag-pop relative h-[min(620px,calc(100vh-96px))]"
             style={{ filter: `drop-shadow(0 0 60px rgba(${PLATFORM_LOOK[activePlatform.id].hue},0.35))` }}
           >
             <PhonePreview
