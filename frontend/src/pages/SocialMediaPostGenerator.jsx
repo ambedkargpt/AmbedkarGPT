@@ -680,12 +680,13 @@ export default function SocialMediaPostGenerator() {
     setView(next);
   }
 
-  // The page's one back control. Because each view is its own history entry,
-  // a plain history step walks generated -> story -> feed -> whatever page
-  // came before. Opened cold (no in-app history), stepping back would leave
-  // the site, so it lands on Services instead.
+  // The page's one back control, one step up: the post goes back to its
+  // story, the story to the news, and the news to Services. A plain history
+  // step from the feed went to whatever came before it - after signing in,
+  // that was the landing page.
   function goBack() {
-    if (location.key !== 'default') navigate(-1);
+    if (view === 'generated') goView('preview');
+    else if (view === 'preview') goView('feed');
     else navigate('/generate');
   }
   const handoffDone = useRef(false);
@@ -1054,29 +1055,13 @@ export default function SocialMediaPostGenerator() {
       >
         {/* Brand header */}
         <div className="border-b border-[#141d3a]/70 px-5 py-4">
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard')}
-            title={t('gen.goToDashboard')}
-            className="mb-3 flex items-center gap-2 rounded-lg transition hover:opacity-90"
-          >
-            <AgMark size={28} color="#8FA8FF" />
-            <span className="font-display text-[15px] font-bold gradient-text-blue">{t('brand.wordmark')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/generate')}
-            className="inline-flex items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 px-3 py-1.5 text-[11.5px] font-medium text-[#8b94b8] transition hover:border-[#3a6bc4]/60 hover:text-white"
-          >
-            <LayoutGrid size={12} strokeWidth={2} />
-            {t('nav.services')}
-          </button>
-
           {/* Which tool you are in. This used to sit as a banner across the top
               of the feed, where it repeated the logo already shown here and ate
               a strip of vertical space above the stories. In the rail it still
               names the page, and the feed starts at the search bar. */}
-          <div className="mt-4">
+          {/* The brand and the way to Services live in the dashboard sidebar
+              beside this rail, so it starts with the tool's name. */}
+          <div>
             <p className="font-display text-[16px] font-bold leading-snug text-white">
               {t('gen.title')}
             </p>
