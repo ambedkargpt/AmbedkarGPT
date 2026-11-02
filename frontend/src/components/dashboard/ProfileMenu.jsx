@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { UserCog, SlidersHorizontal, LogOut } from 'lucide-react';
 import { partyLogo } from '../../utils/politicalParties';
 import { useI18n } from '../../i18n/index.jsx';
+import { PREFERENCES_ENABLED } from '../../data/features';
 
 /**
  * Account menu behind the topbar avatar.
@@ -72,8 +73,8 @@ export default function ProfileMenu({ name, email, initial, party, onLogout }) {
 
   const items = [
     { label: t('dash.updateProfile'), icon: UserCog, onClick: () => go('/profile-setup') },
-    { label: t('dash.preferences'), icon: SlidersHorizontal, onClick: () => go('/preferences') },
-  ];
+    PREFERENCES_ENABLED && { label: t('dash.preferences'), icon: SlidersHorizontal, onClick: () => go('/preferences') },
+  ].filter(Boolean);
 
   return (
     <>

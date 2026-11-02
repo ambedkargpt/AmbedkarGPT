@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * Nobody generates a post without a party, a position and the preference
- * questions - but nobody is dragged into a form either.
+ * Nobody generates a post without a party and a position - but nobody is
+ * dragged into a form either. The preference questions are no longer asked:
+ * the server answers them with defaults for the party and role.
  *
  * A Google sign-up arrives with a name and no party. It used to be sent to
  * the profile screen from whatever page it opened, which pulled people who
@@ -33,32 +34,24 @@ async function signedIn(page, user, pending) {
 test('a new account with no party is told, not redirected, and cannot generate', async ({ page }) => {
   await signedIn(page, {}, { party: false, position: false, profile: true });
 
+  // The dashboard is switched off: its address opens the news feed.
   await page.goto('/dashboard');
-  await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole('link', { name: /set up profile|प्रोफ़ाइल सेट/i })).toBeVisible();
-
-  await page.goto('/generate/social-media');
   await expect(page).toHaveURL(/\/generate\/social-media$/);
   await expect(page.getByRole('heading', { name: /set up your profile first|पहले अपनी प्रोफ़ाइल/i })).toBeVisible();
   await page.getByRole('link', { name: /set up profile|प्रोफ़ाइल सेट/i }).click();
   await expect(page).toHaveURL(/\/profile-setup$/);
 });
 
-test('a party with unanswered preferences is pointed to the questions, and can skip with defaults', async ({ page }) => {
+test('the sidebar offers no dashboard, preferences or unbuilt pages', async ({ page }) => {
   await signedIn(page, { political_party: INC, party_position: 'national_vice_president' },
-    { party: false, position: true, profile: false });
+    { party: false, position: false, profile: false });
 
-  await page.goto('/dashboard');
-  await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole('link', { name: /answer preferences|प्राथमिकताएँ चुनिए/i })).toBeVisible();
-
-  await page.goto('/generate/social-media');
-  await expect(page.getByRole('heading', { name: /set up your profile first|पहले अपनी प्रोफ़ाइल/i })).toBeVisible();
-
-  await page.goto('/questionnaire');
-  // No partial save past required questions; the way out is the recommended answers.
-  await expect(page.getByRole('button', { name: /save.*later|बाद/i })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /recommended answers|सुझाए गए जवाब/i })).toBeVisible();
+  await page.goto('/posts');
+  const rail = page.locator('aside').first();
+  await expect(rail.getByRole('button', { name: /post history|पोस्ट इतिहास/i })).toBeVisible();
+  await expect(rail.getByRole('button', { name: /^(dashboard|डैशबोर्ड)$/i })).toHaveCount(0);
+  await expect(rail.getByText(/preferences|प्राथमिकताएँ/i)).toHaveCount(0);
+  await expect(rail.getByText(/soon|जल्द/i)).toHaveCount(0);
 });
 
 test('an account that has done both gets in', async ({ page }) => {
@@ -66,14 +59,14 @@ test('an account that has done both gets in', async ({ page }) => {
     { party: false, position: false, profile: false });
 
   await page.goto('/dashboard');
-  await expect(page).toHaveURL(/\/dashboard$/);
-  await expect(page.getByRole('link', { name: /set up profile|answer preferences|प्रोफ़ाइल सेट|प्राथमिकताएँ चुनिए/i })).toHaveCount(0);
+  await expect(page).toHaveURL(/\/generate\/social-media$/);
+  await expect(page.getByRole('heading', { name: /set up your profile first|पहले अपनी प्रोफ़ाइल/i })).toHaveCount(0);
 });
 
-test('the ON AIR strip on the dashboard opens the station and signs out', async ({ page }) => {
+test('the ON AIR strip in the app frame opens the station and signs out', async ({ page }) => {
   await signedIn(page, { political_party: INC, party_position: 'national_vice_president' },
     { party: false, position: false, profile: false });
-  await page.goto('/dashboard');
+  await page.goto('/posts');
   const strip = page.getByRole('link', { name: /open bhim radio|भीम रेडियो खोलें/i });
   await expect(strip).toBeVisible({ timeout: 15000 });
   await strip.click();

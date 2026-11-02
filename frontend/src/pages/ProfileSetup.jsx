@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, AtSign, Mail, ArrowRight, ArrowLeft, ChevronDown, AlertTriangle } from 'lucide-react';
+import { User, AtSign, Mail, ArrowRight, ArrowLeft, ChevronDown } from 'lucide-react';
 import { isValidPhoneNumber } from 'react-phone-number-input';
 import { useAuth } from '../context/AuthContext';
 import { clearPendingQuestions } from '../hooks/usePendingQuestions';
@@ -16,6 +16,7 @@ import AgMark      from '../components/brand/AgMark';
 import ambedkarSrc from '../assets/images/qna-ambedkar.webp';
 import { useI18n } from '../i18n/index.jsx';
 import { partyLabel, levelLabel } from '../utils/displayLabel';
+import { HOME_ROUTE } from '../data/features';
 
 function FieldInput({ icon: Icon, label, placeholder, value, onChange, error, hint, maxLength }) {
   const [focused, setFocused] = useState(false);
@@ -72,7 +73,8 @@ export default function ProfileSetup() {
   const profileMissing = !currentUser?.political_party
     || (partyHasQuestions(currentUser?.political_party) && !currentUser?.party_position);
   const isOnboarding = !currentUser?.full_name || profileMissing;
-  const nextRoute = isOnboarding ? '/questionnaire' : '/dashboard';
+  // Straight to the news: preferences are no longer asked (defaults stand in).
+  const nextRoute = HOME_ROUTE;
   const [username, setUsername]   = useState(currentUser?.username || '');
   // Whichever of the two a signup didn't collect — phone signup has no email
   // on file and vice versa. Filled in here, both stay optional: nothing
@@ -105,13 +107,6 @@ export default function ProfileSetup() {
   // Derived from the saved position so reopening the form lands on the level
   // already chosen, rather than asking someone to find it again.
   const [partyLevel, setPartyLevel] = useState(() => groupForId(currentUser?.party_position || ''));
-
-  // The party is set once and then fixed: every answer is stored against an
-  // id that names it, so changing it orphans all of them. The server refuses
-  // it; this disables the control so nobody fills in a form that is going to
-  // be rejected. The position stays editable: a new level brings its own five
-  // questions.
-  const partyLocked = Boolean(currentUser?.political_party);
 
   function handleLevelChange(level) {
     setPartyLevel(level);
@@ -442,26 +437,6 @@ export default function ProfileSetup() {
               />
             </div>
 
-            {/* Said before the choice, not after it. A lock the writer only
-                meets as a rejected save is a trap; this is the Instagram
-                pattern for a username or a date of birth. It disappears once
-                both are set, because by then it is advice about nothing. */}
-            {!partyLocked && (
-              <div
-                className="flex gap-3 rounded-xl px-4 py-3.5"
-                style={{ backgroundColor: 'rgba(240,160,75,0.08)', border: '1px solid rgba(240,160,75,0.28)' }}
-              >
-                <AlertTriangle size={16} strokeWidth={2} className="mt-0.5 shrink-0" style={{ color: '#f0b877' }} />
-                <div>
-                  <p className="text-[13px] font-semibold" style={{ color: '#f0b877' }}>
-                    {t('profile.lockWarning.title')}
-                  </p>
-                  <p className="mt-1 text-[12.5px] leading-relaxed" style={{ color: '#c0cde8' }}>
-                    {t('profile.lockWarning.body')}
-                  </p>
-                </div>
-              </div>
-            )}
 
             {/* Party affiliation — decides which news feed the user sees */}
             <div>
@@ -472,8 +447,7 @@ export default function ProfileSetup() {
                 <select
                   value={politicalParty}
                   onChange={(e) => { setPoliticalParty(e.target.value); setErrors((p) => ({ ...p, politicalParty: '' })); }}
-                  disabled={partyLocked}
-                  className="w-full appearance-none rounded-xl px-4 py-3.5 pr-10 text-[14px] outline-none transition disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full appearance-none rounded-xl px-4 py-3.5 pr-10 text-[14px] outline-none transition"
                   style={{
                     backgroundColor: '#0a1130',
                     border: `1px solid ${errors.politicalParty ? '#ef4444' : '#1e3260'}`,
@@ -494,9 +468,6 @@ export default function ProfileSetup() {
                   style={{ color: '#8b94b8' }}
                 />
               </div>
-              {partyLocked && (
-                <p className="mt-1.5 text-[12px]" style={{ color: '#8b94b8' }}>{t('profile.partyLocked')}</p>
-              )}
               {errors.politicalParty
                 ? <p className="mt-1.5 text-[12px]" style={{ color: '#ef4444' }}>{errors.politicalParty}</p>
                 : <p className="mt-1.5 text-[12px]" style={{ color: '#5a6e9a' }}>{t('profile.feedTailored')}</p>}

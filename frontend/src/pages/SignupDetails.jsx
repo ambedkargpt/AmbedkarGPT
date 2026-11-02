@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AlertTriangle, ArrowLeft, ArrowRight, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check } from 'lucide-react';
 import { isValidPhoneNumber } from 'react-phone-number-input';
 import { useAuth } from '../context/AuthContext';
 import { useCurtain } from '../context/CurtainContext';
@@ -16,6 +16,7 @@ import { INDIAN_STATES, CITIES_BY_STATE } from '../utils/indianStatesCities';
 import { useI18n } from '../i18n/index.jsx';
 import { partyLabel, levelLabel } from '../utils/displayLabel';
 import { partyHasQuestions } from '../utils/partyQuestions';
+import { HOME_ROUTE } from '../data/features';
 
 /**
  * The rest of sign-up, asked once the email or phone is verified.
@@ -140,9 +141,10 @@ export default function SignupDetails() {
         sessionStorage.removeItem('auth_redirect');
         curtainGo(redirect, { replace: true });
       } else {
-        // The party was just set, so what the questionnaire asks has changed.
+        // Straight to the news. The preference questions are no longer asked:
+        // each one takes the default for this party and role on the server.
         clearPendingQuestions();
-        curtainGo('/questionnaire', { replace: true });
+        curtainGo(HOME_ROUTE, { replace: true });
       }
     } catch (err) {
       const detail = (err?.response?.data?.detail || err?.message || '').toLowerCase();
@@ -296,22 +298,6 @@ export default function SignupDetails() {
 
           {step === 2 && (
             <>
-              {/* Both fields below are set once and then fixed, so the warning
-                  comes before them rather than after a save is refused. */}
-              <div
-                className="flex gap-3 rounded-xl px-4 py-3"
-                style={{ backgroundColor: 'rgba(240,160,75,0.08)', border: '1px solid rgba(240,160,75,0.28)' }}
-              >
-                <AlertTriangle size={15} strokeWidth={2} className="mt-0.5 shrink-0" style={{ color: '#f0b877' }} />
-                <div>
-                  <p className="text-[12.5px] font-semibold" style={{ color: '#f0b877' }}>
-                    {t('profile.lockWarning.title')}
-                  </p>
-                  <p className="mt-0.5 text-xs leading-relaxed" style={{ color: '#c0cde8' }}>
-                    {t('profile.lockWarning.body')}
-                  </p>
-                </div>
-              </div>
 
               <div ref={partyRef} className="relative">
                 <label className="block mb-1.5 text-sm font-medium" style={{ color: '#c5cde8' }}>

@@ -28,6 +28,7 @@ import Spinner from '../components/Spinner';
 import { useI18n } from '../i18n/index.jsx';
 import SpeakButton from '../components/generate/SpeakButton';
 import Sidebar from '../components/dashboard/Sidebar';
+import { PREFERENCES_ENABLED } from '../data/features';
 import PhonePreview from '../components/compose/PhonePreview';
 import { PLATFORM_LOOK } from '../components/compose/platformLook';
 import '../components/compose/compose.css';
@@ -335,7 +336,8 @@ export default function SocialMediaPostGenerator() {
   const [translating,     setTranslating]     = useState(false);
   const [quota,           setQuota]           = useState(null);
   const [postStatus,      setPostStatus]      = useState('draft');
-  const [platform,        setPlatform]        = useState('twitter');
+  // WhatsApp first: it is where these posts are mostly shared.
+  const [platform,        setPlatform]        = useState('whatsapp');
   // Always the platform preview. The Post/Preview toggle is gone: a plain-text
   // rendering of the same words told nobody anything the preview did not, and
   // the preview is what someone is actually about to publish.
@@ -1870,6 +1872,7 @@ export default function SocialMediaPostGenerator() {
             )}
 
             {/* ── Mobile preferences (right panel is hidden on mobile) ── */}
+            {PREFERENCES_ENABLED && (
             <div className="mt-4 lg:hidden">
               <button
                 type="button"
@@ -1884,11 +1887,12 @@ export default function SocialMediaPostGenerator() {
                 <ChevronRight size={14} strokeWidth={2} className="shrink-0 text-[#6b78a0]" />
               </button>
             </div>
+            )}
 
             {/* The preferences arrive as a sheet from the bottom rather than
                 pushing the rest of the page down: they are a detour from the
                 story, not part of reading it. */}
-            {showMobilePrefs && prefQuestions.length > 0 && (
+            {PREFERENCES_ENABLED && showMobilePrefs && prefQuestions.length > 0 && (
               <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label={t('gen.postPreferences')}>
                 <div
                   className="dash-backdrop absolute inset-0 bg-[#03060f]/78 backdrop-blur-[3px]"
@@ -2322,7 +2326,7 @@ export default function SocialMediaPostGenerator() {
       {/* ── RESIZE HANDLE + RIGHT SIDEBAR ──
           Only with a story open: the preferences shape a post, and on the
           feed they took a column from the stories for nothing. */}
-      {view !== 'feed' && (
+      {PREFERENCES_ENABLED && view !== 'feed' && (
       <div className="sticky top-0 z-20 hidden h-screen shrink-0 lg:flex" style={{ width: panelWidth + 8 }}>
         {/* Drag handle */}
         <div
