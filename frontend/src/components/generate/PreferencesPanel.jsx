@@ -3,6 +3,7 @@ import { Sparkles, ChevronDown, RotateCcw } from 'lucide-react';
 import { labelWithSize } from '../../utils/preferenceQuestions';
 import { questionLabel } from '../../i18n/preferenceOptions';
 import { useI18n } from '../../i18n/index.jsx';
+import { shortOption, shortQuestion } from '../../data/partyQuestionsShort';
 
 // UI-only display metadata per question_id — labels and hints are not stored
 // in the DB, so the ids map to i18n keys here. Falls back gracefully for
@@ -79,7 +80,7 @@ function Dropdown({ value, options, optionsHi, onChange, lang }) {
           const hi = lang === 'hi' ? optionsHi?.[i] : '';
           return (
             <option key={opt} value={opt} title={opt} className="bg-[#0a1130] text-white">
-              {hi || labelWithSize(opt, lang)}
+              {shortOption(opt, lang) || hi || labelWithSize(opt, lang)}
             </option>
           );
         })}
@@ -155,16 +156,24 @@ export default function PreferencesPanel({ questions = [], value, onChange, defa
           ))
         ) : (
           questions.map((q, i) => {
+            // A party question reads as one short question and short options,
+            // so a writer can choose at a glance; the full sentence is on hover.
+            const short = shortQuestion(q.question_id, lang);
             const { label, hint } = getMeta(q.question_id, q.question_text, t, lang);
             return (
               <div key={q.question_id}>
                 <div className="flex items-baseline justify-between gap-2">
-                  <label className="text-[11.5px] font-semibold uppercase tracking-wider text-[#6aa8ff]">
-                    <span className="font-count text-[#8b94b8] mr-1">{i + 1}.</span>
-                    {label}
+                  <label
+                    title={short ? q.question_text : undefined}
+                    className={short
+                      ? 'text-[14px] font-semibold leading-snug text-white'
+                      : 'text-[11.5px] font-semibold uppercase tracking-wider text-[#6aa8ff]'}
+                  >
+                    <span className="font-count text-[#8b94b8] mr-1.5">{i + 1}.</span>
+                    {short || label}
                   </label>
                 </div>
-                {hint && (
+                {!short && hint && (
                   <p className="mt-0.5 text-[10.5px] text-[#6b78a0] leading-snug">{hint}</p>
                 )}
                 <div className="mt-2">

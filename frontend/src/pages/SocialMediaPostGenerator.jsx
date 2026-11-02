@@ -28,6 +28,7 @@ import { useI18n } from '../i18n/index.jsx';
 import SpeakButton from '../components/generate/SpeakButton';
 import { partyLabel } from '../utils/displayLabel';
 import { partyLogo } from '../utils/politicalParties';
+import { shortOption, shortQuestion } from '../data/partyQuestionsShort';
 import { trackEvent } from '../analytics/metrics';
 
 const CATEGORIES = ['All', 'Legacy', 'Policy', 'Education', 'Research', 'Grassroots'];
@@ -1936,9 +1937,9 @@ export default function SocialMediaPostGenerator() {
                     };
                     return (
                       <div key={q.question_id}>
-                        <label className="mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wider text-[#6aa8ff]">
-                          <span className="mr-1 text-[#4e5a80]">{i + 1}.</span>
-                          {labels[q.question_id] ?? q.question_text}
+                        <label className="mb-1.5 block text-[14px] font-semibold leading-snug text-white">
+                          <span className="mr-1.5 text-[#6b78a0]">{i + 1}.</span>
+                          {shortQuestion(q.question_id, lang) ?? labels[q.question_id] ?? q.question_text}
                         </label>
                         <div className="relative">
                           <select
@@ -1947,7 +1948,7 @@ export default function SocialMediaPostGenerator() {
                             className="w-full appearance-none rounded-lg border border-[#1e3260]/70 bg-[#0a1130]/80 py-2 pl-3 pr-8 text-[12.5px] text-white outline-none transition focus:border-[#3f9fff]/60"
                           >
                             {q.options.map((opt) => (
-                              <option key={opt} value={opt} className="bg-[#0a1130]">{opt}</option>
+                              <option key={opt} value={opt} className="bg-[#0a1130]">{shortOption(opt, lang) || opt}</option>
                             ))}
                           </select>
                           <ChevronDown size={12} strokeWidth={2} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6b78a0]" />
