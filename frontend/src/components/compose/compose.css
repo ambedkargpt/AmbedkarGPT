@@ -45,8 +45,8 @@
 .cmp-fadein { animation: cmpFade .5s cubic-bezier(.2,.8,.2,1) both; }
 @keyframes cmpFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
-/* Facebook preview is clamped like the real feed ("See more"). */
-.cmp-clamp14 { display: -webkit-box; -webkit-line-clamp: 14; -webkit-box-orient: vertical; overflow: hidden; }
+/* The phone's screen scrolls, so a long post can be read to the end. */
+.cmp-phone-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,.22) transparent; overscroll-behavior: contain; }
 
 /* Devanagari must never be letter-spaced: it breaks conjuncts. */
 [lang="hi"] .cmp-root .tracking-wider,

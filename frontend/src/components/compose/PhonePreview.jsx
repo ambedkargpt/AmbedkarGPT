@@ -44,7 +44,7 @@ export function BusyBody({ genSeconds }) {
         <span className="flex flex-col gap-1.5"><span className="cmp-shim h-[11px] w-[120px]" /><span className="cmp-shim h-[9px] w-20" /></span>
       </div>
       <span className="cmp-shim h-3" /><span className="cmp-shim h-3 w-[92%]" /><span className="cmp-shim h-3 w-[96%]" /><span className="cmp-shim h-3 w-[64%]" />
-      <div className="mt-auto flex flex-col items-center gap-3.5 pb-5">
+      <div className="mt-auto flex shrink-0 flex-col items-center gap-3.5 pb-5">
         <ChakraIcon size={64} spokes={24} color="#6aa8ff" spinning />
         <ol className="m-0 flex list-none flex-col gap-1.5 p-0 text-[15px]">
           {steps.map((s, i) => (
@@ -110,7 +110,7 @@ export default function PhonePreview({
           )}
 
           {state === 'ready' && platform === 'twitter' && (
-            <div className="cmp-fadein flex flex-1 flex-col gap-2.5 p-4">
+            <div className="cmp-fadein cmp-phone-scroll flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-4">
               <div className="flex items-center gap-2.5">
                 <Avatar name={authorName} />
                 <span className="flex flex-col leading-[1.3]">
@@ -133,20 +133,20 @@ export default function PhonePreview({
                 </div>
                 <div className="px-3 py-[7px] text-[13.5px] text-[#71767B]">ambedkargpt.in</div>
               </div>
-              <div className="mt-auto flex items-center gap-5 pb-1.5 text-[14px] text-[#71767B]"><span>💬 0</span><span>🔁 0</span><span>♡ 0</span></div>
+              <div className="mt-auto flex shrink-0 items-center gap-5 pb-1.5 text-[14px] text-[#71767B]"><span>💬 0</span><span>🔁 0</span><span>♡ 0</span></div>
             </div>
           )}
 
           {state === 'ready' && platform === 'reddit' && (
-            <div className="cmp-fadein flex flex-1 flex-col gap-2.5 p-4">
+            <div className="cmp-fadein cmp-phone-scroll flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-4">
               <div className="flex items-center gap-2 text-[14px] text-[#818384]">
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#FF4500] text-[11px] font-bold text-white">r/</span>
                 <strong className="text-[#D7DADC]">r/india</strong>
                 <span>· u/{authorHandle} · {t('cmp.now')}</span>
               </div>
               <h3 className={`m-0 text-[18px] font-semibold leading-[1.45] text-[#D7DADC] ${bodyFont}`}>{first}</h3>
-              <p className={`m-0 line-clamp-[12] text-[15.5px] leading-[1.6] text-[#C9CCCF] ${bodyFont}`}>{rest.join(' ').trim()}</p>
-              <div className="mt-auto flex gap-2.5 pb-1.5 text-[14px] font-semibold text-[#818384]">
+              <p className={`m-0 whitespace-pre-line text-[15.5px] leading-[1.6] text-[#C9CCCF] ${bodyFont}`}>{rest.join(' ').trim()}</p>
+              <div className="mt-auto flex shrink-0 gap-2.5 pb-1.5 text-[14px] font-semibold text-[#818384]">
                 <span className="rounded-full bg-[#272729] px-2.5 py-1">⬆ 1 ⬇</span>
                 <span className="rounded-full bg-[#272729] px-2.5 py-1">💬 0</span>
               </div>
@@ -154,8 +154,8 @@ export default function PhonePreview({
           )}
 
           {state === 'ready' && platform === 'whatsapp' && (
-            <div className="cmp-fadein flex flex-1 flex-col justify-end bg-[#0B141A] px-3 py-4">
-              <div className={`max-w-[92%] self-end whitespace-pre-line rounded-[12px_12px_4px_12px] bg-[#005C4B] px-[11px] pb-[5px] pt-[9px] text-[16px] leading-[1.55] text-[#E9EDEF] ${bodyFont}`}>
+            <div className="cmp-fadein cmp-phone-scroll flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#0B141A] px-3 py-4">
+              <div className={`mt-auto max-w-[92%] self-end whitespace-pre-line rounded-[12px_12px_4px_12px] bg-[#005C4B] px-[11px] pb-[5px] pt-[9px] text-[16px] leading-[1.55] text-[#E9EDEF] ${bodyFont}`}>
                 <Tagged text={text} tagColor="#53BDEB" />
                 <span className="block text-right text-[12.5px] text-[#A8D5CB]">10:42 ✓✓</span>
               </div>
@@ -163,7 +163,7 @@ export default function PhonePreview({
           )}
 
           {state === 'ready' && platform === 'facebook' && (
-            <div className="cmp-fadein flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden p-3.5">
+            <div className="cmp-fadein cmp-phone-scroll flex min-h-0 flex-1 flex-col gap-2.5 overflow-y-auto p-3.5">
               <div className="flex items-center gap-2.5">
                 <Avatar name={authorName} size={36} />
                 <span className="flex flex-col leading-[1.3]">
@@ -171,10 +171,10 @@ export default function PhonePreview({
                   <span className="text-[13.5px] text-[#B0B3B8]">{t('cmp.now')} · 🌐</span>
                 </span>
               </div>
-              <p className={`cmp-clamp14 m-0 whitespace-pre-line text-[15px] leading-[1.6] text-[#E4E6EB] ${bodyFont}`}>
+              <p className={`m-0 whitespace-pre-line text-[15px] leading-[1.6] text-[#E4E6EB] ${bodyFont}`}>
                 <Tagged text={text} tagColor="#2D88FF" />
               </p>
-              <div className="mt-auto flex justify-around border-t border-[#3E4042] pb-1 pt-2 text-[14.5px] font-semibold text-[#B0B3B8]">
+              <div className="mt-auto flex shrink-0 justify-around border-t border-[#3E4042] pb-1 pt-2 text-[14.5px] font-semibold text-[#B0B3B8]">
                 <span>👍 {t('cmp.like')}</span><span>💬 {t('cmp.comment')}</span><span>↗ {t('cmp.share')}</span>
               </div>
             </div>
