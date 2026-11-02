@@ -3,13 +3,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { clearPendingQuestions } from '../hooks/usePendingQuestions';
 import {
   ArrowLeft, Search, Filter, Sparkles,
-  Copy, Check, RefreshCw, ChevronDown, FileText, Star, Radio,
+  Copy, Check, RefreshCw, ChevronDown, FileText, Radio,
   ArrowUpDown, List, LayoutGrid, Users, Globe,
   CalendarDays, Clock, ChevronRight, X as XIcon,
   MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle,
 } from 'lucide-react';
 
-import PreferencesPanel from '../components/generate/PreferencesPanel';
+import Composer from '../components/generate/Composer';
+import NewsDesk from '../components/generate/NewsDesk';
 import DevSourceTag from '../components/DevSourceTag';
 import ScrollRow from '../components/ui/ScrollRow';
 import PostContent from '../components/generate/PostContent';
@@ -17,8 +18,9 @@ import AgMark from '../components/brand/AgMark';
 import { useAuth } from '../context/AuthContext';
 import { getNews, getNewsById, getNewsByStoryId, getTenants } from '../api/news';
 import { adaptNews, resolveTenantForUser } from '../utils/newsTenants';
-import { generatePostForNews, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion, updatePost, warmGenerator } from '../api/posts';
+import { generatePostForNews, getPosts, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion, updatePost, warmGenerator } from '../api/posts';
 import { getPartyQuestions } from '../api/questions';
+import { labelForId } from '../utils/partyRoles';
 import { getProfileAnswers, saveProfileAnswers } from '../api/profile';
 import { CORE_QUESTION_IDS } from '../utils/preferenceQuestions';
 import { getSiteLanguage, SITE_LANGUAGES } from '../utils/siteLanguage';
@@ -81,9 +83,8 @@ function shareTarget(platform, text) {
 }
 
 
-const MIN_PANEL = 220;
-const MAX_PANEL = 500;
 const PAGE_SIZE = 12; // news cards per page
+
 
 // Feed ordering and card layout are remembered per browser. Both are reading
 // preferences, not account settings, and localStorage throws outright in some
@@ -306,11 +307,10 @@ export default function SocialMediaPostGenerator() {
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [selectedPostId,  setSelectedPostId]  = useState(null);
   const [copied,          setCopied]          = useState(false);
-  const [panelWidth,      setPanelWidth]      = useState(300);
   const [searchInput,     setSearchInput]     = useState('');
   const [prefQuestions,   setPrefQuestions]   = useState([]);
-  const [preferences,     setPreferences]     = useState({});
   const [savedPrefs,      setSavedPrefs]      = useState({});
+  const [preferences,     setPreferences]     = useState({});
   const [translatedPost,  setTranslatedPost]  = useState('');
   const [showTranslated,  setShowTranslated]  = useState(false);
   const [translating,     setTranslating]     = useState(false);
@@ -352,6 +352,24 @@ export default function SocialMediaPostGenerator() {
     if (!currentUser?.id) return;
     getDailyQuota().then(setQuota).catch(() => {});
   }, [currentUser?.id]);
+
+  // How many posts this user has written on each story, for the "2/5" chip.
+  // Only a reading of what the server enforces (five posts per story).
+  const [postCounts, setPostCounts] = useState({});
+  const loadPostCounts = useCallback(() => {
+    getPosts({ limit: 500 })
+      .then((posts) => {
+        const counts = {};
+        for (const p of posts ?? []) {
+          if (p?.news_id) counts[p.news_id] = (counts[p.news_id] ?? 0) + 1;
+        }
+        setPostCounts(counts);
+      })
+      .catch(() => {});
+  }, []);
+  useEffect(() => {
+    if (currentUser?.id) loadPostCounts();
+  }, [currentUser?.id, loadPostCounts]);
 
   // The party comes from the user's signup choice — it is not switchable here.
   // Declared before loadNews because that callback reads it.
@@ -444,46 +462,20 @@ export default function SocialMediaPostGenerator() {
       setPreferences(initial);
       setSavedPrefs(initial);
     }).catch(() => {});
-    // Re-runs on a language switch, so the party questions come back in the
-    // language now on screen, and on a party change, so they come back as the
-    // new party's set rather than the old one's. Position is not a dependency
-    // any more: the panel no longer asks anything that varies by level.
+    // Re-runs on a language switch, so the questions come back in the language
+    // now on screen, and on a party change, so they come back as the new
+    // party's set rather than the old one's.
   }, [currentUser?.id, currentUser?.political_party, siteLang]);
 
-  // Resize drag refs
-  const resizing  = useRef(false);
-  const startX    = useRef(0);
-  const startW    = useRef(0);
-
   useEffect(() => {
-    function onMove(e) {
-      if (!resizing.current) return;
-      const delta = startX.current - e.clientX;
-      setPanelWidth(Math.min(MAX_PANEL, Math.max(MIN_PANEL, startW.current + delta)));
-    }
-    function onUp() { resizing.current = false; document.body.style.cursor = ''; document.body.style.userSelect = ''; }
     function onClickOutside(e) {
       if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false);
       if (sortRef.current && !sortRef.current.contains(e.target)) setSortOpen(false);
       if (typeRef.current && !typeRef.current.contains(e.target)) setTypeOpen(false);
     }
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
     document.addEventListener('mousedown', onClickOutside);
-    return () => {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-      document.removeEventListener('mousedown', onClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
-
-  function startResize(e) {
-    resizing.current = true;
-    startX.current   = e.clientX;
-    startW.current   = panelWidth;
-    document.body.style.cursor     = 'col-resize';
-    document.body.style.userSelect = 'none';
-  }
 
 
   // Split the feed into three sections: the chosen party's news, the
@@ -523,6 +515,16 @@ export default function SocialMediaPostGenerator() {
     { id: 'general', Icon: Globe, label: t('gen.generalNews'),
       sub: t('gen.generalNewsSub'), count: generalArticles.length },
   ];
+
+  // The desk's tabs carry the party's short name in the first one, since the
+  // party banner is gone from that layout.
+  const deskSectionTabs = sectionTabs.map((s) => ({
+    ...s,
+    heading: t(`gen.v2.head.${s.id}`),
+    ...(s.id === 'party' && activeParty
+      ? { sub: t('gen.v2.partySub', { party: partyShortLabel(activeParty, currentUser?.political_party, t, lang) }) }
+      : {}),
+  }));
 
   function chooseSection(id) {
     setNewsSection(id);
@@ -753,6 +755,7 @@ export default function SocialMediaPostGenerator() {
       trackEvent('generate_post', { platform, language: siteLang });
       setGeneratedPost(content);
       setPostFailed(false);
+      loadPostCounts();
       setSelectedPostId(response?.post?.id || null);
       setPostStatus('draft');
       setRefinementNote('');
@@ -948,163 +951,19 @@ export default function SocialMediaPostGenerator() {
 
   return (
     <div
-      className="relative flex min-h-screen text-[#e5e7eb]"
+      className="relative flex min-h-screen text-[#e5e7eb] lg:h-screen lg:overflow-hidden"
       // The dashboard shell's own ground, so moving from the dashboard or the
       // services page into the generator does not drop into a darker room.
       style={{
         background:
           'radial-gradient(1200px 700px at 18% -4%, #101c46 0%, rgba(7,11,28,0) 58%),' +
-        'linear-gradient(168deg, #0a1030 0%, #070b1f 48%, #04081a 100%)',
+          'linear-gradient(168deg, #0a1030 0%, #070b1f 48%, #04081a 100%)',
       }}
     >
       {/* ambient glows */}
       <div className="pointer-events-none fixed left-[240px] top-0 h-[500px] w-[500px] rounded-full bg-[#3f9fff]/8 blur-[140px]" />
       <div className="pointer-events-none fixed bottom-0 right-[300px] h-[420px] w-[420px] rounded-full bg-[#7b5cff]/8 blur-[140px]" />
 
-      {/* ── LEFT SIDEBAR ── */}
-      <aside
-        className="hidden lg:flex w-[240px] shrink-0 flex-col overflow-y-auto border-r border-[#1f2b52]/70"
-        style={{ background: 'linear-gradient(180deg, rgba(16,25,55,0.55) 0%, rgba(10,16,38,0.55) 100%)' }}
-      >
-        {/* Brand header */}
-        <div className="border-b border-[#141d3a]/70 px-5 py-4">
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard')}
-            title={t('gen.goToDashboard')}
-            className="mb-3 flex items-center gap-2 rounded-lg transition hover:opacity-90"
-          >
-            <AgMark size={28} color="#8FA8FF" />
-            <span className="font-display text-[15px] font-bold gradient-text-blue">{t('brand.wordmark')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/generate')}
-            className="inline-flex items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 px-3 py-1.5 text-[11.5px] font-medium text-[#8b94b8] transition hover:border-[#3a6bc4]/60 hover:text-white"
-          >
-            <LayoutGrid size={12} strokeWidth={2} />
-            {t('nav.services')}
-          </button>
-
-          {/* Which tool you are in. This used to sit as a banner across the top
-              of the feed, where it repeated the logo already shown here and ate
-              a strip of vertical space above the stories. In the rail it still
-              names the page, and the feed starts at the search bar. */}
-          <div className="mt-4">
-            <p className="font-display text-[16px] font-bold leading-snug text-white">
-              {t('gen.title')}
-            </p>
-            <p className="mt-1 text-[11.5px] leading-relaxed text-[#6b78a0]">
-              {t('gen.motto')}
-              <span className="block text-[#5a6584]">{t('brand.attrib')}</span>
-            </p>
-            <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-[#3f9fff]/20 bg-[#3f9fff]/8 px-2.5 py-1 text-[10.5px] font-semibold text-[#6aa8ff]">
-              <Sparkles size={9} strokeWidth={2} />
-              {t('gen.aiPowered')}
-            </span>
-          </div>
-        </div>
-
-        {/* User profile card */}
-        <div className="px-4 pt-4">
-          <div className="rounded-2xl border border-[#22305c]/80 bg-[#101937] px-5 py-5">
-            <div className="flex flex-col items-center">
-              <div className="relative">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#3f9fff] to-[#7b5cff] text-[22px] font-bold text-white shadow-[0_0_24px_rgba(63,159,255,0.35)]">
-                  {(currentUser?.username?.[0] ?? '?').toUpperCase()}
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#101937] bg-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-              </div>
-              <p className="mt-3 font-display text-[16px] font-semibold text-white">{currentUser?.username ?? '—'}</p>
-              <p className="mt-0.5 text-[11.5px] text-[#8b93a5]">{currentUser?.email ?? currentUser?.phone ?? ''}</p>
-              <button
-                type="button"
-                onClick={() => navigate('/profile-setup')}
-                className="mt-1 text-[11px] font-medium text-[#ef6a6a] transition hover:text-[#ff8a8a]"
-              >
-                {t('gen.completeProfile')}
-              </button>
-            </div>
-
-            {/* Stat cards */}
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-[#22305c]/80 bg-[#0c1430] px-3 py-3 text-center">
-                <p className="font-count text-[22px] font-bold text-[#4a9eff]">127</p>
-                <p className="mt-0.5 text-[10px] text-[#8b93a5]">{t('gen.activityScore')}</p>
-              </div>
-              <div className="rounded-xl border border-[#3a3320]/80 bg-[#17130a] px-3 py-3 text-center">
-                <p className="flex items-center justify-center gap-1 font-display text-[18px] font-bold text-[#f5b73d]">
-                  <Star size={15} strokeWidth={2} className="fill-[#f5b73d]" />
-                  Pro
-                </p>
-                <p className="mt-0.5 text-[10px] text-[#8b93a5]">{t('gen.subscription')}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Party affiliation — set at signup, shown read-only */}
-        <div className="px-4 pt-5">
-          <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#8b93a5]">
-            {t('gen.yourParty')}
-          </p>
-          {activeParty ? (
-            <div
-              className="flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-[13px] font-medium text-white"
-              style={{ borderColor: 'rgba(63,159,255,0.55)', backgroundColor: 'rgba(63,159,255,0.10)' }}
-            >
-              <Check size={14} strokeWidth={2.5} className="shrink-0 text-[#6aa8ff]" />
-              <span className="min-w-0 truncate">{activeParty.name}</span>
-            </div>
-          ) : (
-            // No party on the profile (older accounts, or skipped at signup) —
-            // say so instead of silently hiding the whole party feed.
-            <button
-              type="button"
-              onClick={() => navigate('/profile-setup')}
-              className="w-full rounded-xl border border-[#22305c]/80 bg-[#101937] px-3.5 py-3 text-left text-[12.5px] text-[#8b93a5] transition hover:border-[#3f9fff]/45 hover:text-white"
-            >
-              {t('gen.noPartyLine')}
-              <span className="mt-0.5 block text-[11.5px] text-[#6aa8ff]">{t('gen.setParty')}</span>
-            </button>
-          )}
-        </div>
-
-        {/* Target platform */}
-        <div className="px-4 pt-5">
-          <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#8b93a5]">{t('gen.targetPlatform')}</p>
-          <div className="space-y-2">
-            {PLATFORMS.map((p) => {
-              const active = platform === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setPlatform(p.id)}
-                  className="flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left text-[13px] font-medium transition"
-                  style={{
-                    borderColor: active ? p.color : 'rgba(34,48,92,0.8)',
-                    backgroundColor: active ? `${p.color}1f` : '#101937',
-                    color: active ? '#ffffff' : '#8b93a5',
-                  }}
-                >
-                  <span className="flex h-6 w-6 items-center justify-center text-[13px] font-bold" style={{ color: p.color }}>
-                    {p.short}
-                  </span>
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Keeps the version line at the foot of the sidebar. */}
-        <div className="flex-1" />
-
-        <div className="px-6 py-5 text-[11px] font-count text-[#4e5a80] tracking-wide">
-          v1.0 · AmbedkarGPT
-        </div>
-      </aside>
 
       {/* ── MAIN CONTENT ── */}
       <div
@@ -1113,7 +972,7 @@ export default function SocialMediaPostGenerator() {
       >
 
         {/* Search + filter */}
-        <header className="flex flex-wrap items-center gap-2.5 px-4 pb-3 pt-4 sm:flex-nowrap sm:gap-3 sm:px-6 md:px-8">
+        <header className={`flex flex-wrap items-center gap-2.5 px-4 pb-3 pt-4 sm:flex-nowrap sm:gap-3 sm:px-6 md:px-8 lg:hidden`}>
           <button
             type="button"
             onClick={goBack}
@@ -1218,9 +1077,49 @@ export default function SocialMediaPostGenerator() {
           </div>
         </header>
 
-        {/* ── Feed view ── */}
+        {/* ── Feed view, lg and up ── */}
         {view === 'feed' && (
-          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+          <NewsDesk
+            firstName={(currentUser?.full_name || currentUser?.username || '').split(' ')[0]}
+            searchInput={searchInput}
+            onSearch={(v) => { setSearchInput(v); setPage(1); }}
+            sortOrder={sortOrder}
+            onSort={(id) => { setSortOrder(id); writeLocal(SORT_KEY, id); setPage(1); }}
+            cardView={cardView}
+            onCardView={(id) => { setCardView(id); writeLocal(VIEW_KEY, id); }}
+            sectionTabs={activeParty ? deskSectionTabs : []}
+            newsSection={newsSection}
+            onSection={chooseSection}
+            partyLogo={partyLogo(currentUser?.political_party || activeParty?.name || '')}
+            partyShort={activeParty ? partyShortLabel(activeParty, currentUser?.political_party, t, lang) : ''}
+            partyName={activeParty ? partyLabel(activeParty.name, lang) : ''}
+            partyTags={(PARTY_TAG_KEYS[activeParty?.slug] ?? []).map((k) => t(k)).filter((v) => v && !v.startsWith('ptag.')).join(' · ')}
+            quota={quota}
+            dateFilter={dateFilter}
+            availableDays={availableDays}
+            onDate={(id) => { setDateFilter(id); setPage(1); }}
+            dayPrefix={DAY_PREFIX}
+            typeFilter={typeFilter}
+            onType={(id) => { setTypeFilter(id); setPage(1); }}
+            showType={newsSection === 'party'}
+            loading={newsLoading}
+            error={newsError}
+            onRetry={loadNews}
+            opposition={newsSection === 'opposition'}
+            groups={pagedGroups}
+            total={orderedArticles.length}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            pageItems={getPageItems(currentPage, totalPages)}
+            onPage={setPage}
+            postCounts={postCounts}
+            onOpen={handlePreview}
+          />
+        )}
+
+        {/* ── Feed view, phones and tablets ── */}
+        {view === 'feed' && (
+          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8 lg:hidden">
             {/* Three news sections: chosen party, opposition (BJP, empty
                 until it is scraped), and general (neutral) news. Underlined
                 tabs rather than pills, and each section carries its own
@@ -1751,6 +1650,56 @@ export default function SocialMediaPostGenerator() {
           </div>
         )}
 
+        {/* ── Composer, lg and up: the preview and generated views in one ── */}
+        {view !== 'feed' && selectedArticle && (
+          <Composer
+            article={selectedArticle}
+            onBack={() => goView('feed')}
+            platforms={PLATFORMS}
+            platform={platform}
+            onPlatform={setPlatform}
+            questions={prefQuestions}
+            savedPrefs={savedPrefs}
+            roleLabel={labelForId(currentUser?.party_position, currentUser?.political_party, lang)}
+            partyName={activeParty ? partyLabel(activeParty.name, lang) : ''}
+            preferences={preferences}
+            onPreference={(id, v) => setPreferences((prev) => ({ ...prev, [id]: v }))}
+            quota={quota}
+            atDailyLimit={atDailyLimit}
+            quotaCountdown={quotaCountdown}
+            postCount={postCounts[selectedArticle._backendId] ?? 0}
+            generating={generating}
+            genSeconds={genSeconds}
+            onGenerate={handleGenerate}
+            content={activeContent}
+            postFailed={postFailed}
+            selectedPostId={selectedPostId}
+            postStatus={postStatus}
+            hasOtherVersion={hasOtherVersion}
+            refinedIsLive={refinedIsLive}
+            switchingVersion={switchingVersion}
+            onToggleVersion={handleToggleVersion}
+            refinedAt={refinedAt}
+            showTranslated={showTranslated && Boolean(translatedPost)}
+            translating={translating}
+            onTranslate={handleTranslate}
+            onShowOriginal={() => setShowTranslated(false)}
+            copied={copied}
+            onCopy={handleCopy}
+            copiedHashtags={copiedHashtags}
+            onCopyHashtags={handleCopyHashtags}
+            onPublish={handlePublish}
+            sharing={sharing}
+            shareMsg={shareMsg}
+            charOverLimit={charOverLimit}
+            refinementNote={refinementNote}
+            onRefinementNote={(v) => { setRefinementNote(v); if (refineHint) setRefineHint(''); }}
+            refineHint={refineHint}
+            onRegenerate={handleRegenerate}
+            userName={currentUser?.full_name || currentUser?.username || ''}
+          />
+        )}
+
         {/* ── Preview view ── */}
         {view === 'preview' && selectedArticle && (() => {
           const hasSecondPara = Boolean(
@@ -1766,7 +1715,7 @@ export default function SocialMediaPostGenerator() {
             .trim().split(/[\s।]+/).filter(Boolean).length;
           const readingMinutes = Math.max(1, Math.round(words / 200));
           return (
-          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8 lg:hidden">
             <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
               <span className="inline-block rounded-full border border-[#1e3a6e]/60 bg-[#0d1840]/60 px-2.5 py-0.5 font-count text-[10px] uppercase tracking-widest text-[#6aa8ff]">
                 {selectedArticle.category}
@@ -1993,7 +1942,7 @@ export default function SocialMediaPostGenerator() {
 
         {/* ── Generated post view ── */}
         {view === 'generated' && (
-          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8 lg:hidden">
             {/* Header: title on left, actions on right (icon-only on mobile
                 to prevent overflow). The way back is the page's single back
                 control at the top, which steps back to the story. */}
@@ -2295,28 +2244,9 @@ export default function SocialMediaPostGenerator() {
 
           </div>
         )}
+
       </div>
 
-      {/* ── RESIZE HANDLE + RIGHT SIDEBAR ── */}
-      <div className="sticky top-0 z-20 hidden h-screen shrink-0 lg:flex" style={{ width: panelWidth + 8 }}>
-        {/* Drag handle */}
-        <div
-          onMouseDown={startResize}
-          className="group flex w-2 shrink-0 cursor-col-resize flex-col items-center justify-center border-l border-[#141d3a]/70 transition-colors hover:border-[#3f9fff]/30 hover:bg-[#3f9fff]/5"
-        >
-          <div className="h-10 w-[3px] rounded-full bg-[#1e3260] transition-colors group-hover:bg-[#3f9fff]/50" />
-        </div>
-
-        {/* Preferences panel */}
-        <div className="h-full flex-1 overflow-hidden">
-          <PreferencesPanel
-            questions={prefQuestions}
-            value={preferences}
-            onChange={setPreferences}
-            defaultValues={savedPrefs}
-          />
-        </div>
-      </div>
     </div>
   );
 }
