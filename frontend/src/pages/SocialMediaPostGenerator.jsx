@@ -32,7 +32,7 @@ import NotificationBell from '../components/dashboard/NotificationBell';
 import ProfileMenu from '../components/dashboard/ProfileMenu';
 import LanguageSwitcher from '../components/LanguageSwitcher';
 import { labelForId } from '../utils/partyRoles';
-import { PREFERENCES_ENABLED } from '../data/features';
+import { GENERAL_NEWS_ENABLED, PREFERENCES_ENABLED } from '../data/features';
 import PhonePreview from '../components/compose/PhonePreview';
 import { PLATFORM_LOOK } from '../components/compose/platformLook';
 import '../components/compose/compose.css';
@@ -546,9 +546,10 @@ export default function SocialMediaPostGenerator() {
       count: partyArticles.length },
     { id: 'opposition', Icon: Users, label: t('gen.oppositionNews'),
       sub: t('gen.oppositionNewsSub'), count: oppositionArticles.length },
-    { id: 'general', Icon: Globe, label: t('gen.generalNews'),
+    // General news is switched off for now (GENERAL_NEWS_ENABLED).
+    GENERAL_NEWS_ENABLED && { id: 'general', Icon: Globe, label: t('gen.generalNews'),
       sub: t('gen.generalNewsSub'), count: generalArticles.length },
-  ];
+  ].filter(Boolean);
 
   function chooseSection(id) {
     setNewsSection(id);
@@ -724,7 +725,7 @@ export default function SocialMediaPostGenerator() {
       .then((item) => {
         if (!item) return;
         const article = adaptNews(item);
-        if (section) setNewsSection(section);
+        if (section && (section !== 'general' || GENERAL_NEWS_ENABLED)) setNewsSection(section);
         setSelectedArticle(article);
         setGeneratedPost('');
         setSelectedPostId(null);
@@ -1288,7 +1289,7 @@ export default function SocialMediaPostGenerator() {
                 })}
               </ScrollRow>
 
-              <div className="mb-6 hidden gap-3 sm:grid sm:grid-cols-3">
+              <div className={`mb-6 hidden gap-3 sm:grid ${sectionTabs.length === 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
                 {sectionTabs.map((s) => {
                   const active = newsSection === s.id;
                   const tint = SECTION_THEME[s.id].accent;

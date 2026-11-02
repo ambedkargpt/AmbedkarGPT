@@ -15,5 +15,8 @@ export const DASHBOARD_ENABLED = false;
  */
 export const PREFERENCES_ENABLED = false;
 
+/** The "General news" section of the news feed. Off: only party and opposition news. */
+export const GENERAL_NEWS_ENABLED = false;
+
 /** Where "home" is for a signed-in user: the news feed to write from. */
 export const HOME_ROUTE = '/generate/social-media';
