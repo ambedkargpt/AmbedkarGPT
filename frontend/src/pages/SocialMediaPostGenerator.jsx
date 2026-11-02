@@ -1,17 +1,16 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { clearPendingQuestions } from '../hooks/usePendingQuestions';
 import {
   ArrowLeft, Search, Filter, Sparkles,
-  Copy, Check, RefreshCw, ChevronDown, FileText, Radio,
+  Copy, Check, RefreshCw, ChevronDown, FileText, Star, Radio,
   ArrowUpDown, List, LayoutGrid, Users, Globe,
   CalendarDays, Clock, ChevronRight, X as XIcon,
-  MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle,
+  MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle, Smartphone,
 } from 'lucide-react';
 
-import Composer from '../components/generate/Composer';
-import NewsDesk from '../components/generate/NewsDesk';
-import Sidebar from '../components/dashboard/Sidebar';
+import PreferencesPanel from '../components/generate/PreferencesPanel';
 import DevSourceTag from '../components/DevSourceTag';
 import ScrollRow from '../components/ui/ScrollRow';
 import PostContent from '../components/generate/PostContent';
@@ -19,9 +18,8 @@ import AgMark from '../components/brand/AgMark';
 import { useAuth } from '../context/AuthContext';
 import { getNews, getNewsById, getNewsByStoryId, getTenants } from '../api/news';
 import { adaptNews, resolveTenantForUser } from '../utils/newsTenants';
-import { generatePostForNews, getPosts, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion, updatePost, warmGenerator } from '../api/posts';
+import { generatePostForNews, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion, updatePost, warmGenerator } from '../api/posts';
 import { getPartyQuestions } from '../api/questions';
-import { labelForId } from '../utils/partyRoles';
 import { getProfileAnswers, saveProfileAnswers } from '../api/profile';
 import { CORE_QUESTION_IDS } from '../utils/preferenceQuestions';
 import { getSiteLanguage, SITE_LANGUAGES } from '../utils/siteLanguage';
@@ -29,9 +27,11 @@ import { parsePost, hashtagsText } from '../utils/parsePost';
 import Spinner from '../components/Spinner';
 import { useI18n } from '../i18n/index.jsx';
 import SpeakButton from '../components/generate/SpeakButton';
+import PhonePreview from '../components/compose/PhonePreview';
+import { PLATFORM_LOOK } from '../components/compose/platformLook';
+import '../components/compose/compose.css';
 import { partyLabel } from '../utils/displayLabel';
 import { partyLogo } from '../utils/politicalParties';
-import { shortOption, shortQuestion } from '../data/partyQuestionsShort';
 import { trackEvent } from '../analytics/metrics';
 
 const CATEGORIES = ['All', 'Legacy', 'Policy', 'Education', 'Research', 'Grassroots'];
@@ -84,8 +84,9 @@ function shareTarget(platform, text) {
 }
 
 
+const MIN_PANEL = 220;
+const MAX_PANEL = 500;
 const PAGE_SIZE = 12; // news cards per page
-
 
 // Feed ordering and card layout are remembered per browser. Both are reading
 // preferences, not account settings, and localStorage throws outright in some
@@ -280,7 +281,7 @@ export default function SocialMediaPostGenerator() {
     navigate(detail.step === 'profile' ? '/profile-setup' : '/questionnaire', { replace: true });
     return true;
   }
-  const { currentUser, logout } = useAuth();
+  const { currentUser } = useAuth();
 
   const [articles,        setArticles]        = useState([]);
   const [newsLoading,     setNewsLoading]     = useState(true);
@@ -305,13 +306,16 @@ export default function SocialMediaPostGenerator() {
   // and line height. This says which of the two the string holds, and the
   // render gives an error its own frame.
   const [postFailed,      setPostFailed]      = useState(false);
+  // The post drawn inside a phone, the way the platform shows it, on request.
+  const [phoneOpen,       setPhoneOpen]       = useState(false);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [selectedPostId,  setSelectedPostId]  = useState(null);
   const [copied,          setCopied]          = useState(false);
+  const [panelWidth,      setPanelWidth]      = useState(300);
   const [searchInput,     setSearchInput]     = useState('');
   const [prefQuestions,   setPrefQuestions]   = useState([]);
-  const [savedPrefs,      setSavedPrefs]      = useState({});
   const [preferences,     setPreferences]     = useState({});
+  const [savedPrefs,      setSavedPrefs]      = useState({});
   const [translatedPost,  setTranslatedPost]  = useState('');
   const [showTranslated,  setShowTranslated]  = useState(false);
   const [translating,     setTranslating]     = useState(false);
@@ -353,24 +357,6 @@ export default function SocialMediaPostGenerator() {
     if (!currentUser?.id) return;
     getDailyQuota().then(setQuota).catch(() => {});
   }, [currentUser?.id]);
-
-  // How many posts this user has written on each story, for the "2/5" chip.
-  // Only a reading of what the server enforces (five posts per story).
-  const [postCounts, setPostCounts] = useState({});
-  const loadPostCounts = useCallback(() => {
-    getPosts({ limit: 500 })
-      .then((posts) => {
-        const counts = {};
-        for (const p of posts ?? []) {
-          if (p?.news_id) counts[p.news_id] = (counts[p.news_id] ?? 0) + 1;
-        }
-        setPostCounts(counts);
-      })
-      .catch(() => {});
-  }, []);
-  useEffect(() => {
-    if (currentUser?.id) loadPostCounts();
-  }, [currentUser?.id, loadPostCounts]);
 
   // The party comes from the user's signup choice — it is not switchable here.
   // Declared before loadNews because that callback reads it.
@@ -463,20 +449,46 @@ export default function SocialMediaPostGenerator() {
       setPreferences(initial);
       setSavedPrefs(initial);
     }).catch(() => {});
-    // Re-runs on a language switch, so the questions come back in the language
-    // now on screen, and on a party change, so they come back as the new
-    // party's set rather than the old one's.
+    // Re-runs on a language switch, so the party questions come back in the
+    // language now on screen, and on a party change, so they come back as the
+    // new party's set rather than the old one's. Position is not a dependency
+    // any more: the panel no longer asks anything that varies by level.
   }, [currentUser?.id, currentUser?.political_party, siteLang]);
 
+  // Resize drag refs
+  const resizing  = useRef(false);
+  const startX    = useRef(0);
+  const startW    = useRef(0);
+
   useEffect(() => {
+    function onMove(e) {
+      if (!resizing.current) return;
+      const delta = startX.current - e.clientX;
+      setPanelWidth(Math.min(MAX_PANEL, Math.max(MIN_PANEL, startW.current + delta)));
+    }
+    function onUp() { resizing.current = false; document.body.style.cursor = ''; document.body.style.userSelect = ''; }
     function onClickOutside(e) {
       if (filterRef.current && !filterRef.current.contains(e.target)) setFilterOpen(false);
       if (sortRef.current && !sortRef.current.contains(e.target)) setSortOpen(false);
       if (typeRef.current && !typeRef.current.contains(e.target)) setTypeOpen(false);
     }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
     document.addEventListener('mousedown', onClickOutside);
-    return () => document.removeEventListener('mousedown', onClickOutside);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('mousedown', onClickOutside);
+    };
   }, []);
+
+  function startResize(e) {
+    resizing.current = true;
+    startX.current   = e.clientX;
+    startW.current   = panelWidth;
+    document.body.style.cursor     = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
 
 
   // Split the feed into three sections: the chosen party's news, the
@@ -516,16 +528,6 @@ export default function SocialMediaPostGenerator() {
     { id: 'general', Icon: Globe, label: t('gen.generalNews'),
       sub: t('gen.generalNewsSub'), count: generalArticles.length },
   ];
-
-  // The desk's tabs carry the party's short name in the first one, since the
-  // party banner is gone from that layout.
-  const deskSectionTabs = sectionTabs.map((s) => ({
-    ...s,
-    heading: t(`gen.v2.head.${s.id}`),
-    ...(s.id === 'party' && activeParty
-      ? { sub: t('gen.v2.partySub', { party: partyShortLabel(activeParty, currentUser?.political_party, t, lang) }) }
-      : {}),
-  }));
 
   function chooseSection(id) {
     setNewsSection(id);
@@ -756,7 +758,6 @@ export default function SocialMediaPostGenerator() {
       trackEvent('generate_post', { platform, language: siteLang });
       setGeneratedPost(content);
       setPostFailed(false);
-      loadPostCounts();
       setSelectedPostId(response?.post?.id || null);
       setPostStatus('draft');
       setRefinementNote('');
@@ -950,40 +951,177 @@ export default function SocialMediaPostGenerator() {
     } catch { setCopied(false); }
   }
 
+  useEffect(() => {
+    if (!phoneOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setPhoneOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [phoneOpen]);
+
+  const authorName = currentUser?.full_name || currentUser?.username || 'AmbedkarGPT';
+
   return (
     <div
-      className="relative flex min-h-screen text-[#e5e7eb] lg:h-screen lg:overflow-hidden"
-      // The dashboard shell's own ground, so moving from the dashboard or the
-      // services page into the generator does not drop into a darker room.
-      style={{
-        background:
-          'radial-gradient(1200px 700px at 18% -4%, #101c46 0%, rgba(7,11,28,0) 58%),' +
-          'linear-gradient(168deg, #0a1030 0%, #070b1f 48%, #04081a 100%)',
-      }}
+      className="relative flex min-h-screen text-[#e5e7eb]"
+      style={{ background: 'radial-gradient(1200px 700px at 50% -10%, #0c111e 0%, #080b13 55%, #06080e 100%)' }}
     >
-      {/* The dashboard's own navigation, closed to icons so the desk keeps its
-          width; it opens over the page on hover. Laptops only - phones keep
-          their header. */}
-      <Sidebar
-        hoverExpand
-        active="generate"
-        onSelect={(id) => { if (id === 'dashboard') navigate('/dashboard'); }}
-        onLogout={async () => { await logout(); navigate('/', { replace: true }); }}
-      />
-
       {/* ambient glows */}
       <div className="pointer-events-none fixed left-[240px] top-0 h-[500px] w-[500px] rounded-full bg-[#3f9fff]/8 blur-[140px]" />
       <div className="pointer-events-none fixed bottom-0 right-[300px] h-[420px] w-[420px] rounded-full bg-[#7b5cff]/8 blur-[140px]" />
 
+      {/* ── LEFT SIDEBAR ── */}
+      <aside
+        className="hidden lg:flex w-[240px] shrink-0 flex-col overflow-y-auto border-r border-[#1a2130]/70"
+        style={{ background: 'linear-gradient(180deg,#0a0e18 0%,#080b13 100%)' }}
+      >
+        {/* Brand header */}
+        <div className="border-b border-[#141d3a]/70 px-5 py-4">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard')}
+            title={t('gen.goToDashboard')}
+            className="mb-3 flex items-center gap-2 rounded-lg transition hover:opacity-90"
+          >
+            <AgMark size={28} color="#8FA8FF" />
+            <span className="font-display text-[15px] font-bold gradient-text-blue">{t('brand.wordmark')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/generate')}
+            className="inline-flex items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 px-3 py-1.5 text-[11.5px] font-medium text-[#8b94b8] transition hover:border-[#3a6bc4]/60 hover:text-white"
+          >
+            <LayoutGrid size={12} strokeWidth={2} />
+            {t('nav.services')}
+          </button>
+
+          {/* Which tool you are in. This used to sit as a banner across the top
+              of the feed, where it repeated the logo already shown here and ate
+              a strip of vertical space above the stories. In the rail it still
+              names the page, and the feed starts at the search bar. */}
+          <div className="mt-4">
+            <p className="font-display text-[16px] font-bold leading-snug text-white">
+              {t('gen.title')}
+            </p>
+            <p className="mt-1 text-[11.5px] leading-relaxed text-[#6b78a0]">
+              {t('gen.motto')}
+              <span className="block text-[#5a6584]">{t('brand.attrib')}</span>
+            </p>
+            <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-[#3f9fff]/20 bg-[#3f9fff]/8 px-2.5 py-1 text-[10.5px] font-semibold text-[#6aa8ff]">
+              <Sparkles size={9} strokeWidth={2} />
+              {t('gen.aiPowered')}
+            </span>
+          </div>
+        </div>
+
+        {/* User profile card */}
+        <div className="px-4 pt-4">
+          <div className="rounded-2xl border border-[#1e2636]/80 bg-[#0e1320] px-5 py-5">
+            <div className="flex flex-col items-center">
+              <div className="relative">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#3f9fff] to-[#7b5cff] text-[22px] font-bold text-white shadow-[0_0_24px_rgba(63,159,255,0.35)]">
+                  {(currentUser?.username?.[0] ?? '?').toUpperCase()}
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#0e1320] bg-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+              </div>
+              <p className="mt-3 font-display text-[16px] font-semibold text-white">{currentUser?.username ?? '—'}</p>
+              <p className="mt-0.5 text-[11.5px] text-[#8b93a5]">{currentUser?.email ?? currentUser?.phone ?? ''}</p>
+              <button
+                type="button"
+                onClick={() => navigate('/profile-setup')}
+                className="mt-1 text-[11px] font-medium text-[#ef6a6a] transition hover:text-[#ff8a8a]"
+              >
+                {t('gen.completeProfile')}
+              </button>
+            </div>
+
+            {/* Stat cards */}
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <div className="rounded-xl border border-[#1e2636]/80 bg-[#0b0f18] px-3 py-3 text-center">
+                <p className="font-count text-[22px] font-bold text-[#4a9eff]">127</p>
+                <p className="mt-0.5 text-[10px] text-[#8b93a5]">{t('gen.activityScore')}</p>
+              </div>
+              <div className="rounded-xl border border-[#3a3320]/80 bg-[#17130a] px-3 py-3 text-center">
+                <p className="flex items-center justify-center gap-1 font-display text-[18px] font-bold text-[#f5b73d]">
+                  <Star size={15} strokeWidth={2} className="fill-[#f5b73d]" />
+                  Pro
+                </p>
+                <p className="mt-0.5 text-[10px] text-[#8b93a5]">{t('gen.subscription')}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Party affiliation — set at signup, shown read-only */}
+        <div className="px-4 pt-5">
+          <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#8b93a5]">
+            {t('gen.yourParty')}
+          </p>
+          {activeParty ? (
+            <div
+              className="flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-[13px] font-medium text-white"
+              style={{ borderColor: 'rgba(63,159,255,0.55)', backgroundColor: 'rgba(63,159,255,0.10)' }}
+            >
+              <Check size={14} strokeWidth={2.5} className="shrink-0 text-[#6aa8ff]" />
+              <span className="min-w-0 truncate">{activeParty.name}</span>
+            </div>
+          ) : (
+            // No party on the profile (older accounts, or skipped at signup) —
+            // say so instead of silently hiding the whole party feed.
+            <button
+              type="button"
+              onClick={() => navigate('/profile-setup')}
+              className="w-full rounded-xl border border-[#1e2636]/80 bg-[#0e1320] px-3.5 py-3 text-left text-[12.5px] text-[#8b93a5] transition hover:border-[#3f9fff]/45 hover:text-white"
+            >
+              {t('gen.noPartyLine')}
+              <span className="mt-0.5 block text-[11.5px] text-[#6aa8ff]">{t('gen.setParty')}</span>
+            </button>
+          )}
+        </div>
+
+        {/* Target platform */}
+        <div className="px-4 pt-5">
+          <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#8b93a5]">{t('gen.targetPlatform')}</p>
+          <div className="space-y-2">
+            {PLATFORMS.map((p) => {
+              const active = platform === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setPlatform(p.id)}
+                  className="flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left text-[13px] font-medium transition"
+                  style={{
+                    borderColor: active ? p.color : 'rgba(30,38,54,0.8)',
+                    backgroundColor: active ? `${p.color}1f` : '#0e1320',
+                    color: active ? '#ffffff' : '#8b93a5',
+                  }}
+                >
+                  <span className="flex h-6 w-6 items-center justify-center text-[13px] font-bold" style={{ color: p.color }}>
+                    {p.short}
+                  </span>
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Keeps the version line at the foot of the sidebar. */}
+        <div className="flex-1" />
+
+        <div className="px-6 py-5 text-[11px] font-count text-[#4e5a80] tracking-wide">
+          v1.0 · AmbedkarGPT
+        </div>
+      </aside>
 
       {/* ── MAIN CONTENT ── */}
       <div
-        className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden border-x border-[#1f2b52]/50"
-        style={{ background: 'transparent' }}
+        className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden border-x border-[#1a2130]/50"
+        style={{ background: 'linear-gradient(180deg,#0a0e18 0%,#080b12 100%)' }}
       >
 
         {/* Search + filter */}
-        <header className={`flex flex-wrap items-center gap-2.5 px-4 pb-3 pt-4 sm:flex-nowrap sm:gap-3 sm:px-6 md:px-8 lg:hidden`}>
+        <header className="flex flex-wrap items-center gap-2.5 px-4 pb-3 pt-4 sm:flex-nowrap sm:gap-3 sm:px-6 md:px-8">
           <button
             type="button"
             onClick={goBack}
@@ -1088,48 +1226,9 @@ export default function SocialMediaPostGenerator() {
           </div>
         </header>
 
-        {/* ── Feed view, lg and up ── */}
+        {/* ── Feed view ── */}
         {view === 'feed' && (
-          <NewsDesk
-            firstName={(currentUser?.full_name || currentUser?.username || '').split(' ')[0]}
-            searchInput={searchInput}
-            onSearch={(v) => { setSearchInput(v); setPage(1); }}
-            sortOrder={sortOrder}
-            onSort={(id) => { setSortOrder(id); writeLocal(SORT_KEY, id); setPage(1); }}
-            cardView={cardView}
-            onCardView={(id) => { setCardView(id); writeLocal(VIEW_KEY, id); }}
-            sectionTabs={activeParty ? deskSectionTabs : []}
-            newsSection={newsSection}
-            onSection={chooseSection}
-            partyLogo={partyLogo(currentUser?.political_party || activeParty?.name || '')}
-            partyShort={activeParty ? partyShortLabel(activeParty, currentUser?.political_party, t, lang) : ''}
-            partyName={activeParty ? partyLabel(activeParty.name, lang) : ''}
-            partyTags={(PARTY_TAG_KEYS[activeParty?.slug] ?? []).map((k) => t(k)).filter((v) => v && !v.startsWith('ptag.')).join(' · ')}
-            dateFilter={dateFilter}
-            availableDays={availableDays}
-            onDate={(id) => { setDateFilter(id); setPage(1); }}
-            dayPrefix={DAY_PREFIX}
-            typeFilter={typeFilter}
-            onType={(id) => { setTypeFilter(id); setPage(1); }}
-            showType={newsSection === 'party'}
-            loading={newsLoading}
-            error={newsError}
-            onRetry={loadNews}
-            opposition={newsSection === 'opposition'}
-            groups={pagedGroups}
-            total={orderedArticles.length}
-            currentPage={currentPage}
-            totalPages={totalPages}
-            pageItems={getPageItems(currentPage, totalPages)}
-            onPage={setPage}
-            postCounts={postCounts}
-            onOpen={handlePreview}
-          />
-        )}
-
-        {/* ── Feed view, phones and tablets ── */}
-        {view === 'feed' && (
-          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8 lg:hidden">
+          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
             {/* Three news sections: chosen party, opposition (BJP, empty
                 until it is scraped), and general (neutral) news. Underlined
                 tabs rather than pills, and each section carries its own
@@ -1153,7 +1252,7 @@ export default function SocialMediaPostGenerator() {
                     className="mb-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 rounded-2xl border px-5 py-4"
                     style={{
                       borderColor: `${pt.accent}3d`,
-                      background: `linear-gradient(100deg, #101937 0%, #101937 45%, ${pt.tint} 100%)`,
+                      background: `linear-gradient(100deg, #0e1320 0%, #0e1320 45%, ${pt.tint} 100%)`,
                     }}
                   >
                     {/* The party's own logo, as the dashboard shows it, with
@@ -1223,8 +1322,8 @@ export default function SocialMediaPostGenerator() {
                       aria-pressed={active}
                       className="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-[12.5px] transition"
                       style={{
-                        borderColor: active ? tint : 'rgba(34,48,92,0.9)',
-                        backgroundColor: active ? `${tint}18` : '#0c1430',
+                        borderColor: active ? tint : 'rgba(30,38,54,0.9)',
+                        backgroundColor: active ? `${tint}18` : '#0b101c',
                         color: active ? tint : '#8b94b8',
                         fontWeight: active ? 600 : 500,
                       }}
@@ -1248,17 +1347,17 @@ export default function SocialMediaPostGenerator() {
                       aria-pressed={active}
                       className="flex items-start gap-3 rounded-2xl border px-4 py-3.5 text-left transition duration-150"
                       style={{
-                        borderColor: active ? tint : 'rgba(34,48,92,0.9)',
-                        backgroundColor: active ? `${tint}12` : '#0c1430',
+                        borderColor: active ? tint : 'rgba(30,38,54,0.9)',
+                        backgroundColor: active ? `${tint}12` : '#0b101c',
                         boxShadow: active ? `0 0 0 1px ${tint}, 0 8px 24px ${tint}22` : 'none',
                       }}
                       onMouseEnter={(e) => { if (!active) e.currentTarget.style.borderColor = 'rgba(58,107,196,0.5)'; }}
-                      onMouseLeave={(e) => { if (!active) e.currentTarget.style.borderColor = 'rgba(34,48,92,0.9)'; }}
+                      onMouseLeave={(e) => { if (!active) e.currentTarget.style.borderColor = 'rgba(30,38,54,0.9)'; }}
                     >
                       <span
                         className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition"
                         style={{
-                          backgroundColor: active ? `${tint}22` : 'rgba(34,48,92,0.75)',
+                          backgroundColor: active ? `${tint}22` : 'rgba(30,38,54,0.75)',
                           color: active ? tint : '#6b78a0',
                         }}
                       >
@@ -1276,7 +1375,7 @@ export default function SocialMediaPostGenerator() {
                           <span
                             className="shrink-0 rounded-md px-1.5 py-0.5 font-count text-[11px] leading-none"
                             style={{
-                              backgroundColor: active ? `${tint}26` : 'rgba(34,48,92,0.9)',
+                              backgroundColor: active ? `${tint}26` : 'rgba(30,38,54,0.9)',
                               color: active ? tint : '#5a6e9a',
                             }}
                           >
@@ -1308,7 +1407,7 @@ export default function SocialMediaPostGenerator() {
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div
                       key={i}
-                      className="h-[240px] w-full animate-pulse rounded-2xl border border-[#22305c]/60 bg-[#101937]/70 p-5"
+                      className="h-[240px] w-full animate-pulse rounded-2xl border border-[#1e2636]/60 bg-[#0e1320]/70 p-5"
                     >
                       {/* Card-shaped, so the wait previews what arrives
                           instead of showing a blank box. */}
@@ -1384,7 +1483,7 @@ export default function SocialMediaPostGenerator() {
                     {t(orderedArticles.length === 1 ? 'gen.storyOne' : 'gen.storyMany')}
                   </span>
 
-                  <span className="h-5 w-px bg-[#22305c]" />
+                  <span className="h-5 w-px bg-[#1e2636]" />
 
                   {/* Content type. General and Opposition are scraped from the
                       videos tab alone, so every item in them is one type and a
@@ -1435,7 +1534,7 @@ export default function SocialMediaPostGenerator() {
                     </div>
                   )}
 
-                  {newsSection === 'party' && <span className="h-5 w-px bg-[#22305c]" />}
+                  {newsSection === 'party' && <span className="h-5 w-px bg-[#1e2636]" />}
 
                   {/* Sort */}
                   <div ref={sortRef} className="relative">
@@ -1511,7 +1610,7 @@ export default function SocialMediaPostGenerator() {
                       {group.label}
                     </h4>
                     <span className="font-count text-[11px] text-[#5a6e9a]">{group.items.length}</span>
-                    <span className="h-px flex-1 bg-[#22305c]/80" />
+                    <span className="h-px flex-1 bg-[#1e2636]/80" />
                   </div>
 
                   <div className={cardView === 'list' ? 'flex flex-col gap-3' : 'grid gap-5 lg:grid-cols-2'}>
@@ -1527,17 +1626,17 @@ export default function SocialMediaPostGenerator() {
                       key={article.id}
                       type="button"
                       onClick={() => handlePreview(article)}
-                      className={`group flex flex-col overflow-hidden rounded-2xl border text-left transition duration-200 hover:-translate-y-0.5 hover:bg-[#14204a] hover:shadow-[0_12px_32px_rgba(0,0,0,0.45)] ${
+                      className={`group flex flex-col overflow-hidden rounded-2xl border text-left transition duration-200 hover:-translate-y-0.5 hover:bg-[#111726] hover:shadow-[0_12px_32px_rgba(0,0,0,0.45)] ${
                         cardView === 'list' ? 'px-5 py-4' : 'p-6'
                       }`}
                       style={{
-                        borderColor: 'rgba(34,48,92,0.8)',
-                        backgroundColor: '#101937',
+                        borderColor: 'rgba(30,38,54,0.8)',
+                        backgroundColor: '#0e1320',
                         // Accent rail marks which feed the card belongs to
                         borderLeft: `3px solid ${cardAccent}`,
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${cardAccent}70`; e.currentTarget.style.borderLeftColor = cardAccent; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(34,48,92,0.8)'; e.currentTarget.style.borderLeftColor = cardAccent; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(30,38,54,0.8)'; e.currentTarget.style.borderLeftColor = cardAccent; }}
                     >
                       {/* Header row: NEWS ARTICLE label · category tag.
                           Wraps: "Bharatiya Janata Party" beside the type and
@@ -1617,7 +1716,7 @@ export default function SocialMediaPostGenerator() {
                     type="button"
                     onClick={() => setPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#22305c]/80 bg-[#101937] px-3 text-[12.5px] font-medium text-[#8a9ac0] transition hover:border-[#3f9fff]/45 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#1e2636]/80 bg-[#0e1320] px-3 text-[12.5px] font-medium text-[#8a9ac0] transition hover:border-[#3f9fff]/45 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <ChevronDown size={13} strokeWidth={2} className="rotate-90" />
                     {t('gen.prev')}
@@ -1634,8 +1733,8 @@ export default function SocialMediaPostGenerator() {
                         aria-current={item === currentPage ? 'page' : undefined}
                         className="inline-flex h-9 min-w-9 items-center justify-center rounded-lg border px-2 font-count text-[12.5px] font-semibold transition"
                         style={{
-                          borderColor: item === currentPage ? '#3f9fff' : 'rgba(34,48,92,0.8)',
-                          backgroundColor: item === currentPage ? 'rgba(63,159,255,0.14)' : '#101937',
+                          borderColor: item === currentPage ? '#3f9fff' : 'rgba(30,38,54,0.8)',
+                          backgroundColor: item === currentPage ? 'rgba(63,159,255,0.14)' : '#0e1320',
                           color: item === currentPage ? '#6aa8ff' : '#8a9ac0',
                         }}
                       >
@@ -1648,7 +1747,7 @@ export default function SocialMediaPostGenerator() {
                     type="button"
                     onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#22305c]/80 bg-[#101937] px-3 text-[12.5px] font-medium text-[#8a9ac0] transition hover:border-[#3f9fff]/45 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#1e2636]/80 bg-[#0e1320] px-3 text-[12.5px] font-medium text-[#8a9ac0] transition hover:border-[#3f9fff]/45 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {t('gen.next')}
                     <ChevronDown size={13} strokeWidth={2} className="-rotate-90" />
@@ -1658,56 +1757,6 @@ export default function SocialMediaPostGenerator() {
               </>
             )}
           </div>
-        )}
-
-        {/* ── Composer, lg and up: the preview and generated views in one ── */}
-        {view !== 'feed' && selectedArticle && (
-          <Composer
-            article={selectedArticle}
-            onBack={() => goView('feed')}
-            platforms={PLATFORMS}
-            platform={platform}
-            onPlatform={setPlatform}
-            questions={prefQuestions}
-            savedPrefs={savedPrefs}
-            roleLabel={labelForId(currentUser?.party_position, currentUser?.political_party, lang)}
-            partyName={activeParty ? partyLabel(activeParty.name, lang) : ''}
-            preferences={preferences}
-            onPreference={(id, v) => setPreferences((prev) => ({ ...prev, [id]: v }))}
-            quota={quota}
-            atDailyLimit={atDailyLimit}
-            quotaCountdown={quotaCountdown}
-            postCount={postCounts[selectedArticle._backendId] ?? 0}
-            generating={generating}
-            genSeconds={genSeconds}
-            onGenerate={handleGenerate}
-            content={activeContent}
-            postFailed={postFailed}
-            selectedPostId={selectedPostId}
-            postStatus={postStatus}
-            hasOtherVersion={hasOtherVersion}
-            refinedIsLive={refinedIsLive}
-            switchingVersion={switchingVersion}
-            onToggleVersion={handleToggleVersion}
-            refinedAt={refinedAt}
-            showTranslated={showTranslated && Boolean(translatedPost)}
-            translating={translating}
-            onTranslate={handleTranslate}
-            onShowOriginal={() => setShowTranslated(false)}
-            copied={copied}
-            onCopy={handleCopy}
-            copiedHashtags={copiedHashtags}
-            onCopyHashtags={handleCopyHashtags}
-            onPublish={handlePublish}
-            sharing={sharing}
-            shareMsg={shareMsg}
-            charOverLimit={charOverLimit}
-            refinementNote={refinementNote}
-            onRefinementNote={(v) => { setRefinementNote(v); if (refineHint) setRefineHint(''); }}
-            refineHint={refineHint}
-            onRegenerate={handleRegenerate}
-            userName={currentUser?.full_name || currentUser?.username || ''}
-          />
         )}
 
         {/* ── Preview view ── */}
@@ -1725,7 +1774,7 @@ export default function SocialMediaPostGenerator() {
             .trim().split(/[\s।]+/).filter(Boolean).length;
           const readingMinutes = Math.max(1, Math.round(words / 200));
           return (
-          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8 lg:hidden">
+          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
             <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
               <span className="inline-block rounded-full border border-[#1e3a6e]/60 bg-[#0d1840]/60 px-2.5 py-0.5 font-count text-[10px] uppercase tracking-widest text-[#6aa8ff]">
                 {selectedArticle.category}
@@ -1878,7 +1927,7 @@ export default function SocialMediaPostGenerator() {
                     <button
                       type="button"
                       onClick={() => setShowMobilePrefs(false)}
-                      aria-label={t('common.close')}
+                      aria-label={t('bot.close')}
                       className="dash-icon-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[#8b94b8]"
                     >
                       <XIcon size={17} strokeWidth={2} />
@@ -1896,9 +1945,9 @@ export default function SocialMediaPostGenerator() {
                     };
                     return (
                       <div key={q.question_id}>
-                        <label className="mb-1.5 block text-[14px] font-semibold leading-snug text-white">
-                          <span className="mr-1.5 text-[#6b78a0]">{i + 1}.</span>
-                          {shortQuestion(q.question_id, lang) ?? labels[q.question_id] ?? q.question_text}
+                        <label className="mb-1.5 block text-[10.5px] font-semibold uppercase tracking-wider text-[#6aa8ff]">
+                          <span className="mr-1 text-[#4e5a80]">{i + 1}.</span>
+                          {labels[q.question_id] ?? q.question_text}
                         </label>
                         <div className="relative">
                           <select
@@ -1907,7 +1956,7 @@ export default function SocialMediaPostGenerator() {
                             className="w-full appearance-none rounded-lg border border-[#1e3260]/70 bg-[#0a1130]/80 py-2 pl-3 pr-8 text-[12.5px] text-white outline-none transition focus:border-[#3f9fff]/60"
                           >
                             {q.options.map((opt) => (
-                              <option key={opt} value={opt} className="bg-[#0a1130]">{shortOption(opt, lang) || opt}</option>
+                              <option key={opt} value={opt} className="bg-[#0a1130]">{opt}</option>
                             ))}
                           </select>
                           <ChevronDown size={12} strokeWidth={2} className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[#6b78a0]" />
@@ -1952,7 +2001,7 @@ export default function SocialMediaPostGenerator() {
 
         {/* ── Generated post view ── */}
         {view === 'generated' && (
-          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8 lg:hidden">
+          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
             {/* Header: title on left, actions on right (icon-only on mobile
                 to prevent overflow). The way back is the page's single back
                 control at the top, which steps back to the story. */}
@@ -1972,6 +2021,21 @@ export default function SocialMediaPostGenerator() {
                     content={showTranslated && translatedPost ? translatedPost : generatedPost}
                     lang={showTranslated && translatedPost ? 'en' : 'hi'}
                   />
+                )}
+                {/* Preview in a phone: the post drawn the way the picked
+                    platform will show it. Icon-only on a phone, like its
+                    neighbours. */}
+                {selectedPostId && !generating && !postFailed && generatedPost && (
+                  <button
+                    type="button"
+                    onClick={() => setPhoneOpen(true)}
+                    title={t('cmp.phonePreview')}
+                    aria-label={t('cmp.phonePreview')}
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#1e3a6e]/80 bg-[#0d1840]/80 text-[12px] font-medium text-[#6aa8ff] transition hover:border-[#3f9fff]/60 hover:text-white sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-2"
+                  >
+                    <Smartphone size={13} strokeWidth={2} />
+                    <span className="hidden sm:inline">{t('cmp.phonePreview')}</span>
+                  </button>
                 )}
                 {/* Translate. Icon-only on a phone and labelled from sm up. It used to be removed below sm instead, so the one
                     control that turns a Hindi post into one the reader can
@@ -2254,9 +2318,59 @@ export default function SocialMediaPostGenerator() {
 
           </div>
         )}
-
       </div>
 
+      {/* ── RESIZE HANDLE + RIGHT SIDEBAR ── */}
+      <div className="sticky top-0 z-20 hidden h-screen shrink-0 lg:flex" style={{ width: panelWidth + 8 }}>
+        {/* Drag handle */}
+        <div
+          onMouseDown={startResize}
+          className="group flex w-2 shrink-0 cursor-col-resize flex-col items-center justify-center border-l border-[#141d3a]/70 transition-colors hover:border-[#3f9fff]/30 hover:bg-[#3f9fff]/5"
+        >
+          <div className="h-10 w-[3px] rounded-full bg-[#1e3260] transition-colors group-hover:bg-[#3f9fff]/50" />
+        </div>
+
+        {/* Preferences panel */}
+        <div className="h-full flex-1 overflow-hidden">
+          <PreferencesPanel
+            questions={prefQuestions}
+            value={preferences}
+            onChange={setPreferences}
+            defaultValues={savedPrefs}
+          />
+        </div>
+      </div>
+
+      {/* In document.body, so the backdrop covers the whole screen whatever
+          stacking context the page column makes. */}
+      {phoneOpen && generatedPost && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6" role="dialog" aria-modal="true" aria-label={t('cmp.phonePreview')}>
+          <div className="absolute inset-0 bg-[#03060f]/78 backdrop-blur-[3px]" onClick={() => setPhoneOpen(false)} />
+          <div
+            className="cmp-fadein relative h-[min(620px,calc(100vh-96px))]"
+            style={{ filter: `drop-shadow(0 0 60px rgba(${PLATFORM_LOOK[activePlatform.id].hue},0.35))` }}
+          >
+            <PhonePreview
+              platform={activePlatform.id}
+              state="ready"
+              text={activeContent}
+              authorName={authorName}
+              authorHandle={(currentUser?.username || 'you').replace(/\s+/g, '').toLowerCase()}
+              article={selectedArticle}
+              translated={Boolean(showTranslated && translatedPost)}
+            />
+            <button
+              type="button"
+              onClick={() => setPhoneOpen(false)}
+              aria-label={t('bot.close')}
+              className="absolute -top-12 right-0 flex h-10 w-10 items-center justify-center rounded-full border border-[#1e3a6e] bg-[#0a1130] text-[#c0cde8] transition hover:text-white sm:-right-14 sm:top-0"
+            >
+              <XIcon size={17} />
+            </button>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

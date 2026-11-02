@@ -306,14 +306,10 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
   );
 }
 
-export default function Sidebar({ active = 'dashboard', onSelect, mobileOpen = false, onMobileClose, onLogout, hoverExpand = false }) {
+export default function Sidebar({ active = 'dashboard', onSelect, mobileOpen = false, onMobileClose, onLogout }) {
   // Read once, on the first render, rather than in an effect: starting wide and
   // narrowing a frame later is a visible jump on every page load.
   const [collapsed, setCollapsed] = useState(readCollapsed);
-  // hoverExpand is for a screen that needs its width (the post generator):
-  // the rail stays closed to icons, opens over the page while the pointer or
-  // keyboard focus is in it, and leaves the saved collapsed state alone.
-  const [hoverOpen, setHoverOpen] = useState(false);
 
   function toggleCollapsed() {
     setCollapsed((c) => {
@@ -335,28 +331,6 @@ export default function Sidebar({ active = 'dashboard', onSelect, mobileOpen = f
     drawerRef.current?.querySelector('button')?.focus();
     return () => document.removeEventListener('keydown', onKey);
   }, [mobileOpen, onMobileClose]);
-
-  if (hoverExpand) {
-    const closed = !hoverOpen;
-    return (
-      // The placeholder keeps the strip's width in the layout, so the page
-      // never moves; the rail itself opens over it.
-      <div className="relative hidden w-[76px] shrink-0 lg:block">
-        <aside
-          onMouseEnter={() => setHoverOpen(true)}
-          onMouseLeave={() => setHoverOpen(false)}
-          onFocus={() => setHoverOpen(true)}
-          onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setHoverOpen(false); }}
-          className={`absolute inset-y-0 left-0 z-40 flex flex-col overflow-hidden border-r border-[#141d3a]/70 transition-[width,box-shadow] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none ${
-            closed ? 'w-[76px]' : 'w-[252px] shadow-[18px_0_48px_rgba(2,6,20,0.6)]'
-          }`}
-          style={{ background: 'linear-gradient(180deg,#0a1024 0%,#070b1c 100%)' }}
-        >
-          <SidebarContent active={active} onSelect={onSelect} onLogout={onLogout} collapsed={closed} />
-        </aside>
-      </div>
-    );
-  }
 
   return (
     <>
