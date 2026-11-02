@@ -983,6 +983,19 @@ export default function SocialMediaPostGenerator() {
 
   const authorName = currentUser?.full_name || currentUser?.username || 'AmbedkarGPT';
   const welcomeLogo = partyLogo(currentUser?.political_party);
+  const accountControls = (
+    <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+      <LanguageSwitcher />
+      <NotificationBell totalPosts={quota?.total_streak_posts ?? 0} />
+      <ProfileMenu
+        name={currentUser?.full_name || currentUser?.username || '—'}
+        email={currentUser?.email ?? currentUser?.phone ?? ''}
+        initial={(currentUser?.full_name || currentUser?.username || 'A')[0].toUpperCase()}
+        party={currentUser?.political_party ?? ''}
+        onLogout={async () => { await logout(); navigate('/', { replace: true }); }}
+      />
+    </div>
+  );
   const welcomeName = (currentUser?.full_name || currentUser?.username || '').split(/[\s_]/)[0];
   const roleName = labelForId(currentUser?.party_position || '', currentUser?.political_party || '', lang);
 
@@ -1165,9 +1178,10 @@ export default function SocialMediaPostGenerator() {
         style={{ background: 'linear-gradient(180deg,#0a0e18 0%,#080b12 100%)' }}
       >
 
-        {/* The dashboard's top bar, now that the dashboard is off: back and
-            the page's name on the left, and the account (language,
-            notifications, profile, log out) on the right. */}
+        {/* On a story or a post: back on the left, the account (language,
+            notifications, profile, log out) on the right. The feed carries
+            both in its welcome row instead. */}
+        {view !== 'feed' && (
         <header className="dash-header flex h-14 shrink-0 items-center gap-3 px-4 sm:gap-4 sm:px-6 md:h-16 md:px-8">
           <button
             type="button"
@@ -1179,43 +1193,42 @@ export default function SocialMediaPostGenerator() {
             <ArrowLeft size={12} strokeWidth={2} />
           </button>
 
-          <span className="min-w-0 flex-1 truncate font-display text-[14.5px] font-semibold tracking-tight text-white">
-            {t('gen.title')}
-          </span>
-
-          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <LanguageSwitcher />
-            <NotificationBell totalPosts={quota?.total_streak_posts ?? 0} />
-            <ProfileMenu
-              name={currentUser?.full_name || currentUser?.username || '—'}
-              email={currentUser?.email ?? currentUser?.phone ?? ''}
-              initial={(currentUser?.full_name || currentUser?.username || 'A')[0].toUpperCase()}
-              party={currentUser?.political_party ?? ''}
-              onLogout={async () => { await logout(); navigate('/', { replace: true }); }}
-            />
-          </div>
-
+          <span className="flex-1" />
+          {accountControls}
         </header>
+        )}
 
         {/* ── Feed view ── */}
         {view === 'feed' && (
           <div className="ag-page-in flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
-            <div className="mb-6 mt-5 flex items-center gap-4">
+            {/* On a phone the back button and the account share the first
+                line and the greeting gets the full width under them; from sm
+                up it is one row. */}
+            <div className="mb-7 mt-5 flex flex-wrap items-center gap-x-4 gap-y-4 sm:flex-nowrap sm:gap-5">
+              <button
+                type="button"
+                onClick={goBack}
+                aria-label={t('common.back')}
+                title={t('common.back')}
+                className="order-1 inline-flex items-center gap-1.5 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 px-3 py-2 text-[12px] font-medium text-[#8b94b8] transition hover:text-white"
+              >
+                <ArrowLeft size={12} strokeWidth={2} />
+              </button>
               {welcomeLogo && (
                 <span
-                  className="relative inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-white shadow-[0_0_0_2px_rgba(63,159,255,0.45),0_0_26px_rgba(63,159,255,0.28)]"
+                  className="relative order-4 inline-flex h-[60px] sm:order-2 w-[60px] shrink-0 items-center justify-center rounded-full bg-white shadow-[0_0_0_2px_rgba(63,159,255,0.45),0_0_30px_rgba(63,159,255,0.32)] sm:ml-2 sm:h-[76px] sm:w-[76px]"
                   title={currentUser?.political_party || ''}
                 >
                   <img
                     src={welcomeLogo}
                     alt={currentUser?.political_party || 'Party'}
-                    className="h-[48px] w-[48px] object-contain"
+                    className="h-[56px] w-[56px] object-contain sm:h-[70px] sm:w-[70px]"
                     onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
                   />
-                  <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-[2.5px] border-[#070b1c] bg-[#22c55e]" />
+                  <span className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full border-[2.5px] border-[#070b1c] bg-[#22c55e]" />
                 </span>
               )}
-              <div className="min-w-0">
+              <div className="order-5 min-w-0 flex-1 sm:order-3">
                 <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight sm:text-[28px] md:text-[32px]">
                   <span className="text-white">{t('dash.welcomeBack')} </span>
                   <span className="gradient-text-blue">{welcomeName}</span>
@@ -1231,6 +1244,8 @@ export default function SocialMediaPostGenerator() {
                   {t('dash.subtitle')}
                 </p>
               </div>
+              <div className="order-2 ml-auto sm:order-4 sm:self-start">{accountControls}</div>
+              <span className="order-3 basis-full sm:hidden" aria-hidden="true" />
             </div>
             {/* Three news sections: chosen party, opposition (BJP, empty
                 until it is scraped), and general (neutral) news. Underlined
@@ -1243,7 +1258,6 @@ export default function SocialMediaPostGenerator() {
                   categories, and a long name pushed the other two off a narrow
                   screen. It gets its own band here, in the party's colour, so
                   the tabs below are three comparable things. */}
-              {renderPartyBanner()}
               {/* Section chooser. Cards rather than a tab strip: each one
                   now carries a count and a line saying what is in it, which a
                   tab has no room for, and the three read as siblings. */}
