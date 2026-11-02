@@ -9,7 +9,8 @@ import {
   MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle,
 } from 'lucide-react';
 
-import Composer from '../components/generate/Composer';
+import ComposerDesk from '../components/compose/ComposerDesk';
+import { MAX_POSTS_PER_STORY } from '../data/postLimits';
 import NewsDesk from '../components/generate/NewsDesk';
 import Sidebar from '../components/dashboard/Sidebar';
 import DevSourceTag from '../components/DevSourceTag';
@@ -21,7 +22,6 @@ import { getNews, getNewsById, getNewsByStoryId, getTenants } from '../api/news'
 import { adaptNews, resolveTenantForUser } from '../utils/newsTenants';
 import { generatePostForNews, getPosts, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion, updatePost, warmGenerator } from '../api/posts';
 import { getPartyQuestions } from '../api/questions';
-import { labelForId } from '../utils/partyRoles';
 import { getProfileAnswers, saveProfileAnswers } from '../api/profile';
 import { CORE_QUESTION_IDS } from '../utils/preferenceQuestions';
 import { getSiteLanguage, SITE_LANGUAGES } from '../utils/siteLanguage';
@@ -950,6 +950,104 @@ export default function SocialMediaPostGenerator() {
     } catch { setCopied(false); }
   }
 
+  // ── The desk composer (lg and up) ──
+  // On a laptop the story and its post are one screen: the studio (platform,
+  // the party questions, generate) beside the phone preview and its actions.
+  // It stands in for both the 'preview' and the 'generated' views, so the
+  // history entries and every handler above stay as they are.
+
+  // A post from "your posts on this story", opened in the phone.
+  function openStoryPost(post, pid) {
+    setPlatform(pid);
+    setGeneratedPost(post?.content || '');
+    setPostFailed(false);
+    setSelectedPostId(post?.id || null);
+    setPostStatus(post?.status === 'published' ? 'published' : 'draft');
+    setRefinementNote('');
+    setRefineHint('');
+    setShareMsg('');
+    applyVersionState(post);
+    setTranslatedPost(post?.translations?.[siteLang] || '');
+    setShowTranslated(false);
+    if (view !== 'generated') goView('generated');
+  }
+
+  function deskComposer() {
+    const a = selectedArticle;
+    const ct = CONTENT_TYPES[a.contentType] ?? CONTENT_TYPES.news;
+    const sectionKey = { party: 'gen.partyNews', opposition: 'gen.oppositionNews', general: 'gen.generalNews' }[newsSection];
+    const readWords = `${a.summary || ''} ${a.content || ''}`.trim().split(/[\s।]+/).filter(Boolean).length;
+    const name = currentUser?.full_name || currentUser?.username || 'AmbedkarGPT';
+    return {
+      article: a,
+      sectionAccent: (SECTION_THEME[newsSection] ?? SECTION_THEME.party).accent,
+      kindLabel: t(a.contentType === 'press_conference' ? 'gen.pressConference' : 'gen.newsArticle'),
+      kindColor: ct.color,
+      tagLabel: sectionKey ? t(sectionKey) : '',
+      metaLine: [a.source, formatNewsDate(a.date), t('gen.minRead', { n: Math.max(1, Math.round(readWords / 200)) })].filter(Boolean).join(' · '),
+      lensLabel: null, // news has no constitution field yet
+      maxPosts: MAX_POSTS_PER_STORY,
+      authorName: name,
+      authorHandle: (currentUser?.username || 'you').replace(/\s+/g, '').toLowerCase(),
+      platforms: PLATFORMS,
+      platform,
+      // A post is written for one platform. Picking another empties the phone
+      // for it; the post just written stays in "your posts on this story".
+      setPlatform: (id) => {
+        if (id === platform) return;
+        setPlatform(id);
+        if (generatedPost) {
+          setGeneratedPost('');
+          setPostFailed(false);
+          setSelectedPostId(null);
+          setTranslatedPost('');
+          setShowTranslated(false);
+          setRefinementNote('');
+          setRefineHint('');
+          setShareMsg('');
+          applyVersionState(null);
+        }
+      },
+      platformLimit: activePlatform.limit,
+      prefQuestions,
+      preferences,
+      setPreferences,
+      savedPrefs,
+      atDailyLimit,
+      quotaCountdown,
+      generating,
+      genSeconds,
+      generatedPost,
+      postFailed,
+      selectedPostId,
+      postStatus,
+      translating,
+      translatedPost,
+      showTranslated,
+      setShowTranslated,
+      hasOtherVersion,
+      refinedIsLive,
+      refinedAt,
+      switchingVersion,
+      refinementNote,
+      refineHint,
+      sharing,
+      shareMsg,
+      copied,
+      copiedHashtags,
+      onBack: () => goView('feed'),
+      onGenerate: handleGenerate,
+      onRegenerate: handleRegenerate,
+      onToggleVersion: handleToggleVersion,
+      onTranslate: handleTranslate,
+      onPublish: handlePublish,
+      onCopy: handleCopy,
+      onCopyHashtags: handleCopyHashtags,
+      onNoteChange: (v) => { setRefinementNote(v); if (refineHint) setRefineHint(''); },
+      onOpenPost: openStoryPost,
+    };
+  }
+
   return (
     <div
       className="relative flex min-h-screen text-[#e5e7eb] lg:h-screen lg:overflow-hidden"
@@ -1662,52 +1760,7 @@ export default function SocialMediaPostGenerator() {
 
         {/* ── Composer, lg and up: the preview and generated views in one ── */}
         {view !== 'feed' && selectedArticle && (
-          <Composer
-            article={selectedArticle}
-            onBack={() => goView('feed')}
-            platforms={PLATFORMS}
-            platform={platform}
-            onPlatform={setPlatform}
-            questions={prefQuestions}
-            savedPrefs={savedPrefs}
-            roleLabel={labelForId(currentUser?.party_position, currentUser?.political_party, lang)}
-            partyName={activeParty ? partyLabel(activeParty.name, lang) : ''}
-            preferences={preferences}
-            onPreference={(id, v) => setPreferences((prev) => ({ ...prev, [id]: v }))}
-            quota={quota}
-            atDailyLimit={atDailyLimit}
-            quotaCountdown={quotaCountdown}
-            postCount={postCounts[selectedArticle._backendId] ?? 0}
-            generating={generating}
-            genSeconds={genSeconds}
-            onGenerate={handleGenerate}
-            content={activeContent}
-            postFailed={postFailed}
-            selectedPostId={selectedPostId}
-            postStatus={postStatus}
-            hasOtherVersion={hasOtherVersion}
-            refinedIsLive={refinedIsLive}
-            switchingVersion={switchingVersion}
-            onToggleVersion={handleToggleVersion}
-            refinedAt={refinedAt}
-            showTranslated={showTranslated && Boolean(translatedPost)}
-            translating={translating}
-            onTranslate={handleTranslate}
-            onShowOriginal={() => setShowTranslated(false)}
-            copied={copied}
-            onCopy={handleCopy}
-            copiedHashtags={copiedHashtags}
-            onCopyHashtags={handleCopyHashtags}
-            onPublish={handlePublish}
-            sharing={sharing}
-            shareMsg={shareMsg}
-            charOverLimit={charOverLimit}
-            refinementNote={refinementNote}
-            onRefinementNote={(v) => { setRefinementNote(v); if (refineHint) setRefineHint(''); }}
-            refineHint={refineHint}
-            onRegenerate={handleRegenerate}
-            userName={currentUser?.full_name || currentUser?.username || ''}
-          />
+          <ComposerDesk c={deskComposer()} />
         )}
 
         {/* ── Preview view ── */}
