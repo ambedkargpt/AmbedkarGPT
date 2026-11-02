@@ -348,7 +348,10 @@ export default function Sidebar({ active = 'dashboard', onSelect, mobileOpen = f
     return (
       // The placeholder keeps the strip's width in the layout, so the page
       // never moves; the rail itself opens over it.
-      <div className="relative hidden w-[76px] shrink-0 lg:block">
+      // Sticky and one screen tall, so the rail (and its log out at the
+      // bottom) stays in view on a page that scrolls the window; it used to
+      // stretch to the page's height and leave log out below the last card.
+      <div className="sticky top-0 hidden h-screen w-[76px] shrink-0 self-start lg:block">
         <aside
           onMouseEnter={() => setHoverOpen(true)}
           onMouseLeave={() => setHoverOpen(false)}

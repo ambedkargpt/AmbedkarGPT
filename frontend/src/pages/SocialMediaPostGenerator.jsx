@@ -60,15 +60,16 @@ function useCountdown(resetAt) {
   return label;
 }
 
+// WhatsApp first and X last: in the order these posts are most shared.
 const PLATFORMS = [
-  { id: 'twitter',   label: 'Twitter / X',  short: '𝕏',   limit: 280,  color: '#1d9bf0' },
+  { id: 'whatsapp',  label: 'WhatsApp',      short: 'WA',  limit: 65536, color: '#25d366' },
   // Reddit's self-post body limit really is 40,000 — the counter says so
   // rather than a rounder number that would be a guess.
   { id: 'reddit',    label: 'Reddit',        short: 'r/',  limit: 40000, color: '#ff4500' },
   // WhatsApp and Facebook accept far more than anyone writes (65,536 and
   // 63,206 characters); the length the post aims for is set on the server.
-  { id: 'whatsapp',  label: 'WhatsApp',      short: 'WA',  limit: 65536, color: '#25d366' },
   { id: 'facebook',  label: 'Facebook',      short: 'f',   limit: 63206, color: '#1877f2' },
+  { id: 'twitter',   label: 'Twitter / X',  short: '𝕏',   limit: 280,  color: '#1d9bf0' },
 ];
 
 /**
@@ -1240,9 +1241,6 @@ export default function SocialMediaPostGenerator() {
                     {roleName && <span className="font-semibold text-white">{roleName}</span>}
                   </p>
                 )}
-                <p className="mt-1.5 text-[15px] leading-snug text-[#9aa5c4] md:text-[16.5px]">
-                  {t('dash.subtitle')}
-                </p>
               </div>
               <div className="order-2 ml-auto sm:order-4 sm:self-start">{accountControls}</div>
               <span className="order-3 basis-full sm:hidden" aria-hidden="true" />
