@@ -11,6 +11,7 @@ import {
 
 import Composer from '../components/generate/Composer';
 import NewsDesk from '../components/generate/NewsDesk';
+import Sidebar from '../components/dashboard/Sidebar';
 import DevSourceTag from '../components/DevSourceTag';
 import ScrollRow from '../components/ui/ScrollRow';
 import PostContent from '../components/generate/PostContent';
@@ -279,7 +280,7 @@ export default function SocialMediaPostGenerator() {
     navigate(detail.step === 'profile' ? '/profile-setup' : '/questionnaire', { replace: true });
     return true;
   }
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
 
   const [articles,        setArticles]        = useState([]);
   const [newsLoading,     setNewsLoading]     = useState(true);
@@ -960,6 +961,16 @@ export default function SocialMediaPostGenerator() {
           'linear-gradient(168deg, #0a1030 0%, #070b1f 48%, #04081a 100%)',
       }}
     >
+      {/* The dashboard's own navigation, closed to icons so the desk keeps its
+          width; it opens over the page on hover. Laptops only - phones keep
+          their header. */}
+      <Sidebar
+        hoverExpand
+        active="generate"
+        onSelect={(id) => { if (id === 'dashboard') navigate('/dashboard'); }}
+        onLogout={async () => { await logout(); navigate('/', { replace: true }); }}
+      />
+
       {/* ambient glows */}
       <div className="pointer-events-none fixed left-[240px] top-0 h-[500px] w-[500px] rounded-full bg-[#3f9fff]/8 blur-[140px]" />
       <div className="pointer-events-none fixed bottom-0 right-[300px] h-[420px] w-[420px] rounded-full bg-[#7b5cff]/8 blur-[140px]" />

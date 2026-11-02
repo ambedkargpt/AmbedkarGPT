@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronDown, FileText, Globe, LayoutGrid, List, Radio, Search } from 'lucide-react';
-import AgMark from '../brand/AgMark';
 import Spinner from '../Spinner';
 import { useI18n } from '../../i18n/index.jsx';
 import { MAX_POSTS_PER_STORY } from '../../data/postLimits';
@@ -222,54 +221,13 @@ export default function NewsDesk({
           + 'linear-gradient(168deg, #0a1030 0%, #070b1f 48%, #04081a 100%)',
       }}
     >
-      {/* The rail: what to read. Closed it is an icon strip, so the feed
-          gets the width; it opens over the feed on hover or keyboard focus,
-          so the cards never jump. */}
-      <div className="relative w-[84px] shrink-0">
+      {/* The rail: what to read. The app's own navigation sits left of it
+          (the dashboard sidebar, closed to icons), so the brand is not
+          repeated here. */}
       <aside
         aria-label={t('gen.v2.chooseNews')}
-        className="dash-panel group/rail absolute inset-y-0 left-0 z-30 w-[84px] overflow-hidden transition-[width,box-shadow] duration-300 ease-out hover:w-[300px] hover:shadow-[18px_0_48px_rgba(2,6,20,0.6)] focus-within:w-[300px] motion-reduce:transition-none"
-        style={{ background: 'linear-gradient(180deg, #111a3a 0%, #0b1129 100%)' }}
+        className="dash-panel flex w-[300px] shrink-0 flex-col gap-4 overflow-y-auto p-4"
       >
-        {/* Closed: the strip */}
-        <div className="absolute inset-y-0 left-0 flex w-[84px] flex-col items-center gap-3 py-4 transition-opacity duration-200 group-hover/rail:pointer-events-none group-hover/rail:opacity-0 group-focus-within/rail:pointer-events-none group-focus-within/rail:opacity-0">
-          <AgMark size={30} color="#8FA8FF" />
-          {partyName && (
-            <span title={partyName} className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-[#3f9fff] font-display text-[13px] font-bold text-white">
-              {partyShort}
-              {partyLogo && <img src={partyLogo} alt="" className="absolute inset-0 h-full w-full bg-white object-contain p-1" onError={(e) => { e.currentTarget.style.display = 'none'; }} />}
-            </span>
-          )}
-          <span className="my-1 h-px w-10 bg-white/10" />
-          {sectionTabs.map((s) => {
-            const on = s.id === newsSection;
-            const accent = SECTION_ACCENT[s.id];
-            return (
-              <button
-                key={s.id}
-                type="button"
-                tabIndex={-1}
-                title={s.label}
-                onClick={() => onSection(s.id)}
-                className="relative rounded-xl p-1 transition-colors"
-                style={{ backgroundColor: on ? accent : 'transparent' }}
-              >
-                <SectionIcon id={s.id} partyLogo={partyLogo} partyShort={partyShort} active={on} accent={accent} />
-                <span className="absolute -right-1.5 -top-1.5 rounded-full bg-[#0a1030] px-1.5 font-count text-[10.5px] font-bold text-white ring-1 ring-white/20">{s.count}</span>
-              </button>
-            );
-          })}
-          <div className="flex-1" />
-          {quota && <QuotaRing used={used} limit={limit} />}
-        </div>
-
-        {/* Open: the whole rail, at its full width so nothing reflows while it slides */}
-        <div className="flex h-full w-[300px] flex-col gap-4 overflow-y-auto p-4 opacity-0 transition-opacity duration-200 group-hover/rail:opacity-100 group-hover/rail:delay-100 group-focus-within/rail:opacity-100">
-        <button type="button" onClick={() => navigate('/dashboard')} title={t('gen.goToDashboard')} className="flex items-center gap-2.5 px-1 pt-1 transition hover:opacity-90">
-          <AgMark size={30} color="#8FA8FF" />
-          <span className="font-display text-[18px] font-bold gradient-text-blue">{t('brand.wordmark')}</span>
-        </button>
-
         {partyName && (
           <div className="flex items-center gap-3 rounded-2xl border border-[#3f9fff]/30 bg-gradient-to-br from-[#16306f] to-[#0d1638] p-3.5">
             <span className="relative flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#3f9fff] font-display text-[14px] font-bold text-white">
@@ -367,9 +325,7 @@ export default function NewsDesk({
             </div>
           </div>
         )}
-        </div>
       </aside>
-      </div>
 
       {/* The feed */}
       <div className="flex min-w-0 flex-1 flex-col overflow-y-auto pr-1">
