@@ -1001,6 +1001,7 @@ class PostsService:
         own would leave the model guessing which question it answered.
         """
         from backend.pipeline.position_questions import (
+            defaults_for,
             group_for_position,
             question_ids_for,
             question_party,
@@ -1008,16 +1009,19 @@ class PostsService:
         )
         from backend.repositories.questions_repo import QuestionsRepository
 
-        ids = question_ids_for(
-            question_party(user_doc.get("political_party")),
-            group_for_position(user_doc.get("party_position")),
-        )
+        party = question_party(user_doc.get("political_party"))
+        group = group_for_position(user_doc.get("party_position"))
+        ids = question_ids_for(party, group)
         if not ids:
             return "", {}
         rows = self.profile_answers_repo.list_by_user(
             user_id=user_id, question_ids=ids, limit=len(ids), skip=0
         )
-        saved = {str(row.get("question_id")): row.get("answer") for row in rows}
+        saved = {
+            str(row.get("question_id")): row.get("answer")
+            for row in rows
+            if isinstance(row.get("answer"), str) and row.get("answer").strip()
+        }
 
         # The generator's side panel now carries these five as well, and a
         # control that does not change the post it sits beside is worse than no
@@ -1032,7 +1036,10 @@ class PostsService:
             if qid in wanted and isinstance(value, str) and value.strip()
         }
 
-        answers = {**saved, **panel}
+        # Unanswered questions take the set's defaults, as the party's do:
+        # nobody is asked these any more, and a role with no answers must
+        # still shape the post.
+        answers = {**defaults_for(party, group), **saved, **panel}
         if not answers:
             return "", {}
         return render_preferences(QuestionsRepository().list_by_ids(ids), answers), answers

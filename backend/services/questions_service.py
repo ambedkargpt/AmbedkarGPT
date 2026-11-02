@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from fastapi import HTTPException, status
 
+import os
+
 from backend.pipeline.party_questions import CATEGORY as PARTY_CATEGORY
 from backend.pipeline.position_questions import CATEGORY as POSITION_CATEGORY
 from backend.pipeline.position_questions import question_party
@@ -15,6 +17,14 @@ from backend.schemas.questions import (
     QuestionResponse,
     QuestionUpdateRequest,
 )
+
+
+# Whether the party and position questions are ever put to the user. Off: the
+# product is for senior party workers who want to write a post, not fill in a
+# questionnaire, and every question has a default that stands in for an answer
+# (party_questions.DEFAULT_NUMBERS, position_questions.DEFAULT_NUMBERS). Set
+# ASK_PREFERENCE_QUESTIONS=true to bring the prompts back.
+ASK_PREFERENCE_QUESTIONS = os.getenv("ASK_PREFERENCE_QUESTIONS", "false").strip().lower() in {"1", "true", "yes"}
 
 
 class QuestionsService:
@@ -110,6 +120,10 @@ class QuestionsService:
         # one the position set looked empty, which read as answered.
         if not str(user.get("party_position") or "").strip():
             return PendingSetsResponse(profile=True)
+
+        # Party and role chosen: the defaults answer every question from here.
+        if not ASK_PREFERENCE_QUESTIONS:
+            return PendingSetsResponse()
 
         answers_repo = ProfileAnswersRepository()
 

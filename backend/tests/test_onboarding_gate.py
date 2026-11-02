@@ -76,7 +76,16 @@ def test_a_party_with_no_questions_needs_only_the_party(users, answers):
     assert _service().onboarding_gap(USER_ID) is None
 
 
-def test_a_position_with_no_answers_has_its_preferences_outstanding(users, answers):
+def test_party_and_position_chosen_is_enough(users, answers):
+    """The defaults answer every question, so nothing is outstanding."""
+    _user(users, political_party=INC, party_position=POSITION)
+    assert _service().onboarding_gap(USER_ID) is None
+
+
+def test_with_questions_switched_on_a_position_with_no_answers_is_outstanding(users, answers, monkeypatch):
+    from backend.services import questions_service
+
+    monkeypatch.setattr(questions_service, "ASK_PREFERENCE_QUESTIONS", True)
     from backend.pipeline.position_questions import group_for_position
     from backend.pipeline.position_questions import question_ids_for as position_ids
     from backend.pipeline.position_questions import question_party
