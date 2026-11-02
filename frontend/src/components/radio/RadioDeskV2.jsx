@@ -93,25 +93,25 @@ export default function RadioDeskV2({
   return (
     <div className="flex min-h-[calc(100vh-140px)] flex-col">
       {/* Header */}
-      <header className="flex h-[76px] shrink-0 items-center gap-4 border-b border-[#1b2350]">
+      <header className="flex min-h-[64px] shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-[#1b2350] py-3 sm:gap-x-4 lg:h-[76px] lg:flex-nowrap lg:py-0">
         {/* A link home, so a page opened cold from a shared link still has
             somewhere to go; with history behind it, it steps back instead. */}
         <Link
           to="/"
           onClick={onBack}
           aria-label={t('radio.backHome')}
-          className="inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border border-[#3a4a85] bg-[#0d1333] px-4 text-[15px] font-semibold text-white transition hover:border-[#1d7afc] hover:bg-[#13205a]"
+          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-[#3a4a85] bg-[#0d1333] px-3 text-[14px] font-semibold sm:h-11 sm:px-4 sm:text-[15px] text-white transition hover:border-[#1d7afc] hover:bg-[#13205a]"
         >
           <Home size={18} strokeWidth={2} />
           {t('radio.home')}
         </Link>
-        <AgMark size={38} color="#8FA8FF" decorative />
+        <span className="hidden sm:inline-flex"><AgMark size={38} color="#8FA8FF" decorative /></span>
         <div className="min-w-0">
-          <h1 className="font-display text-[30px] font-extrabold leading-tight text-white">{t('radio.title')}</h1>
+          <h1 className="font-display text-[clamp(22px,2.2vw+14px,30px)] font-extrabold leading-tight text-white">{t('radio.title')}</h1>
           <div className="radio-v2-program"><ProgramLine /></div>
         </div>
-        <div className="ml-auto flex items-center gap-3">
-          <span className="inline-flex h-11 items-center gap-2.5 rounded-full border border-[#2a3566] bg-[#0d1333] pl-1.5 pr-4">
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+          <span className="hidden h-11 items-center gap-2.5 rounded-full border border-[#2a3566] bg-[#0d1333] pl-1.5 pr-4 md:inline-flex">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1d7afc] font-hindi text-[13px] font-bold text-white">
               {t('radio.anchorName').slice(0, 2)}
             </span>
@@ -132,7 +132,7 @@ export default function RadioDeskV2({
             </span>
             {t(listening ? 'radio.v2.live' : 'radio.v2.standby')}
           </span>
-          <span className="font-count text-[20px] font-semibold tabular-nums text-white">
+          <span className="hidden font-count text-[20px] font-semibold tabular-nums text-white sm:inline">
             {clockLabel} <span className="text-[12px] text-[#8b94b8]">IST</span>
           </span>
           <ShareMenu headline={headline} className="bhim-share radio-v2-share" />
@@ -140,11 +140,11 @@ export default function RadioDeskV2({
         </div>
       </header>
 
-      <div className="grid min-h-0 flex-1 gap-5 pt-6 lg:grid-cols-[260px_minmax(0,1fr)_340px] xl:grid-cols-[300px_minmax(0,1fr)_420px] xl:gap-7">
+      <div className="grid min-h-0 flex-1 gap-5 pt-5 sm:pt-6 lg:grid-cols-[260px_minmax(0,1fr)_340px] xl:grid-cols-[300px_minmax(0,1fr)_420px] xl:gap-7">
         {/* Stations */}
-        <aside className="flex min-w-0 flex-col gap-3">
+        <aside className="order-3 flex min-w-0 flex-col gap-3 lg:order-none">
           <p className="text-[15px] font-semibold text-[#c7d1eb]">{t('radio.v2.parties')}</p>
-          <ul className="flex flex-col gap-3">
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:flex lg:flex-col">
             {STATIONS.map(({ slug, labelKey }) => {
               const c = STATION_COLOR[slug];
               const share = shares[slug];
@@ -196,7 +196,7 @@ export default function RadioDeskV2({
         </aside>
 
         {/* The dial and what is on air */}
-        <section data-radio-now className="flex min-w-0 flex-col items-center">
+        <section data-radio-now className="order-1 flex min-w-0 flex-col items-center lg:order-none">
           {!onAir ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-[14px] text-[#8b94b8]">
               {(status === 'idle' || status === 'loading') && (
@@ -217,7 +217,7 @@ export default function RadioDeskV2({
             <>
               {/* Sized by the height left over as well as the width: on the
                   public page the navbar, the layout switch and the crawl take 250px. */}
-              <div className="relative w-full" style={{ maxWidth: 'min(400px, 38vh)' }}>
+              <div className="relative w-full" style={{ maxWidth: 'min(400px, 38vh, 72vw)' }}>
                 <ChakraDial color={color} progress={progress} listening={listening} canTune={canTune} onTune={onTune} />
                 <span className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 whitespace-nowrap rounded-full border border-[#2a3566] bg-[#0a0e27] px-4 py-1.5 font-count text-[14px] text-[#dfe6f7]">
                   {storyIndex < 0
@@ -226,20 +226,20 @@ export default function RadioDeskV2({
                 </span>
               </div>
 
-              <div className="mt-8 flex w-full max-w-[560px] flex-col items-center text-center">
+              <div className="mt-7 flex w-full max-w-[560px] flex-col items-center text-center sm:mt-8">
                 <div className="flex flex-wrap items-center justify-center gap-2">
                   <span className={`text-[15px] font-semibold ${hiCaps}`} style={{ color }}>{t('radio.nowOnAir')}</span>
                   {story?.storyType && <span className="rounded-full border border-[#2a3566] px-2 py-0.5 text-[11.5px] text-[#c7d1eb]">{story.storyType}</span>}
                   {story?.tenant && <span className="rounded-full border border-[#2a3566] px-2 py-0.5 text-[11.5px] text-[#c7d1eb]">{story.tenant}</span>}
                 </div>
-                <h2 lang="hi" aria-live="polite" className="mt-2 font-hindi text-[30px] font-bold leading-[1.4] text-white" style={{ textWrap: 'balance' }}>
+                <h2 lang="hi" aria-live="polite" className="mt-2 font-hindi text-[clamp(21px,2.2vw+13px,30px)] font-bold leading-[1.4] text-white" style={{ textWrap: 'balance' }}>
                   {story?.title || t('radio.title')}
                 </h2>
                 <p className="mt-1.5 text-[15px] text-[#9aa5c8]">
                   {t('radio.airedAt', { time: istClock(airTime(now, offsetInStory)) })}
                 </p>
                 {next && (
-                  <p className="mt-4 inline-flex max-w-full items-center gap-2.5 rounded-full border border-[#2a3566] bg-[#0d1333] px-5 py-2 text-[14.5px]">
+                  <p className="mt-4 inline-flex max-w-full items-center gap-2.5 rounded-full border border-[#2a3566] bg-[#0d1333] px-4 py-2 text-[14.5px] sm:px-5">
                     <span className="shrink-0 text-[#8b94b8]">{t('radio.v2.upNext')}</span>
                     <span lang="hi" className="min-w-0 truncate font-hindi text-white">{next.track.title}</span>
                     <span className="shrink-0 font-count text-[#c7d1eb]">{mmss(nextInSec)}</span>
@@ -247,11 +247,11 @@ export default function RadioDeskV2({
                 )}
               </div>
 
-              <div className="mt-6 flex min-h-16 w-full items-center gap-5 rounded-2xl border border-[#1b2350] px-5 py-3" style={{ backgroundColor: SURFACE }}>
+              <div className="mt-6 flex min-h-16 w-full flex-wrap items-center gap-x-5 gap-y-3 rounded-2xl border border-[#1b2350] px-4 py-3 sm:flex-nowrap sm:px-5" style={{ backgroundColor: SURFACE }}>
                 {/* Moves whenever the station is on air, bright in the station's
                     colour while this listener hears it: the broadcast does not
                     stop because nobody is listening. */}
-                <SignalMeter active={listening} live={canTune} bars={22} color={color} />
+                <span className="hidden sm:contents"><SignalMeter active={listening} live={canTune} bars={22} color={color} /></span>
                 <StatusLine listening={listening} nextInSec={nextInSec} progress={progress} compact />
                 <VolumeControl volume={volume} onChange={onVolume} listening={listening} disabled={!canTune} color={color} compact />
               </div>
@@ -260,9 +260,9 @@ export default function RadioDeskV2({
         </section>
 
         {/* Transcript and running order */}
-        <aside className="flex min-h-0 min-w-0 flex-col gap-5">
-          <div className="rounded-2xl border border-[#1b2350] p-5" style={{ backgroundColor: SURFACE }}>
-            <div className="mb-3 flex items-center justify-between">
+        <aside className="order-2 flex min-h-0 min-w-0 flex-col gap-5 lg:order-none">
+          <div className="rounded-2xl border border-[#1b2350] p-4 sm:p-5" style={{ backgroundColor: SURFACE }}>
+            <div className="mb-3 flex items-center justify-between gap-3">
               <Label>{t('radio.transcript')}</Label>
               <span className="text-[13px] text-[#9aa5c8]">{t('radio.v2.follows')}</span>
             </div>
@@ -280,7 +280,7 @@ export default function RadioDeskV2({
               {upcoming.map(({ track, state, at }) => (
                 <li
                   key={`${track.id}-${state}`}
-                  className="relative grid h-[60px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-5"
+                  className="relative grid h-[60px] grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-5"
                   style={{ backgroundColor: state === 'onair' ? `${color}14` : 'transparent' }}
                 >
                   {state === 'onair' && <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px]" style={{ backgroundColor: color }} />}

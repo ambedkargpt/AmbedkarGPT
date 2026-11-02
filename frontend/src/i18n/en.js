@@ -387,8 +387,6 @@ export default {
   "radio.artworkAlt": "{station} station",
   "radio.liveBadge": "Live",
   "radio.opening": "Opening",
-  "radio.layout.desk": "Desk",
-  "radio.layout.tape": "Tape",
   "radio.home": "Home",
   "radio.backHome": "Back to the home page",
   "radio.nowOnAir": "Now on air",

@@ -177,30 +177,33 @@ test.describe('sharing the link', () => {
 test.describe('on a phone', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.addInitScript(() => localStorage.setItem('bhim-radio-layout', 'desk'));
   });
 
-  test('the player is a card at the top, with the story and what is next below it', async ({ page }) => {
+  test('the dial and Play come first, the story under them, no sideways scroll', async ({ page }) => {
     await page.goto('/bhimradio');
 
-    const player = page.locator('.bhim-m-player');
-    await expect(player).toBeVisible();
-    const play = player.getByRole('button', { name: /play bhim radio|भीम रेडियो प्ले/i });
+    const now = page.locator('[data-radio-now]');
+    await expect(now).toBeVisible();
+    const play = now.getByRole('button', { name: /tune in|ट्यून इन|play|प्ले/i }).first();
     const box = await play.boundingBox();
     expect(box.y + box.height).toBeLessThan(844);   // no scrolling to reach it
 
-    await expect(page.locator('.bhim-m-headline')).toBeVisible();
-    await expect(page.locator('.bhim-m-card').first()).toBeAttached();
-    // The cards scroll inside their row, never the page sideways.
+    // On a phone what is on air leads; the stations come after it.
+    const order = await page.locator('[data-radio-order]').boundingBox();
+    expect(order.y).toBeGreaterThan(box.y);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   });
 
-  test('the story on air says it went out at the time the clock shows', async ({ page }) => {
-    // Air time was counted from today's midnight while the broadcast loops from
-    // the bulletin's own date, so the label ran up to a cycle ahead of the clock.
+  test('the story on air says it went out at the current time', async ({ page }) => {
+    // Air time was once counted from today's midnight while the broadcast
+    // loops from the bulletin's own date, so the label ran up to a cycle ahead.
     await page.goto('/bhimradio');
-    const clock = (await page.locator('.bhim-m-clock').innerText()).slice(0, 5);
-    const aired = (await page.locator('.bhim-m-aired').innerText()).match(/\d{2}:\d{2}/)[0];
+    const line = page.locator('[data-radio-now] h2 + p');
+    await expect(line).toBeVisible();
+    const aired = (await line.innerText()).match(/\d{2}:\d{2}/)[0];
+    const clock = await page.evaluate(() => new Intl.DateTimeFormat('en-IN', {
+      timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false,
+    }).format(new Date()));
     const mins = (hhmm) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3));
     const gap = (mins(clock) - mins(aired) + 1440) % 1440;
     expect(gap).toBeLessThanOrEqual(10);   // no story is ten minutes long

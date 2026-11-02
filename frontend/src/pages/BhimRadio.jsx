@@ -1,36 +1,21 @@
 import { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, RotateCw } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
 import { useRadio } from '../context/RadioContext';
-import RadioDesk from '../components/radio/RadioDesk';
 import RadioDeskV2 from '../components/radio/RadioDeskV2';
-import RadioMobile from '../components/radio/RadioMobile';
-import RadioTape from '../components/radio/RadioTape';
 import { INK, MUTED, RULE, SURFACE, mmss } from '../components/radio/radioTokens';
 import { useI18n } from '../i18n/index.jsx';
 import { RADIO_REQUIRES_LOGIN } from '../data/radioAccess';
-import ShareMenu from '../components/radio/ShareMenu';
 
 /* ── the station ──────────────────────────────────────────────────────────
-   Two layouts over one broadcast. Both are fed from the same derived state
-   below, so the only thing that differs between them is arrangement; neither
-   can show a different story from the other.
+   One layout at every width: the desk (stations, the dial, the running order
+   and the transcript), which arranges itself for a phone, a tablet and a
+   laptop. The tape layout and the older desk and phone layouts are gone.
    ------------------------------------------------------------------------ */
 
-const LAYOUT_KEY = 'bhim-radio-layout';
-
-// On the standalone page the way to start listening goes straight under the
-// title instead of at the foot of the desk. As a dashboard screen the desk
-// filled the viewport and the foot was on screen; in the public frame the
-// navbar and the news crawl take 118px and the story below is taller than
-// the window, which put the one control that matters at y=1044 on a laptop
-// and past 2000 on a phone. Sticky and fixed are both unavailable here - the
-// public layout's overflow-x clips sticky and the page transition's transform
-// re-anchors fixed - so the order of the page is what changes.
+// The radio is a public page of its own unless it sits behind the login.
 const STANDALONE = !RADIO_REQUIRES_LOGIN;
-const TUNER_FIRST = STANDALONE;
 
 // Accounts that may hold the tape still: play/pause, a scrub that stays put,
 // and the segment walk-through. Hard-coded because it is for one demonstration
@@ -43,52 +28,6 @@ const DEMO_ACCOUNTS = ['krishprakash1232@gmail.com'];
 // Set VITE_RADIO_DEMO_CONTROLS=true in frontend/.env.local (gitignored).
 const LOCAL_DEMO = import.meta.env.DEV && import.meta.env.VITE_RADIO_DEMO_CONTROLS === 'true';
 
-// Below this the desk is a phone: its two columns stack and its footer of
-// controls lands somewhere down a long scroll, so the news-first layout takes
-// its place. The tape keeps its own arrangement at every width.
-const PHONE_QUERY = '(max-width: 639px)';
-
-function usePhone() {
-  const [phone, setPhone] = useState(() => window.matchMedia?.(PHONE_QUERY).matches ?? false);
-  useEffect(() => {
-    const mq = window.matchMedia?.(PHONE_QUERY);
-    if (!mq) return undefined;
-    const onChange = () => setPhone(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return phone;
-}
-
-// From here up the desk is the v2 layout: stations, dial, running order. The
-// older desk stays for tablets, between the phone layout and this.
-const WIDE_QUERY = '(min-width: 1024px)';
-
-function useWide() {
-  const [wide, setWide] = useState(() => window.matchMedia?.(WIDE_QUERY).matches ?? false);
-  useEffect(() => {
-    const mq = window.matchMedia?.(WIDE_QUERY);
-    if (!mq) return undefined;
-    const onChange = () => setWide(mq.matches);
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
-  return wide;
-}
-
-// The tape layout is kept for local comparison only; listeners get the desk.
-const TAPE_AVAILABLE = import.meta.env.DEV;
-
-function readLayout() {
-  if (!TAPE_AVAILABLE) return 'desk';
-  // Per-viewer convenience. Blocked site data throws rather than returning
-  // null, and a storage failure must not be why the page will not render.
-  try {
-    return localStorage.getItem(LAYOUT_KEY) === 'tape' ? 'tape' : 'desk';
-  } catch {
-    return 'desk';
-  }
-}
 
 export default function BhimRadioPage() {
   const { t } = useI18n();
@@ -105,10 +44,6 @@ export default function BhimRadioPage() {
     streamError, setFollowBroadcast,
   } = useRadio();
 
-  const [layout, setLayout] = useState(readLayout);
-  const phone = usePhone();
-  const wide = useWide();
-  const v2 = layout === 'desk' && wide;
   // Open from the start locally: the panel is what the flag is for.
   const [showDemo, setShowDemo] = useState(LOCAL_DEMO);
   const [now, setNow] = useState(() => new Date());
@@ -131,10 +66,6 @@ export default function BhimRadioPage() {
     const timer = setInterval(() => setNow(new Date()), 250);
     return () => clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    try { localStorage.setItem(LAYOUT_KEY, layout); } catch { /* not worth failing over */ }
-  }, [layout]);
 
   const onAir = status === 'ready' && Boolean(station);
   const canTune = onAir && !streamError;
@@ -223,53 +154,11 @@ export default function BhimRadioPage() {
           standalone page the station sat on the public layout's flat navy,
           which read as an empty room. Full-bleed, static, behind the desk. */}
       <div className={STANDALONE ? 'bhim-ground' : undefined}>
-      <div className={`bhim-station ${v2 ? 'bhim-station-v2' : ''}`}>
+      <div className="bhim-station bhim-station-v2">
 
-        {/* ── layout toggle ──
-            Both layouts ship so they can be compared in production before one
-            is chosen. It is a view preference, not a setting, so it is kept in
-            the browser and never sent anywhere. */}
+        {/* The desk carries its own Home link and share. Only the demo
+            account's walk-through toggle sits above it. */}
         <div className="bhim-station-switch">
-          {/* The way out: back to the page the listener came from. A link
-              opened from WhatsApp has no page before it in the app (the
-              router's first entry has the key "default"), so that one goes
-              home instead of out of the site. */}
-          {STANDALONE && !v2 && (
-            <Link
-              to="/"
-              className="bhim-back"
-              aria-label={t('radio.backHome')}
-              onClick={(e) => {
-                if (location.key !== 'default') { e.preventDefault(); navigate(-1); }
-              }}
-            >
-              <ArrowLeft size={16} aria-hidden="true" />
-              <span>{t('radio.home')}</span>
-            </Link>
-          )}
-          {TAPE_AVAILABLE && ['desk', 'tape'].map((id) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setLayout(id)}
-              aria-pressed={layout === id}
-              style={{
-                padding: '6px 14px',
-                border: `2px solid ${layout === id ? '#1d7afc' : RULE}`,
-                background: layout === id ? '#1d7afc' : 'transparent',
-                color: layout === id ? '#fff' : MUTED,
-                font: '600 14px/1 Inter, system-ui, sans-serif',
-                letterSpacing: '0.12em', textTransform: 'uppercase',
-                cursor: 'pointer',
-              }}
-            >
-              {t(`radio.layout.${id}`)}
-            </button>
-          ))}
-
-          {/* The message and the link, to whichever app - see radioShare.js. */}
-          {STANDALONE && !v2 && <ShareMenu headline={story?.title} className="bhim-share" />}
-
           {isDemo && onAir && (
             <button
               type="button"
@@ -287,7 +176,6 @@ export default function BhimRadioPage() {
         </div>
 
         {/* ── what is on, or why it is not ── */}
-        {v2 ? (
           <RadioDeskV2
             {...shared}
             upcoming={upcoming}
@@ -301,46 +189,6 @@ export default function BhimRadioPage() {
               timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false,
             }).format(now)}
           />
-        ) : !onAir ? (
-          <div style={{ padding: '48px 0', color: MUTED, display: 'flex', alignItems: 'center', gap: 10 }}>
-            {(status === 'idle' || status === 'loading') && (
-              <><Loader2 size={16} className="animate-spin" />{t('radio.loading')}</>
-            )}
-            {!configured && t('radio.empty')}
-            {status === 'empty' && t('radio.emptyStation')}
-            {status === 'error' && (
-              <>
-                <span style={{ color: '#ff6b5a' }}>{t('radio.loadFailed')}</span>
-                <button
-                  type="button"
-                  onClick={retry}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    border: `2px solid ${RULE}`, background: SURFACE, color: INK,
-                    padding: '6px 12px', font: '600 12px/1 Inter, sans-serif', cursor: 'pointer',
-                  }}
-                >
-                  <RotateCw size={12} />{t('radio.retry')}
-                </button>
-              </>
-            )}
-          </div>
-        ) : layout === 'tape' ? (
-          <RadioTape
-            className={TUNER_FIRST ? 'bhim-tuner-first' : ''}
-            {...shared}
-            tracks={tracks}
-            reduced={window.matchMedia?.('(prefers-reduced-motion: reduce)').matches}
-          />
-        ) : phone ? (
-          <RadioMobile {...shared} upcoming={upcoming} />
-        ) : (
-          <RadioDesk {...shared} className={TUNER_FIRST ? 'bhim-tuner-first' : ''} upcoming={upcoming} clockLabel={
-            new Intl.DateTimeFormat('en-IN', {
-              timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false,
-            }).format(now)
-          } />
-        )}
 
         {/* ── the walk-through ──
             Every part of the bulletin, furniture included, so it can be shown
@@ -445,48 +293,11 @@ export default function BhimRadioPage() {
         }
         @media (min-width: 768px) { .bhim-station { padding-inline: 32px; } }
         .bhim-station-v2 { max-width: 1440px; padding-block: 8px 24px; }
-        .bhim-back {
-          display: inline-flex; align-items: center; gap: 8px;
-          margin-right: 8px; padding: 6px 14px 6px 10px;
-          border: 2px solid ${RULE}; color: ${INK}; text-decoration: none;
-          font: 600 14px/1 Inter, system-ui, sans-serif;
-          letter-spacing: 0.12em; text-transform: uppercase;
-          transition: border-color .15s ease, color .15s ease;
-        }
-        .bhim-back:hover { border-color: #1d7afc; color: #fff; }
-        .bhim-share {
-          display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
-          padding: 6px 14px; border: 2px solid ${RULE}; background: transparent; color: ${INK};
-          font: 600 14px/1 Inter, system-ui, sans-serif; letter-spacing: 0.12em; text-transform: uppercase;
-          transition: border-color .15s ease, color .15s ease;
-        }
-        .bhim-share:hover { border-color: #1d7afc; color: #fff; }
-        .bhim-share:focus-visible { outline: 2px solid #1d7afc; outline-offset: 2px; }
-        .bhim-back:focus-visible { outline: 2px solid #1d7afc; outline-offset: 2px; }
-        @media (prefers-reduced-motion: reduce) { .bhim-back { transition: none; } }
         .bhim-station-switch {
           display: flex; gap: 8px; align-items: center;
-          margin-bottom: 20px; flex-wrap: wrap;
+          flex-wrap: wrap;
         }
-        /* Header, then the tuner, then everything else. CSS order rather than
-           moving the JSX, so the two layouts and their footers stay as they
-           are for the dashboard version. marginTop:auto on the footer is an
-           inline style, hence !important: left alone it would push the
-           tuner to the bottom of any spare height and away from the title. */
-        .bhim-tuner-first > header { order: 0; }
-        .bhim-tuner-first > footer {
-          order: 1; margin-top: 0 !important;
-          border-top: 0 !important; border-bottom: 2px solid ${RULE};
-        }
-        .bhim-tuner-first > :not(header):not(footer) { order: 2; }
-        /* On a phone the strip is the first thing under the title, so it is laid
-           out for a thumb: the button across the full width, and the status
-           line on a row of its own instead of a column a few characters wide. */
-        @media (max-width: 639px) {
-          .bhim-tuner-first > footer > :nth-child(1) { flex: 1 1 100% !important; width: 100% !important; }
-          .bhim-tuner-first > footer > :nth-child(3) { flex: 1 1 100% !important; order: 4; }
-          .bhim-tuner-first > footer > :nth-child(4) { flex: 1 1 100% !important; order: 5; }
-        }
+        .bhim-station-switch:not(:empty) { margin-bottom: 20px; }
         .bhim-station input[type="range"] { accent-color: #1d7afc; }
         .bhim-station :focus-visible { outline: 2px solid #1d7afc; outline-offset: 2px; }
       `}</style>

@@ -391,8 +391,6 @@ export default {
   "radio.artworkAlt": "{station} स्टेशन",
   "radio.liveBadge": "लाइव",
   "radio.opening": "शुरुआत",
-  "radio.layout.desk": "डेस्क",
-  "radio.layout.tape": "टेप",
   "radio.home": "होम",
   "radio.backHome": "होम पेज पर वापस जाएँ",
   "radio.nowOnAir": "अभी ऑन एयर",
