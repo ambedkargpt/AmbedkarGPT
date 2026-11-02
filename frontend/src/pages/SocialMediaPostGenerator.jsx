@@ -948,7 +948,13 @@ export default function SocialMediaPostGenerator() {
   return (
     <div
       className="relative flex min-h-screen text-[#e5e7eb]"
-      style={{ background: 'radial-gradient(1200px 700px at 50% -10%, #0c111e 0%, #080b13 55%, #06080e 100%)' }}
+      // The dashboard shell's own ground, so moving from the dashboard or the
+      // services page into the generator does not drop into a darker room.
+      style={{
+        background:
+          'radial-gradient(1200px 700px at 18% -4%, #101c46 0%, rgba(7,11,28,0) 58%),' +
+        'linear-gradient(168deg, #0a1030 0%, #070b1f 48%, #04081a 100%)',
+      }}
     >
       {/* ambient glows */}
       <div className="pointer-events-none fixed left-[240px] top-0 h-[500px] w-[500px] rounded-full bg-[#3f9fff]/8 blur-[140px]" />
@@ -956,8 +962,8 @@ export default function SocialMediaPostGenerator() {
 
       {/* ── LEFT SIDEBAR ── */}
       <aside
-        className="hidden lg:flex w-[240px] shrink-0 flex-col overflow-y-auto border-r border-[#1a2130]/70"
-        style={{ background: 'linear-gradient(180deg,#0a0e18 0%,#080b13 100%)' }}
+        className="hidden lg:flex w-[240px] shrink-0 flex-col overflow-y-auto border-r border-[#1f2b52]/70"
+        style={{ background: 'linear-gradient(180deg, rgba(16,25,55,0.55) 0%, rgba(10,16,38,0.55) 100%)' }}
       >
         {/* Brand header */}
         <div className="border-b border-[#141d3a]/70 px-5 py-4">
@@ -1000,13 +1006,13 @@ export default function SocialMediaPostGenerator() {
 
         {/* User profile card */}
         <div className="px-4 pt-4">
-          <div className="rounded-2xl border border-[#1e2636]/80 bg-[#0e1320] px-5 py-5">
+          <div className="rounded-2xl border border-[#22305c]/80 bg-[#101937] px-5 py-5">
             <div className="flex flex-col items-center">
               <div className="relative">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#3f9fff] to-[#7b5cff] text-[22px] font-bold text-white shadow-[0_0_24px_rgba(63,159,255,0.35)]">
                   {(currentUser?.username?.[0] ?? '?').toUpperCase()}
                 </div>
-                <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#0e1320] bg-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#101937] bg-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
               </div>
               <p className="mt-3 font-display text-[16px] font-semibold text-white">{currentUser?.username ?? '—'}</p>
               <p className="mt-0.5 text-[11.5px] text-[#8b93a5]">{currentUser?.email ?? currentUser?.phone ?? ''}</p>
@@ -1021,7 +1027,7 @@ export default function SocialMediaPostGenerator() {
 
             {/* Stat cards */}
             <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-[#1e2636]/80 bg-[#0b0f18] px-3 py-3 text-center">
+              <div className="rounded-xl border border-[#22305c]/80 bg-[#0c1430] px-3 py-3 text-center">
                 <p className="font-count text-[22px] font-bold text-[#4a9eff]">127</p>
                 <p className="mt-0.5 text-[10px] text-[#8b93a5]">{t('gen.activityScore')}</p>
               </div>
@@ -1055,7 +1061,7 @@ export default function SocialMediaPostGenerator() {
             <button
               type="button"
               onClick={() => navigate('/profile-setup')}
-              className="w-full rounded-xl border border-[#1e2636]/80 bg-[#0e1320] px-3.5 py-3 text-left text-[12.5px] text-[#8b93a5] transition hover:border-[#3f9fff]/45 hover:text-white"
+              className="w-full rounded-xl border border-[#22305c]/80 bg-[#101937] px-3.5 py-3 text-left text-[12.5px] text-[#8b93a5] transition hover:border-[#3f9fff]/45 hover:text-white"
             >
               {t('gen.noPartyLine')}
               <span className="mt-0.5 block text-[11.5px] text-[#6aa8ff]">{t('gen.setParty')}</span>
@@ -1076,8 +1082,8 @@ export default function SocialMediaPostGenerator() {
                   onClick={() => setPlatform(p.id)}
                   className="flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left text-[13px] font-medium transition"
                   style={{
-                    borderColor: active ? p.color : 'rgba(30,38,54,0.8)',
-                    backgroundColor: active ? `${p.color}1f` : '#0e1320',
+                    borderColor: active ? p.color : 'rgba(34,48,92,0.8)',
+                    backgroundColor: active ? `${p.color}1f` : '#101937',
                     color: active ? '#ffffff' : '#8b93a5',
                   }}
                 >
@@ -1101,8 +1107,8 @@ export default function SocialMediaPostGenerator() {
 
       {/* ── MAIN CONTENT ── */}
       <div
-        className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden border-x border-[#1a2130]/50"
-        style={{ background: 'linear-gradient(180deg,#0a0e18 0%,#080b12 100%)' }}
+        className="relative z-10 flex min-w-0 flex-1 flex-col overflow-hidden border-x border-[#1f2b52]/50"
+        style={{ background: 'transparent' }}
       >
 
         {/* Search + filter */}
@@ -1237,7 +1243,7 @@ export default function SocialMediaPostGenerator() {
                     className="mb-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 rounded-2xl border px-5 py-4"
                     style={{
                       borderColor: `${pt.accent}3d`,
-                      background: `linear-gradient(100deg, #0e1320 0%, #0e1320 45%, ${pt.tint} 100%)`,
+                      background: `linear-gradient(100deg, #101937 0%, #101937 45%, ${pt.tint} 100%)`,
                     }}
                   >
                     {/* The party's own logo, as the dashboard shows it, with
@@ -1307,8 +1313,8 @@ export default function SocialMediaPostGenerator() {
                       aria-pressed={active}
                       className="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-[12.5px] transition"
                       style={{
-                        borderColor: active ? tint : 'rgba(30,38,54,0.9)',
-                        backgroundColor: active ? `${tint}18` : '#0b101c',
+                        borderColor: active ? tint : 'rgba(34,48,92,0.9)',
+                        backgroundColor: active ? `${tint}18` : '#0c1430',
                         color: active ? tint : '#8b94b8',
                         fontWeight: active ? 600 : 500,
                       }}
@@ -1332,17 +1338,17 @@ export default function SocialMediaPostGenerator() {
                       aria-pressed={active}
                       className="flex items-start gap-3 rounded-2xl border px-4 py-3.5 text-left transition duration-150"
                       style={{
-                        borderColor: active ? tint : 'rgba(30,38,54,0.9)',
-                        backgroundColor: active ? `${tint}12` : '#0b101c',
+                        borderColor: active ? tint : 'rgba(34,48,92,0.9)',
+                        backgroundColor: active ? `${tint}12` : '#0c1430',
                         boxShadow: active ? `0 0 0 1px ${tint}, 0 8px 24px ${tint}22` : 'none',
                       }}
                       onMouseEnter={(e) => { if (!active) e.currentTarget.style.borderColor = 'rgba(58,107,196,0.5)'; }}
-                      onMouseLeave={(e) => { if (!active) e.currentTarget.style.borderColor = 'rgba(30,38,54,0.9)'; }}
+                      onMouseLeave={(e) => { if (!active) e.currentTarget.style.borderColor = 'rgba(34,48,92,0.9)'; }}
                     >
                       <span
                         className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition"
                         style={{
-                          backgroundColor: active ? `${tint}22` : 'rgba(30,38,54,0.75)',
+                          backgroundColor: active ? `${tint}22` : 'rgba(34,48,92,0.75)',
                           color: active ? tint : '#6b78a0',
                         }}
                       >
@@ -1360,7 +1366,7 @@ export default function SocialMediaPostGenerator() {
                           <span
                             className="shrink-0 rounded-md px-1.5 py-0.5 font-count text-[11px] leading-none"
                             style={{
-                              backgroundColor: active ? `${tint}26` : 'rgba(30,38,54,0.9)',
+                              backgroundColor: active ? `${tint}26` : 'rgba(34,48,92,0.9)',
                               color: active ? tint : '#5a6e9a',
                             }}
                           >
@@ -1392,7 +1398,7 @@ export default function SocialMediaPostGenerator() {
                   {Array.from({ length: 6 }).map((_, i) => (
                     <div
                       key={i}
-                      className="h-[240px] w-full animate-pulse rounded-2xl border border-[#1e2636]/60 bg-[#0e1320]/70 p-5"
+                      className="h-[240px] w-full animate-pulse rounded-2xl border border-[#22305c]/60 bg-[#101937]/70 p-5"
                     >
                       {/* Card-shaped, so the wait previews what arrives
                           instead of showing a blank box. */}
@@ -1468,7 +1474,7 @@ export default function SocialMediaPostGenerator() {
                     {t(orderedArticles.length === 1 ? 'gen.storyOne' : 'gen.storyMany')}
                   </span>
 
-                  <span className="h-5 w-px bg-[#1e2636]" />
+                  <span className="h-5 w-px bg-[#22305c]" />
 
                   {/* Content type. General and Opposition are scraped from the
                       videos tab alone, so every item in them is one type and a
@@ -1519,7 +1525,7 @@ export default function SocialMediaPostGenerator() {
                     </div>
                   )}
 
-                  {newsSection === 'party' && <span className="h-5 w-px bg-[#1e2636]" />}
+                  {newsSection === 'party' && <span className="h-5 w-px bg-[#22305c]" />}
 
                   {/* Sort */}
                   <div ref={sortRef} className="relative">
@@ -1595,7 +1601,7 @@ export default function SocialMediaPostGenerator() {
                       {group.label}
                     </h4>
                     <span className="font-count text-[11px] text-[#5a6e9a]">{group.items.length}</span>
-                    <span className="h-px flex-1 bg-[#1e2636]/80" />
+                    <span className="h-px flex-1 bg-[#22305c]/80" />
                   </div>
 
                   <div className={cardView === 'list' ? 'flex flex-col gap-3' : 'grid gap-5 lg:grid-cols-2'}>
@@ -1611,17 +1617,17 @@ export default function SocialMediaPostGenerator() {
                       key={article.id}
                       type="button"
                       onClick={() => handlePreview(article)}
-                      className={`group flex flex-col overflow-hidden rounded-2xl border text-left transition duration-200 hover:-translate-y-0.5 hover:bg-[#111726] hover:shadow-[0_12px_32px_rgba(0,0,0,0.45)] ${
+                      className={`group flex flex-col overflow-hidden rounded-2xl border text-left transition duration-200 hover:-translate-y-0.5 hover:bg-[#14204a] hover:shadow-[0_12px_32px_rgba(0,0,0,0.45)] ${
                         cardView === 'list' ? 'px-5 py-4' : 'p-6'
                       }`}
                       style={{
-                        borderColor: 'rgba(30,38,54,0.8)',
-                        backgroundColor: '#0e1320',
+                        borderColor: 'rgba(34,48,92,0.8)',
+                        backgroundColor: '#101937',
                         // Accent rail marks which feed the card belongs to
                         borderLeft: `3px solid ${cardAccent}`,
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${cardAccent}70`; e.currentTarget.style.borderLeftColor = cardAccent; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(30,38,54,0.8)'; e.currentTarget.style.borderLeftColor = cardAccent; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(34,48,92,0.8)'; e.currentTarget.style.borderLeftColor = cardAccent; }}
                     >
                       {/* Header row: NEWS ARTICLE label · category tag.
                           Wraps: "Bharatiya Janata Party" beside the type and
@@ -1701,7 +1707,7 @@ export default function SocialMediaPostGenerator() {
                     type="button"
                     onClick={() => setPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#1e2636]/80 bg-[#0e1320] px-3 text-[12.5px] font-medium text-[#8a9ac0] transition hover:border-[#3f9fff]/45 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#22305c]/80 bg-[#101937] px-3 text-[12.5px] font-medium text-[#8a9ac0] transition hover:border-[#3f9fff]/45 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <ChevronDown size={13} strokeWidth={2} className="rotate-90" />
                     {t('gen.prev')}
@@ -1718,8 +1724,8 @@ export default function SocialMediaPostGenerator() {
                         aria-current={item === currentPage ? 'page' : undefined}
                         className="inline-flex h-9 min-w-9 items-center justify-center rounded-lg border px-2 font-count text-[12.5px] font-semibold transition"
                         style={{
-                          borderColor: item === currentPage ? '#3f9fff' : 'rgba(30,38,54,0.8)',
-                          backgroundColor: item === currentPage ? 'rgba(63,159,255,0.14)' : '#0e1320',
+                          borderColor: item === currentPage ? '#3f9fff' : 'rgba(34,48,92,0.8)',
+                          backgroundColor: item === currentPage ? 'rgba(63,159,255,0.14)' : '#101937',
                           color: item === currentPage ? '#6aa8ff' : '#8a9ac0',
                         }}
                       >
@@ -1732,7 +1738,7 @@ export default function SocialMediaPostGenerator() {
                     type="button"
                     onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#1e2636]/80 bg-[#0e1320] px-3 text-[12.5px] font-medium text-[#8a9ac0] transition hover:border-[#3f9fff]/45 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-[#22305c]/80 bg-[#101937] px-3 text-[12.5px] font-medium text-[#8a9ac0] transition hover:border-[#3f9fff]/45 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     {t('gen.next')}
                     <ChevronDown size={13} strokeWidth={2} className="-rotate-90" />
