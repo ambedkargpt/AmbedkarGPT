@@ -27,6 +27,7 @@ import { parsePost, hashtagsText } from '../utils/parsePost';
 import Spinner from '../components/Spinner';
 import { useI18n } from '../i18n/index.jsx';
 import SpeakButton from '../components/generate/SpeakButton';
+import Sidebar from '../components/dashboard/Sidebar';
 import PhonePreview from '../components/compose/PhonePreview';
 import { PLATFORM_LOOK } from '../components/compose/platformLook';
 import '../components/compose/compose.css';
@@ -281,7 +282,7 @@ export default function SocialMediaPostGenerator() {
     navigate(detail.step === 'profile' ? '/profile-setup' : '/questionnaire', { replace: true });
     return true;
   }
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
 
   const [articles,        setArticles]        = useState([]);
   const [newsLoading,     setNewsLoading]     = useState(true);
@@ -960,11 +961,88 @@ export default function SocialMediaPostGenerator() {
 
   const authorName = currentUser?.full_name || currentUser?.username || 'AmbedkarGPT';
 
+  // The party's banner: logo, name and what it stands for. It heads the feed,
+  // the story and the post alike, so you always see whose voice you write in.
+  function renderPartyBanner() {
+    if (!activeParty) return null;
+    const pt = PARTY_THEME[activeParty.slug] ?? DEFAULT_PARTY_THEME;
+    const initials = partyShortLabel(activeParty, currentUser?.political_party, t, lang);
+    const logo = partyLogo(currentUser?.political_party || activeParty.name);
+    const tags = (PARTY_TAG_KEYS[activeParty.slug] ?? [])
+      .map((k) => t(k))
+      .filter((v) => v && !v.startsWith('ptag.'));
+    return (
+      <div
+        className="mb-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 rounded-2xl border px-5 py-4"
+        style={{
+          borderColor: `${pt.accent}3d`,
+          background: `linear-gradient(100deg, #0e1320 0%, #0e1320 45%, ${pt.tint} 100%)`,
+        }}
+      >
+        {/* The party's own logo, as the dashboard shows it, with
+            the lettered tile behind it. A logo that is missing or
+            fails to load hides itself and leaves the initials, so
+            a party we have no artwork for still reads as itself
+            rather than as a broken image. */}
+        <span
+          className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl font-display text-[20px] font-bold text-white"
+          style={{
+            background: `linear-gradient(150deg, ${pt.accent} 0%, ${pt.accent}b0 100%)`,
+            boxShadow: `0 6px 20px ${pt.accent}55`,
+          }}
+        >
+          {initials}
+          {logo && (
+            <img
+              src={logo}
+              alt={activeParty.name}
+              className="absolute inset-0 h-full w-full bg-white object-contain p-1.5"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          )}
+        </span>
+
+        {/* Sizes to its own text rather than filling the row. The
+            "Change party" button used to hold the right-hand end,
+            and without it a stretched block left the name marooned
+            against a wide empty gap. It can still shrink, so a long
+            name truncates rather than pushing the logo off. */}
+        <div className="min-w-0">
+          {/* Wraps on a phone, where truncating turned the party's
+              name into "India…". Ellipsis only once there is a
+              column to run out of. */}
+          <h2 className="font-display text-[19px] font-bold leading-snug tracking-tight text-white sm:truncate sm:text-[21px]">
+            {partyLabel(activeParty.name, lang)}
+          </h2>
+          {tags.length > 0 && (
+            <p className="mt-0.5 text-[12.5px] leading-snug text-[#8b94b8] sm:truncate sm:text-[13px]">
+              {tags.join('  ·  ')}
+            </p>
+          )}
+        </div>
+
+        {/* There was a "Change party" button here. The party is
+            write-once, so it only ever led to a form that would
+            refuse the change: an offer the product cannot keep. */}
+      </div>
+    );
+  }
+
+
   return (
     <div
       className="relative flex min-h-screen text-[#e5e7eb]"
       style={{ background: 'radial-gradient(1200px 700px at 50% -10%, #0c111e 0%, #080b13 55%, #06080e 100%)' }}
     >
+      {/* The dashboard's own navigation, closed to icons; it opens over the
+          page on hover. Laptops only - phones keep their header. */}
+      <Sidebar
+        hoverExpand
+        active="generate"
+        onSelect={(id) => { if (id === 'dashboard') navigate('/dashboard'); }}
+        onLogout={async () => { await logout(); navigate('/', { replace: true }); }}
+      />
+
       {/* ambient glows */}
       <div className="pointer-events-none fixed left-[240px] top-0 h-[500px] w-[500px] rounded-full bg-[#3f9fff]/8 blur-[140px]" />
       <div className="pointer-events-none fixed bottom-0 right-[300px] h-[420px] w-[420px] rounded-full bg-[#7b5cff]/8 blur-[140px]" />
@@ -1028,54 +1106,12 @@ export default function SocialMediaPostGenerator() {
               <button
                 type="button"
                 onClick={() => navigate('/profile-setup')}
-                className="mt-1 text-[11px] font-medium text-[#ef6a6a] transition hover:text-[#ff8a8a]"
+                className="mt-1.5 text-[11.5px] font-medium text-[#6aa8ff] transition hover:text-white"
               >
-                {t('gen.completeProfile')}
+                {t('gen.customize')}
               </button>
             </div>
-
-            {/* Stat cards */}
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-[#1e2636]/80 bg-[#0b0f18] px-3 py-3 text-center">
-                <p className="font-count text-[22px] font-bold text-[#4a9eff]">127</p>
-                <p className="mt-0.5 text-[10px] text-[#8b93a5]">{t('gen.activityScore')}</p>
-              </div>
-              <div className="rounded-xl border border-[#3a3320]/80 bg-[#17130a] px-3 py-3 text-center">
-                <p className="flex items-center justify-center gap-1 font-display text-[18px] font-bold text-[#f5b73d]">
-                  <Star size={15} strokeWidth={2} className="fill-[#f5b73d]" />
-                  Pro
-                </p>
-                <p className="mt-0.5 text-[10px] text-[#8b93a5]">{t('gen.subscription')}</p>
-              </div>
-            </div>
           </div>
-        </div>
-
-        {/* Party affiliation — set at signup, shown read-only */}
-        <div className="px-4 pt-5">
-          <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#8b93a5]">
-            {t('gen.yourParty')}
-          </p>
-          {activeParty ? (
-            <div
-              className="flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-[13px] font-medium text-white"
-              style={{ borderColor: 'rgba(63,159,255,0.55)', backgroundColor: 'rgba(63,159,255,0.10)' }}
-            >
-              <Check size={14} strokeWidth={2.5} className="shrink-0 text-[#6aa8ff]" />
-              <span className="min-w-0 truncate">{activeParty.name}</span>
-            </div>
-          ) : (
-            // No party on the profile (older accounts, or skipped at signup) —
-            // say so instead of silently hiding the whole party feed.
-            <button
-              type="button"
-              onClick={() => navigate('/profile-setup')}
-              className="w-full rounded-xl border border-[#1e2636]/80 bg-[#0e1320] px-3.5 py-3 text-left text-[12.5px] text-[#8b93a5] transition hover:border-[#3f9fff]/45 hover:text-white"
-            >
-              {t('gen.noPartyLine')}
-              <span className="mt-0.5 block text-[11.5px] text-[#6aa8ff]">{t('gen.setParty')}</span>
-            </button>
-          )}
         </div>
 
         {/* Target platform */}
@@ -1240,69 +1276,7 @@ export default function SocialMediaPostGenerator() {
                   categories, and a long name pushed the other two off a narrow
                   screen. It gets its own band here, in the party's colour, so
                   the tabs below are three comparable things. */}
-              {(() => {
-                const pt = PARTY_THEME[activeParty.slug] ?? DEFAULT_PARTY_THEME;
-                const initials = partyShortLabel(activeParty, currentUser?.political_party, t, lang);
-                const logo = partyLogo(currentUser?.political_party || activeParty.name);
-                const tags = (PARTY_TAG_KEYS[activeParty.slug] ?? [])
-                  .map((k) => t(k))
-                  .filter((v) => v && !v.startsWith('ptag.'));
-                return (
-                  <div
-                    className="mb-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 rounded-2xl border px-5 py-4"
-                    style={{
-                      borderColor: `${pt.accent}3d`,
-                      background: `linear-gradient(100deg, #0e1320 0%, #0e1320 45%, ${pt.tint} 100%)`,
-                    }}
-                  >
-                    {/* The party's own logo, as the dashboard shows it, with
-                        the lettered tile behind it. A logo that is missing or
-                        fails to load hides itself and leaves the initials, so
-                        a party we have no artwork for still reads as itself
-                        rather than as a broken image. */}
-                    <span
-                      className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl font-display text-[20px] font-bold text-white"
-                      style={{
-                        background: `linear-gradient(150deg, ${pt.accent} 0%, ${pt.accent}b0 100%)`,
-                        boxShadow: `0 6px 20px ${pt.accent}55`,
-                      }}
-                    >
-                      {initials}
-                      {logo && (
-                        <img
-                          src={logo}
-                          alt={activeParty.name}
-                          className="absolute inset-0 h-full w-full bg-white object-contain p-1.5"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                        />
-                      )}
-                    </span>
-
-                    {/* Sizes to its own text rather than filling the row. The
-                        "Change party" button used to hold the right-hand end,
-                        and without it a stretched block left the name marooned
-                        against a wide empty gap. It can still shrink, so a long
-                        name truncates rather than pushing the logo off. */}
-                    <div className="min-w-0">
-                      {/* Wraps on a phone, where truncating turned the party's
-                          name into "India…". Ellipsis only once there is a
-                          column to run out of. */}
-                      <h2 className="font-display text-[19px] font-bold leading-snug tracking-tight text-white sm:truncate sm:text-[21px]">
-                        {partyLabel(activeParty.name, lang)}
-                      </h2>
-                      {tags.length > 0 && (
-                        <p className="mt-0.5 text-[12.5px] leading-snug text-[#8b94b8] sm:truncate sm:text-[13px]">
-                          {tags.join('  ·  ')}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* There was a "Change party" button here. The party is
-                        write-once, so it only ever led to a form that would
-                        refuse the change: an offer the product cannot keep. */}
-                  </div>
-                );
-              })()}
+              {renderPartyBanner()}
               {/* Section chooser. Cards rather than a tab strip: each one
                   now carries a count and a line saying what is in it, which a
                   tab has no room for, and the three read as siblings. */}
@@ -1775,6 +1749,7 @@ export default function SocialMediaPostGenerator() {
           const readingMinutes = Math.max(1, Math.round(words / 200));
           return (
           <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+            {renderPartyBanner()}
             <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
               <span className="inline-block rounded-full border border-[#1e3a6e]/60 bg-[#0d1840]/60 px-2.5 py-0.5 font-count text-[10px] uppercase tracking-widest text-[#6aa8ff]">
                 {selectedArticle.category}
@@ -2002,6 +1977,7 @@ export default function SocialMediaPostGenerator() {
         {/* ── Generated post view ── */}
         {view === 'generated' && (
           <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+            {renderPartyBanner()}
             {/* Header: title on left, actions on right (icon-only on mobile
                 to prevent overflow). The way back is the page's single back
                 control at the top, which steps back to the story. */}
@@ -2320,7 +2296,10 @@ export default function SocialMediaPostGenerator() {
         )}
       </div>
 
-      {/* ── RESIZE HANDLE + RIGHT SIDEBAR ── */}
+      {/* ── RESIZE HANDLE + RIGHT SIDEBAR ──
+          Only with a story open: the preferences shape a post, and on the
+          feed they took a column from the stories for nothing. */}
+      {view !== 'feed' && (
       <div className="sticky top-0 z-20 hidden h-screen shrink-0 lg:flex" style={{ width: panelWidth + 8 }}>
         {/* Drag handle */}
         <div
@@ -2340,6 +2319,7 @@ export default function SocialMediaPostGenerator() {
           />
         </div>
       </div>
+      )}
 
       {/* In document.body, so the backdrop covers the whole screen whatever
           stacking context the page column makes. */}
