@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { clearPendingQuestions } from '../hooks/usePendingQuestions';
 import {
   ArrowLeft, Search, Filter, Sparkles,
   Copy, Check, RefreshCw, ChevronDown, FileText, Star, Radio,
-  ArrowUpDown, List, LayoutGrid, Users, Globe,
+  ArrowUpDown, List, LayoutGrid, Users, Globe, ArrowRight,
   CalendarDays, Clock, ChevronRight, X as XIcon,
-  MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle,
+  MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle, Smartphone,
 } from 'lucide-react';
 
 import PreferencesPanel from '../components/generate/PreferencesPanel';
@@ -26,6 +27,10 @@ import { parsePost, hashtagsText } from '../utils/parsePost';
 import Spinner from '../components/Spinner';
 import { useI18n } from '../i18n/index.jsx';
 import SpeakButton from '../components/generate/SpeakButton';
+import Sidebar from '../components/dashboard/Sidebar';
+import PhonePreview from '../components/compose/PhonePreview';
+import { PLATFORM_LOOK } from '../components/compose/platformLook';
+import '../components/compose/compose.css';
 import { partyLabel } from '../utils/displayLabel';
 import { partyLogo } from '../utils/politicalParties';
 import { trackEvent } from '../analytics/metrics';
@@ -67,13 +72,26 @@ const PLATFORMS = [
  * most) and the rest as the body. Facebook lets no site fill in a post, so
  * its text is copied (`copy`) and Facebook opens to paste it.
  */
+// Past this a share link is refused: Reddit answers "URI Too Long" at about
+// 8 KB. Each Devanagari letter is 9 characters once encoded (%E0%A4%B0), so a
+// long Hindi post crosses it at well under a thousand letters.
+const MAX_SHARE_URL = 6000;
+
+// A long post opens the platform without its body, and the body is copied
+// instead (`copy` is then the text to copy, and `pasteBody` says so).
 function shareTarget(platform, text) {
   const enc = encodeURIComponent;
   if (platform === 'twitter') return { url: `https://twitter.com/intent/tweet?text=${enc(text)}` };
-  if (platform === 'whatsapp') return { url: `https://wa.me/?text=${enc(text)}` };
+  if (platform === 'whatsapp') {
+    const url = `https://wa.me/?text=${enc(text)}`;
+    return url.length <= MAX_SHARE_URL ? { url } : { url: 'https://wa.me/', copy: text, pasteBody: true };
+  }
   if (platform === 'reddit') {
     const [first = '', ...rest] = text.trim().split('\n');
-    return { url: `https://www.reddit.com/submit?type=TEXT&title=${enc(first.trim().slice(0, 300))}&text=${enc(rest.join('\n').trim())}` };
+    const title = `https://www.reddit.com/submit?type=TEXT&title=${enc(first.trim().slice(0, 300))}`;
+    const body = rest.join('\n').trim();
+    const url = `${title}&text=${enc(body)}`;
+    return url.length <= MAX_SHARE_URL ? { url } : { url: title, copy: body, pasteBody: true };
   }
   if (platform === 'facebook') return { url: 'https://www.facebook.com/', copy: true };
   return { url: null, copy: true };
@@ -277,7 +295,7 @@ export default function SocialMediaPostGenerator() {
     navigate(detail.step === 'profile' ? '/profile-setup' : '/questionnaire', { replace: true });
     return true;
   }
-  const { currentUser } = useAuth();
+  const { currentUser, logout } = useAuth();
 
   const [articles,        setArticles]        = useState([]);
   const [newsLoading,     setNewsLoading]     = useState(true);
@@ -302,6 +320,8 @@ export default function SocialMediaPostGenerator() {
   // and line height. This says which of the two the string holds, and the
   // render gives an error its own frame.
   const [postFailed,      setPostFailed]      = useState(false);
+  // The post drawn inside a phone, the way the platform shows it, on request.
+  const [phoneOpen,       setPhoneOpen]       = useState(false);
   const [selectedArticle, setSelectedArticle] = useState(null);
   const [selectedPostId,  setSelectedPostId]  = useState(null);
   const [copied,          setCopied]          = useState(false);
@@ -618,6 +638,8 @@ export default function SocialMediaPostGenerator() {
 
   // Group the current page into day buckets, preserving the newest-first order
   // the API already applied.
+  // Changes whenever a different set of cards is shown, so they rise again.
+  const feedKey = `${newsSection}|${dateFilter}|${typeFilter}|${page}|${cardView}`;
   const pagedGroups = useMemo(() => {
     const groups = [];
     let current = null;
@@ -673,12 +695,13 @@ export default function SocialMediaPostGenerator() {
     setView(next);
   }
 
-  // The page's one back control. Because each view is its own history entry,
-  // a plain history step walks generated -> story -> feed -> whatever page
-  // came before. Opened cold (no in-app history), stepping back would leave
-  // the site, so it lands on Services instead.
+  // The page's one back control, one step up: the post goes back to its
+  // story, the story to the news, and the news to Services. A plain history
+  // step from the feed went to whatever came before it - after signing in,
+  // that was the landing page.
   function goBack() {
-    if (location.key !== 'default') navigate(-1);
+    if (view === 'generated') goView('preview');
+    else if (view === 'preview') goView('feed');
     else navigate('/generate');
   }
   const handoffDone = useRef(false);
@@ -908,11 +931,11 @@ export default function SocialMediaPostGenerator() {
   async function handlePublish() {
     if (!selectedPostId || sharing) return;
     const text = showTranslated && translatedPost ? translatedPost : generatedPost;
-    const { url, copy } = shareTarget(platform, text);
+    const { url, copy, pasteBody } = shareTarget(platform, text);
     setShareMsg('');
     if (copy) {
-      await navigator.clipboard?.writeText(text).catch(() => {});
-      setShareMsg(t('gen.pasteIn', { platform: activePlatform.label }));
+      await navigator.clipboard?.writeText(typeof copy === 'string' ? copy : text).catch(() => {});
+      setShareMsg(t(pasteBody ? 'gen.pasteBody' : 'gen.pasteIn', { platform: activePlatform.label }));
     }
     if (postStatus === 'published') {
       if (url) window.open(url, '_blank', 'noopener,noreferrer');
@@ -945,11 +968,97 @@ export default function SocialMediaPostGenerator() {
     } catch { setCopied(false); }
   }
 
+  useEffect(() => {
+    if (!phoneOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setPhoneOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [phoneOpen]);
+
+  const authorName = currentUser?.full_name || currentUser?.username || 'AmbedkarGPT';
+
+  // The party's banner: logo, name and what it stands for. It heads the feed,
+  // the story and the post alike, so you always see whose voice you write in.
+  function renderPartyBanner() {
+    if (!activeParty) return null;
+    const pt = PARTY_THEME[activeParty.slug] ?? DEFAULT_PARTY_THEME;
+    const initials = partyShortLabel(activeParty, currentUser?.political_party, t, lang);
+    const logo = partyLogo(currentUser?.political_party || activeParty.name);
+    const tags = (PARTY_TAG_KEYS[activeParty.slug] ?? [])
+      .map((k) => t(k))
+      .filter((v) => v && !v.startsWith('ptag.'));
+    return (
+      <div
+        className="mb-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 rounded-2xl border px-5 py-4"
+        style={{
+          borderColor: `${pt.accent}3d`,
+          background: `linear-gradient(100deg, #0e1320 0%, #0e1320 45%, ${pt.tint} 100%)`,
+        }}
+      >
+        {/* The party's own logo, as the dashboard shows it, with
+            the lettered tile behind it. A logo that is missing or
+            fails to load hides itself and leaves the initials, so
+            a party we have no artwork for still reads as itself
+            rather than as a broken image. */}
+        <span
+          className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl font-display text-[20px] font-bold text-white"
+          style={{
+            background: `linear-gradient(150deg, ${pt.accent} 0%, ${pt.accent}b0 100%)`,
+            boxShadow: `0 6px 20px ${pt.accent}55`,
+          }}
+        >
+          {initials}
+          {logo && (
+            <img
+              src={logo}
+              alt={activeParty.name}
+              className="absolute inset-0 h-full w-full bg-white object-contain p-1.5"
+              onError={(e) => { e.currentTarget.style.display = 'none'; }}
+            />
+          )}
+        </span>
+
+        {/* Sizes to its own text rather than filling the row. The
+            "Change party" button used to hold the right-hand end,
+            and without it a stretched block left the name marooned
+            against a wide empty gap. It can still shrink, so a long
+            name truncates rather than pushing the logo off. */}
+        <div className="min-w-0">
+          {/* Wraps on a phone, where truncating turned the party's
+              name into "India…". Ellipsis only once there is a
+              column to run out of. */}
+          <h2 className="font-display text-[19px] font-bold leading-snug tracking-tight text-white sm:truncate sm:text-[21px]">
+            {partyLabel(activeParty.name, lang)}
+          </h2>
+          {tags.length > 0 && (
+            <p className="mt-0.5 text-[12.5px] leading-snug text-[#8b94b8] sm:truncate sm:text-[13px]">
+              {tags.join('  ·  ')}
+            </p>
+          )}
+        </div>
+
+        {/* There was a "Change party" button here. The party is
+            write-once, so it only ever led to a form that would
+            refuse the change: an offer the product cannot keep. */}
+      </div>
+    );
+  }
+
+
   return (
     <div
-      className="relative flex min-h-screen text-[#e5e7eb]"
+      className="ag-page-in relative flex min-h-screen text-[#e5e7eb]"
       style={{ background: 'radial-gradient(1200px 700px at 50% -10%, #0c111e 0%, #080b13 55%, #06080e 100%)' }}
     >
+      {/* The dashboard's own navigation, closed to icons; it opens over the
+          page on hover. Laptops only - phones keep their header. */}
+      <Sidebar
+        hoverExpand
+        active="generate"
+        onSelect={(id) => { if (id === 'dashboard') navigate('/dashboard'); }}
+        onLogout={async () => { await logout(); navigate('/', { replace: true }); }}
+      />
+
       {/* ambient glows */}
       <div className="pointer-events-none fixed left-[240px] top-0 h-[500px] w-[500px] rounded-full bg-[#3f9fff]/8 blur-[140px]" />
       <div className="pointer-events-none fixed bottom-0 right-[300px] h-[420px] w-[420px] rounded-full bg-[#7b5cff]/8 blur-[140px]" />
@@ -961,29 +1070,13 @@ export default function SocialMediaPostGenerator() {
       >
         {/* Brand header */}
         <div className="border-b border-[#141d3a]/70 px-5 py-4">
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard')}
-            title={t('gen.goToDashboard')}
-            className="mb-3 flex items-center gap-2 rounded-lg transition hover:opacity-90"
-          >
-            <AgMark size={28} color="#8FA8FF" />
-            <span className="font-display text-[15px] font-bold gradient-text-blue">{t('brand.wordmark')}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate('/generate')}
-            className="inline-flex items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 px-3 py-1.5 text-[11.5px] font-medium text-[#8b94b8] transition hover:border-[#3a6bc4]/60 hover:text-white"
-          >
-            <LayoutGrid size={12} strokeWidth={2} />
-            {t('nav.services')}
-          </button>
-
           {/* Which tool you are in. This used to sit as a banner across the top
               of the feed, where it repeated the logo already shown here and ate
               a strip of vertical space above the stories. In the rail it still
               names the page, and the feed starts at the search bar. */}
-          <div className="mt-4">
+          {/* The brand and the way to Services live in the dashboard sidebar
+              beside this rail, so it starts with the tool's name. */}
+          <div>
             <p className="font-display text-[16px] font-bold leading-snug text-white">
               {t('gen.title')}
             </p>
@@ -1013,54 +1106,12 @@ export default function SocialMediaPostGenerator() {
               <button
                 type="button"
                 onClick={() => navigate('/profile-setup')}
-                className="mt-1 text-[11px] font-medium text-[#ef6a6a] transition hover:text-[#ff8a8a]"
+                className="mt-1.5 text-[11.5px] font-medium text-[#6aa8ff] transition hover:text-white"
               >
-                {t('gen.completeProfile')}
+                {t('gen.customize')}
               </button>
             </div>
-
-            {/* Stat cards */}
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-[#1e2636]/80 bg-[#0b0f18] px-3 py-3 text-center">
-                <p className="font-count text-[22px] font-bold text-[#4a9eff]">127</p>
-                <p className="mt-0.5 text-[10px] text-[#8b93a5]">{t('gen.activityScore')}</p>
-              </div>
-              <div className="rounded-xl border border-[#3a3320]/80 bg-[#17130a] px-3 py-3 text-center">
-                <p className="flex items-center justify-center gap-1 font-display text-[18px] font-bold text-[#f5b73d]">
-                  <Star size={15} strokeWidth={2} className="fill-[#f5b73d]" />
-                  Pro
-                </p>
-                <p className="mt-0.5 text-[10px] text-[#8b93a5]">{t('gen.subscription')}</p>
-              </div>
-            </div>
           </div>
-        </div>
-
-        {/* Party affiliation — set at signup, shown read-only */}
-        <div className="px-4 pt-5">
-          <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#8b93a5]">
-            {t('gen.yourParty')}
-          </p>
-          {activeParty ? (
-            <div
-              className="flex items-center gap-2.5 rounded-xl border px-3.5 py-3 text-[13px] font-medium text-white"
-              style={{ borderColor: 'rgba(63,159,255,0.55)', backgroundColor: 'rgba(63,159,255,0.10)' }}
-            >
-              <Check size={14} strokeWidth={2.5} className="shrink-0 text-[#6aa8ff]" />
-              <span className="min-w-0 truncate">{activeParty.name}</span>
-            </div>
-          ) : (
-            // No party on the profile (older accounts, or skipped at signup) —
-            // say so instead of silently hiding the whole party feed.
-            <button
-              type="button"
-              onClick={() => navigate('/profile-setup')}
-              className="w-full rounded-xl border border-[#1e2636]/80 bg-[#0e1320] px-3.5 py-3 text-left text-[12.5px] text-[#8b93a5] transition hover:border-[#3f9fff]/45 hover:text-white"
-            >
-              {t('gen.noPartyLine')}
-              <span className="mt-0.5 block text-[11.5px] text-[#6aa8ff]">{t('gen.setParty')}</span>
-            </button>
-          )}
         </div>
 
         {/* Target platform */}
@@ -1213,7 +1264,7 @@ export default function SocialMediaPostGenerator() {
 
         {/* ── Feed view ── */}
         {view === 'feed' && (
-          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+          <div className="ag-page-in flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
             {/* Three news sections: chosen party, opposition (BJP, empty
                 until it is scraped), and general (neutral) news. Underlined
                 tabs rather than pills, and each section carries its own
@@ -1225,69 +1276,7 @@ export default function SocialMediaPostGenerator() {
                   categories, and a long name pushed the other two off a narrow
                   screen. It gets its own band here, in the party's colour, so
                   the tabs below are three comparable things. */}
-              {(() => {
-                const pt = PARTY_THEME[activeParty.slug] ?? DEFAULT_PARTY_THEME;
-                const initials = partyShortLabel(activeParty, currentUser?.political_party, t, lang);
-                const logo = partyLogo(currentUser?.political_party || activeParty.name);
-                const tags = (PARTY_TAG_KEYS[activeParty.slug] ?? [])
-                  .map((k) => t(k))
-                  .filter((v) => v && !v.startsWith('ptag.'));
-                return (
-                  <div
-                    className="mb-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 rounded-2xl border px-5 py-4"
-                    style={{
-                      borderColor: `${pt.accent}3d`,
-                      background: `linear-gradient(100deg, #0e1320 0%, #0e1320 45%, ${pt.tint} 100%)`,
-                    }}
-                  >
-                    {/* The party's own logo, as the dashboard shows it, with
-                        the lettered tile behind it. A logo that is missing or
-                        fails to load hides itself and leaves the initials, so
-                        a party we have no artwork for still reads as itself
-                        rather than as a broken image. */}
-                    <span
-                      className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl font-display text-[20px] font-bold text-white"
-                      style={{
-                        background: `linear-gradient(150deg, ${pt.accent} 0%, ${pt.accent}b0 100%)`,
-                        boxShadow: `0 6px 20px ${pt.accent}55`,
-                      }}
-                    >
-                      {initials}
-                      {logo && (
-                        <img
-                          src={logo}
-                          alt={activeParty.name}
-                          className="absolute inset-0 h-full w-full bg-white object-contain p-1.5"
-                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                        />
-                      )}
-                    </span>
-
-                    {/* Sizes to its own text rather than filling the row. The
-                        "Change party" button used to hold the right-hand end,
-                        and without it a stretched block left the name marooned
-                        against a wide empty gap. It can still shrink, so a long
-                        name truncates rather than pushing the logo off. */}
-                    <div className="min-w-0">
-                      {/* Wraps on a phone, where truncating turned the party's
-                          name into "India…". Ellipsis only once there is a
-                          column to run out of. */}
-                      <h2 className="font-display text-[19px] font-bold leading-snug tracking-tight text-white sm:truncate sm:text-[21px]">
-                        {partyLabel(activeParty.name, lang)}
-                      </h2>
-                      {tags.length > 0 && (
-                        <p className="mt-0.5 text-[12.5px] leading-snug text-[#8b94b8] sm:truncate sm:text-[13px]">
-                          {tags.join('  ·  ')}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* There was a "Change party" button here. The party is
-                        write-once, so it only ever led to a form that would
-                        refuse the change: an offer the product cannot keep. */}
-                  </div>
-                );
-              })()}
+              {renderPartyBanner()}
               {/* Section chooser. Cards rather than a tab strip: each one
                   now carries a count and a line saying what is in it, which a
                   tab has no room for, and the three read as siblings. */}
@@ -1587,8 +1576,8 @@ export default function SocialMediaPostGenerator() {
                 </div>
               </div>
 
-              {pagedGroups.map((group) => (
-                <div key={group.label} className="mb-7 last:mb-0">
+              {pagedGroups.map((group, gi) => (
+                <div key={`${feedKey}|${group.label}`} className="mb-7 last:mb-0">
                   {/* Day heading */}
                   <div className="mb-3 flex items-center gap-3">
                     <h4 className="font-count text-[11.5px] font-semibold uppercase tracking-[0.2em] text-[#8a9ac0]">
@@ -1599,8 +1588,10 @@ export default function SocialMediaPostGenerator() {
                   </div>
 
                   <div className={cardView === 'list' ? 'flex flex-col gap-3' : 'grid gap-5 lg:grid-cols-2'}>
-                {group.items.map((article) => {
+                {group.items.map((article, ai) => {
                   const dateLabel = formatNewsDate(article.date);
+                  // Where the card sits in the page, for the rise stagger.
+                  const riseIndex = pagedGroups.slice(0, gi).reduce((n, g) => n + g.items.length, 0) + ai;
                   // Colour follows the article's own tenant, so a mixed list
                   // still reads correctly rather than following the active tab.
                   const cardAccent = article.tenantSlug === 'general'
@@ -1611,7 +1602,7 @@ export default function SocialMediaPostGenerator() {
                       key={article.id}
                       type="button"
                       onClick={() => handlePreview(article)}
-                      className={`group flex flex-col overflow-hidden rounded-2xl border text-left transition duration-200 hover:-translate-y-0.5 hover:bg-[#111726] hover:shadow-[0_12px_32px_rgba(0,0,0,0.45)] ${
+                      className={`ag-rise ag-card group flex flex-col overflow-hidden rounded-2xl border text-left hover:bg-[#111726] ${
                         cardView === 'list' ? 'px-5 py-4' : 'p-6'
                       }`}
                       style={{
@@ -1619,6 +1610,8 @@ export default function SocialMediaPostGenerator() {
                         backgroundColor: '#0e1320',
                         // Accent rail marks which feed the card belongs to
                         borderLeft: `3px solid ${cardAccent}`,
+                        '--i': riseIndex,
+                        '--cat': cardAccent,
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.borderColor = `${cardAccent}70`; e.currentTarget.style.borderLeftColor = cardAccent; }}
                       onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(30,38,54,0.8)'; e.currentTarget.style.borderLeftColor = cardAccent; }}
@@ -1685,6 +1678,7 @@ export default function SocialMediaPostGenerator() {
                         >
                           <Sparkles size={12} strokeWidth={2} />
                           {t('gen.generate')}
+                          <ArrowRight size={12} strokeWidth={2.2} className="ag-arrow" />
                         </span>
                       </div>
                     </button>
@@ -1759,7 +1753,8 @@ export default function SocialMediaPostGenerator() {
             .trim().split(/[\s।]+/).filter(Boolean).length;
           const readingMinutes = Math.max(1, Math.round(words / 200));
           return (
-          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+          <div className="ag-page-in flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+            {renderPartyBanner()}
             <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
               <span className="inline-block rounded-full border border-[#1e3a6e]/60 bg-[#0d1840]/60 px-2.5 py-0.5 font-count text-[10px] uppercase tracking-widest text-[#6aa8ff]">
                 {selectedArticle.category}
@@ -1912,7 +1907,7 @@ export default function SocialMediaPostGenerator() {
                     <button
                       type="button"
                       onClick={() => setShowMobilePrefs(false)}
-                      aria-label={t('common.close')}
+                      aria-label={t('bot.close')}
                       className="dash-icon-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[#8b94b8]"
                     >
                       <XIcon size={17} strokeWidth={2} />
@@ -1986,7 +1981,8 @@ export default function SocialMediaPostGenerator() {
 
         {/* ── Generated post view ── */}
         {view === 'generated' && (
-          <div className="flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+          <div className="ag-page-in flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+            {renderPartyBanner()}
             {/* Header: title on left, actions on right (icon-only on mobile
                 to prevent overflow). The way back is the page's single back
                 control at the top, which steps back to the story. */}
@@ -2006,6 +2002,21 @@ export default function SocialMediaPostGenerator() {
                     content={showTranslated && translatedPost ? translatedPost : generatedPost}
                     lang={showTranslated && translatedPost ? 'en' : 'hi'}
                   />
+                )}
+                {/* Preview in a phone: the post drawn the way the picked
+                    platform will show it. Icon-only on a phone, like its
+                    neighbours. */}
+                {selectedPostId && !generating && !postFailed && generatedPost && (
+                  <button
+                    type="button"
+                    onClick={() => setPhoneOpen(true)}
+                    title={t('cmp.phonePreview')}
+                    aria-label={t('cmp.phonePreview')}
+                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#1e3a6e]/80 bg-[#0d1840]/80 text-[12px] font-medium text-[#6aa8ff] transition hover:border-[#3f9fff]/60 hover:text-white sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-2"
+                  >
+                    <Smartphone size={13} strokeWidth={2} />
+                    <span className="hidden sm:inline">{t('cmp.phonePreview')}</span>
+                  </button>
                 )}
                 {/* Translate. Icon-only on a phone and labelled from sm up. It used to be removed below sm instead, so the one
                     control that turns a Hindi post into one the reader can
@@ -2056,8 +2067,24 @@ export default function SocialMediaPostGenerator() {
             )}
 
             {(generating || translating) ? (
-              <div className="flex min-h-[260px] flex-col items-center justify-center gap-4 rounded-2xl border border-[#1e3260]/60 bg-[#0a1130]/70 p-5">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#1e3260] border-t-[#3f9fff]" />
+              <div className="ag-page-in flex min-h-[260px] flex-col items-center justify-center gap-4 rounded-2xl border border-[#1e3260]/60 bg-[#0a1130]/70 p-5">
+                {/* A skeleton of the post being written, the way rssgpt shows it. */}
+                <div className="w-full" aria-hidden="true">
+                  <div className="ag-progress h-1 w-full rounded-full bg-[#14224a]" />
+                  <div className="ag-shimmer mt-5 flex items-center gap-3">
+                    <span className="h-10 w-10 rounded-full bg-[#1e2a4f]" />
+                    <span className="flex flex-col gap-2">
+                      <span className="h-2.5 w-28 rounded-full bg-[#1e2a4f]" />
+                      <span className="h-2 w-20 rounded-full bg-[#18223f]" />
+                    </span>
+                  </div>
+                  <div className="ag-shimmer mt-5 flex flex-col gap-3">
+                    <span className="h-3 w-full rounded-full bg-[#1e2a4f]" />
+                    <span className="h-3 w-[92%] rounded-full bg-[#1e2a4f]" />
+                    <span className="h-3 w-[96%] rounded-full bg-[#1e2a4f]" />
+                    <span className="h-3 w-[60%] rounded-full bg-[#1e2a4f]" />
+                  </div>
+                </div>
                 <div className="text-center">
                   <p className="text-[13px] font-medium text-[#6aa8ff]">
                     {generating ? 'Generating your post…' : 'Translating…'}
@@ -2104,6 +2131,7 @@ export default function SocialMediaPostGenerator() {
                 </div>
                 <div className="border-t border-[#141d3a]/60 pt-4">
                   <PostContent
+                    animate
                     content={showTranslated && translatedPost ? translatedPost : generatedPost}
                     lang={showTranslated && translatedPost ? 'en' : 'hi'}
                   />
@@ -2130,6 +2158,7 @@ export default function SocialMediaPostGenerator() {
               /* ── Styled post text ── */
               <div className="min-h-[260px] rounded-2xl border border-[#1e3260]/60 bg-[#0a1130]/70 p-5">
                 <PostContent
+                    animate
                     content={showTranslated && translatedPost ? translatedPost : generatedPost}
                     lang={showTranslated && translatedPost ? 'en' : 'hi'}
                   />
@@ -2290,7 +2319,10 @@ export default function SocialMediaPostGenerator() {
         )}
       </div>
 
-      {/* ── RESIZE HANDLE + RIGHT SIDEBAR ── */}
+      {/* ── RESIZE HANDLE + RIGHT SIDEBAR ──
+          Only with a story open: the preferences shape a post, and on the
+          feed they took a column from the stories for nothing. */}
+      {view !== 'feed' && (
       <div className="sticky top-0 z-20 hidden h-screen shrink-0 lg:flex" style={{ width: panelWidth + 8 }}>
         {/* Drag handle */}
         <div
@@ -2310,6 +2342,38 @@ export default function SocialMediaPostGenerator() {
           />
         </div>
       </div>
+      )}
+
+      {/* In document.body, so the backdrop covers the whole screen whatever
+          stacking context the page column makes. */}
+      {phoneOpen && generatedPost && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6" role="dialog" aria-modal="true" aria-label={t('cmp.phonePreview')}>
+          <div className="ag-fade absolute inset-0 bg-[#03060f]/78 backdrop-blur-[3px]" onClick={() => setPhoneOpen(false)} />
+          <div
+            className="ag-pop relative h-[min(620px,calc(100vh-96px))]"
+            style={{ filter: `drop-shadow(0 0 60px rgba(${PLATFORM_LOOK[activePlatform.id].hue},0.35))` }}
+          >
+            <PhonePreview
+              platform={activePlatform.id}
+              state="ready"
+              text={activeContent}
+              authorName={authorName}
+              authorHandle={(currentUser?.username || 'you').replace(/\s+/g, '').toLowerCase()}
+              article={selectedArticle}
+              translated={Boolean(showTranslated && translatedPost)}
+            />
+            <button
+              type="button"
+              onClick={() => setPhoneOpen(false)}
+              aria-label={t('bot.close')}
+              className="absolute -top-12 right-0 flex h-10 w-10 items-center justify-center rounded-full border border-[#1e3a6e] bg-[#0a1130] text-[#c0cde8] transition hover:text-white sm:-right-14 sm:top-0"
+            >
+              <XIcon size={17} />
+            </button>
+          </div>
+        </div>,
+        document.body,
+      )}
     </div>
   );
 }

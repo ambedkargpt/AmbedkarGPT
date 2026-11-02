@@ -1,0 +1,70 @@
+/* Motion for the signed-in app, after rssgpt's: screens settle in, feed cards
+   rise in turn and lift on hover, a post being written shimmers, and the
+   finished post arrives a paragraph at a time.
+
+   Every animation runs *from* its start state with `backwards` fill, so once
+   it ends nothing is left transformed (a transformed ancestor would capture
+   position: fixed children), and with reduced motion each element simply
+   shows its final state. */
+
+:root {
+  --ag-ease: cubic-bezier(.16, 1, .3, 1);
+  --ag-ease-card: cubic-bezier(.22, 1, .36, 1);
+}
+
+/* A screen arriving: in the dashboard frame on every route, and on each step
+   of the post generator (news → story → post). */
+.ag-page-in { animation: ag-page-in .5s var(--ag-ease) backwards; }
+@keyframes ag-page-in { from { opacity: 0; transform: translateY(10px); } }
+
+/* Cards rise in on every section, filter, page or view change (8 staggered
+   at most, so a long list is not still arriving seconds later). */
+.ag-rise { animation: ag-rise .5s cubic-bezier(.2, .8, .2, 1) backwards; animation-delay: calc(min(var(--i, 0), 8) * 50ms); }
+@keyframes ag-rise { from { opacity: 0; transform: translateY(12px); } }
+
+/* Card hover: it rises on a soft shadow tinted with its section's colour and
+   the arrow steps forward. One easing for all of it, so it moves as one. */
+.ag-card {
+  transition: transform .45s var(--ag-ease-card), box-shadow .45s var(--ag-ease-card), border-color .35s ease, background-color .3s ease;
+}
+.ag-card:hover,
+.ag-card:focus-visible {
+  transform: translateY(-6px);
+  box-shadow:
+    0 22px 44px -18px color-mix(in srgb, var(--cat, #3f9fff) 55%, transparent),
+    0 8px 18px -10px rgba(0, 0, 0, .5);
+}
+.ag-card:active { transform: translateY(-2px) scale(.99); transition-duration: .15s; }
+.ag-card .ag-arrow { transition: transform .35s var(--ag-ease-card); }
+.ag-card:hover .ag-arrow,
+.ag-card:focus-visible .ag-arrow { transform: translateX(4px); }
+
+/* Writing: an indeterminate line under a shimmering skeleton of the post. */
+.ag-progress { position: relative; overflow: hidden; }
+.ag-progress::after {
+  content: '';
+  position: absolute; inset: 0;
+  width: 40%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2563eb, #7b5cff);
+  animation: ag-progress 1.3s var(--ag-ease) infinite;
+}
+@keyframes ag-progress { from { transform: translateX(-100%); } to { transform: translateX(260%); } }
+.ag-shimmer { animation: ag-shimmer 1.4s ease-in-out infinite; }
+@keyframes ag-shimmer { 50% { opacity: .5; } }
+
+/* The finished post arrives a paragraph at a time. */
+.ag-type { animation: ag-type .5s var(--ag-ease) backwards; animation-delay: var(--ty-delay, 0ms); }
+@keyframes ag-type { from { opacity: 0; transform: translateY(6px); } }
+
+/* Dialogs: the backdrop fades, the panel pops. */
+.ag-fade { animation: ag-fade .25s ease backwards; }
+@keyframes ag-fade { from { opacity: 0; } }
+.ag-pop { animation: ag-pop .45s cubic-bezier(.34, 1.36, .64, 1) backwards; }
+@keyframes ag-pop { from { opacity: 0; transform: translateY(24px) scale(.96); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ag-page-in, .ag-rise, .ag-type, .ag-fade, .ag-pop, .ag-shimmer, .ag-progress::after { animation: none !important; }
+  .ag-card, .ag-card .ag-arrow { transition: none !important; }
+  .ag-card:hover, .ag-card:focus-visible { transform: none; }
+}

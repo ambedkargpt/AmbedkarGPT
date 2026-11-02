@@ -1,4 +1,6 @@
 import { useEffect } from 'react';
+import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
 
 import MainLayout from '../layouts/MainLayout';
 import RevealOnScroll from '../components/ui/RevealOnScroll';
@@ -14,6 +16,17 @@ import ContactSection      from '../components/landing/ContactSection';
 import FourIdeasSection    from '../components/landing/FourIdeasSection';
 
 export default function Home({ splashDone = true }) {
+  // Smooth, weighted scrolling on the landing page, as rssgpt's has. Off for
+  // reduced motion and on touch screens, where native scrolling is better;
+  // a scrollable box inside the page (a dialog, a list) still scrolls itself.
+  useEffect(() => {
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const coarse = window.matchMedia?.('(pointer: coarse)').matches;
+    if (reduce || coarse) return undefined;
+    const lenis = new Lenis({ lerp: 0.1, smoothWheel: true, autoRaf: true, anchors: false, allowNestedScroll: true });
+    return () => lenis.destroy();
+  }, []);
+
   // support deep-linking to a section after navigating from another route
   useEffect(() => {
     const pending = sessionStorage.getItem('pending-section-scroll');
