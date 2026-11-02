@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { clearPendingQuestions } from '../hooks/usePendingQuestions';
 import {
-  ArrowLeft, Search, Filter, Sparkles,
+  ArrowLeft, Filter, Sparkles,
   Copy, Check, RefreshCw, ChevronDown, FileText, Star, Radio,
   ArrowUpDown, List, LayoutGrid, Users, Globe, ArrowRight,
   CalendarDays, Clock, ChevronRight, X as XIcon,
@@ -28,6 +28,9 @@ import Spinner from '../components/Spinner';
 import { useI18n } from '../i18n/index.jsx';
 import SpeakButton from '../components/generate/SpeakButton';
 import Sidebar from '../components/dashboard/Sidebar';
+import NotificationBell from '../components/dashboard/NotificationBell';
+import ProfileMenu from '../components/dashboard/ProfileMenu';
+import { labelForId } from '../utils/partyRoles';
 import { PREFERENCES_ENABLED } from '../data/features';
 import PhonePreview from '../components/compose/PhonePreview';
 import { PLATFORM_LOOK } from '../components/compose/platformLook';
@@ -327,7 +330,7 @@ export default function SocialMediaPostGenerator() {
   const [selectedPostId,  setSelectedPostId]  = useState(null);
   const [copied,          setCopied]          = useState(false);
   const [panelWidth,      setPanelWidth]      = useState(300);
-  const [searchInput,     setSearchInput]     = useState('');
+  const [searchInput] = useState('');
   const [prefQuestions,   setPrefQuestions]   = useState([]);
   const [preferences,     setPreferences]     = useState({});
   const [savedPrefs,      setSavedPrefs]      = useState({});
@@ -978,6 +981,8 @@ export default function SocialMediaPostGenerator() {
   }, [phoneOpen]);
 
   const authorName = currentUser?.full_name || currentUser?.username || 'AmbedkarGPT';
+  const welcomeName = (currentUser?.full_name || currentUser?.username || '').split(/[\s_]/)[0];
+  const roleName = labelForId(currentUser?.party_position || '', currentUser?.political_party || '', lang);
 
   // The party's banner: logo, name and what it stands for. It heads the feed,
   // the story and the post alike, so you always see whose voice you write in.
@@ -1158,8 +1163,10 @@ export default function SocialMediaPostGenerator() {
         style={{ background: 'linear-gradient(180deg,#0a0e18 0%,#080b12 100%)' }}
       >
 
-        {/* Search + filter */}
-        <header className="flex flex-wrap items-center gap-2.5 px-4 pb-3 pt-4 sm:flex-nowrap sm:gap-3 sm:px-6 md:px-8">
+        {/* The dashboard's welcome, now that the dashboard is off: who you
+            are writing as, and your account (notifications, profile, log out)
+            on the right. */}
+        <header className="flex items-center gap-3 px-4 pb-3 pt-4 sm:gap-4 sm:px-6 md:px-8">
           <button
             type="button"
             onClick={goBack}
@@ -1170,98 +1177,31 @@ export default function SocialMediaPostGenerator() {
             <ArrowLeft size={12} strokeWidth={2} />
           </button>
 
-          <div className="relative order-last w-full sm:order-none sm:w-auto sm:flex-1">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b78a0]" strokeWidth={2} />
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => { setSearchInput(e.target.value); setPage(1); goView('feed'); }}
-              placeholder={t('gen.searchContent')}
-              className="w-full rounded-full border border-[#1e3260]/70 bg-[#0a1130]/80 py-2.5 pl-9 pr-4 text-[13px] text-white placeholder-[#6b78a0] outline-none transition focus:border-[#3f9fff]/70 focus:shadow-[0_0_0_3px_rgba(63,159,255,0.12)]"
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate font-display text-[19px] font-bold leading-tight tracking-tight sm:text-[23px]">
+              <span className="text-white">{t('dash.welcomeBack')} </span>
+              <span className="gradient-text-blue">{welcomeName}</span>
+            </h1>
+            {(activeParty || roleName) && (
+              <p className="mt-1 flex min-w-0 items-center gap-x-2 text-[12.5px] font-medium text-[#9aa8cc] sm:text-[13.5px]">
+                {activeParty && <span className="truncate">{partyLabel(activeParty.name, lang)}</span>}
+                {activeParty && roleName && <span className="text-[#4f7fd4]" aria-hidden="true">·</span>}
+                {roleName && <span className="shrink-0 font-semibold text-white">{roleName}</span>}
+              </p>
+            )}
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <NotificationBell totalPosts={quota?.total_streak_posts ?? 0} />
+            <ProfileMenu
+              name={currentUser?.full_name || currentUser?.username || '—'}
+              email={currentUser?.email ?? currentUser?.phone ?? ''}
+              initial={(currentUser?.full_name || currentUser?.username || 'A')[0].toUpperCase()}
+              party={currentUser?.political_party ?? ''}
+              onLogout={async () => { await logout(); navigate('/', { replace: true }); }}
             />
           </div>
 
-          <div ref={filterRef} className="relative ml-auto sm:ml-0">
-            <button
-              type="button"
-              onClick={() => { setFilterOpen((p) => !p); goView('feed'); }}
-              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-[12.5px] font-medium transition ${
-                filtersActive
-                  ? 'border-[#3f9fff]/60 bg-[#0d1a3a] text-[#6aa8ff]'
-                  : 'border-[#1e3260]/70 bg-[#0d1531]/80 text-[#8b94b8] hover:border-[#3a6bc4]/60 hover:text-white'
-              }`}
-            >
-              <Filter size={13} strokeWidth={2} />
-              {selectedDayLabel ?? t('gen.filterNewsBtn')}
-              {filtersActive > 0 && (
-                <span className="rounded-full bg-[#3f9fff] px-1.5 py-0.5 font-count text-[10px] leading-none text-white">
-                  {filtersActive}
-                </span>
-              )}
-            </button>
-
-            {filterOpen && (
-              <div className="absolute right-0 top-[calc(100%+6px)] z-40 w-64 overflow-hidden rounded-xl border border-[#1e3260]/70 bg-[#0d1531] shadow-xl">
-                {/* Date */}
-                <p className="px-4 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#5a6e9a]">
-                  {t('gen.date')}
-                </p>
-                {DATE_RANGES.map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => { setDateFilter(d.id); setPage(1); goView('feed'); }}
-                    className={`flex w-full items-center justify-between px-4 py-2 text-[12.5px] transition hover:bg-[#0f1a3a] ${
-                      d.id === dateFilter ? 'text-[#3f9fff]' : 'text-white/80'
-                    }`}
-                  >
-                    {d.label}
-                    {d.id === dateFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#3f9fff]" />}
-                  </button>
-                ))}
-
-                {availableDays.length > 0 && (
-                  <>
-                    <p className="mt-1 border-t border-[#1e3260]/60 px-4 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#5a6e9a]">
-                      {t('gen.pickADay')}
-                    </p>
-                    <div className="max-h-52 overflow-y-auto">
-                      {availableDays.map((d) => {
-                        const id = `${DAY_PREFIX}${d.key}`;
-                        const selected = id === dateFilter;
-                        return (
-                          <button
-                            key={id}
-                            type="button"
-                            onClick={() => { setDateFilter(id); setPage(1); goView('feed'); }}
-                            className={`flex w-full items-center justify-between gap-3 px-4 py-2 text-[12.5px] transition hover:bg-[#0f1a3a] ${
-                              selected ? 'text-[#3f9fff]' : 'text-white/80'
-                            }`}
-                          >
-                            <span className="truncate">{d.label}</span>
-                            <span className="flex shrink-0 items-center gap-2">
-                              <span className="font-count text-[11px] text-[#5a6e9a]">{d.count}</span>
-                              {selected && <span className="h-1.5 w-1.5 rounded-full bg-[#3f9fff]" />}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-
-                {filtersActive > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => { setDateFilter('all'); setTypeFilter('all'); setActiveFilter('All'); setPage(1); }}
-                    className="w-full border-t border-[#1e3260]/60 px-4 py-2.5 text-left text-[12px] text-[#8b94b8] transition hover:bg-[#0f1a3a] hover:text-white"
-                  >
-                    {t('gen.clearFilters')}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
         </header>
 
         {/* ── Feed view ── */}
@@ -1460,6 +1400,90 @@ export default function SocialMediaPostGenerator() {
                   </span>
 
                   <span className="h-5 w-px bg-[#1e2636]" />
+
+                  {/* Date filter. It sat in the page header beside a search
+                      box; it belongs with the feed it filters. */}
+                    <div ref={filterRef} className="relative">
+                      <button
+                        type="button"
+                        onClick={() => { setFilterOpen((p) => !p); goView('feed'); }}
+                        className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-[12.5px] font-medium transition ${
+                          filtersActive
+                            ? 'border-[#3f9fff]/60 bg-[#0d1a3a] text-[#6aa8ff]'
+                            : 'border-[#1e3260]/70 bg-[#0d1531]/80 text-[#8b94b8] hover:border-[#3a6bc4]/60 hover:text-white'
+                        }`}
+                      >
+                        <Filter size={13} strokeWidth={2} />
+                        {selectedDayLabel ?? t('gen.filterNewsBtn')}
+                        {filtersActive > 0 && (
+                          <span className="rounded-full bg-[#3f9fff] px-1.5 py-0.5 font-count text-[10px] leading-none text-white">
+                            {filtersActive}
+                          </span>
+                        )}
+                      </button>
+
+                      {filterOpen && (
+                        <div className="absolute right-0 top-[calc(100%+6px)] z-40 w-64 overflow-hidden rounded-xl border border-[#1e3260]/70 bg-[#0d1531] shadow-xl">
+                          {/* Date */}
+                          <p className="px-4 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#5a6e9a]">
+                            {t('gen.date')}
+                          </p>
+                          {DATE_RANGES.map((d) => (
+                            <button
+                              key={d.id}
+                              type="button"
+                              onClick={() => { setDateFilter(d.id); setPage(1); goView('feed'); }}
+                              className={`flex w-full items-center justify-between px-4 py-2 text-[12.5px] transition hover:bg-[#0f1a3a] ${
+                                d.id === dateFilter ? 'text-[#3f9fff]' : 'text-white/80'
+                              }`}
+                            >
+                              {d.label}
+                              {d.id === dateFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#3f9fff]" />}
+                            </button>
+                          ))}
+
+                          {availableDays.length > 0 && (
+                            <>
+                              <p className="mt-1 border-t border-[#1e3260]/60 px-4 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#5a6e9a]">
+                                {t('gen.pickADay')}
+                              </p>
+                              <div className="max-h-52 overflow-y-auto">
+                                {availableDays.map((d) => {
+                                  const id = `${DAY_PREFIX}${d.key}`;
+                                  const selected = id === dateFilter;
+                                  return (
+                                    <button
+                                      key={id}
+                                      type="button"
+                                      onClick={() => { setDateFilter(id); setPage(1); goView('feed'); }}
+                                      className={`flex w-full items-center justify-between gap-3 px-4 py-2 text-[12.5px] transition hover:bg-[#0f1a3a] ${
+                                        selected ? 'text-[#3f9fff]' : 'text-white/80'
+                                      }`}
+                                    >
+                                      <span className="truncate">{d.label}</span>
+                                      <span className="flex shrink-0 items-center gap-2">
+                                        <span className="font-count text-[11px] text-[#5a6e9a]">{d.count}</span>
+                                        {selected && <span className="h-1.5 w-1.5 rounded-full bg-[#3f9fff]" />}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+
+                          {filtersActive > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => { setDateFilter('all'); setTypeFilter('all'); setActiveFilter('All'); setPage(1); }}
+                              className="w-full border-t border-[#1e3260]/60 px-4 py-2.5 text-left text-[12px] text-[#8b94b8] transition hover:bg-[#0f1a3a] hover:text-white"
+                            >
+                              {t('gen.clearFilters')}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
                   {/* Content type. General and Opposition are scraped from the
                       videos tab alone, so every item in them is one type and a
