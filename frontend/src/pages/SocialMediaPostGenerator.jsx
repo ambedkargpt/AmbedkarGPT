@@ -1105,7 +1105,6 @@ export default function SocialMediaPostGenerator() {
             partyShort={activeParty ? partyShortLabel(activeParty, currentUser?.political_party, t, lang) : ''}
             partyName={activeParty ? partyLabel(activeParty.name, lang) : ''}
             partyTags={(PARTY_TAG_KEYS[activeParty?.slug] ?? []).map((k) => t(k)).filter((v) => v && !v.startsWith('ptag.')).join(' · ')}
-            quota={quota}
             dateFilter={dateFilter}
             availableDays={availableDays}
             onDate={(id) => { setDateFilter(id); setPage(1); }}

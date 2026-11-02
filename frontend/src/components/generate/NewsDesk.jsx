@@ -1,11 +1,10 @@
-import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ChevronDown, FileText, Globe, LayoutGrid, List, Radio, Search } from 'lucide-react';
 import Spinner from '../Spinner';
 import { useI18n } from '../../i18n/index.jsx';
 import { MAX_POSTS_PER_STORY } from '../../data/postLimits';
 
 // The news page from lg up, laid out the way rssgpt's /write is: a rail that
-// chooses what to read (party, section, day, type, today's quota) and a feed
+// chooses what to read (party, section, day, type) and a feed
 // of cards. Drawn in the dashboard's own surfaces, so it reads as one product
 // with it. Phones and tablets keep the page's own feed markup.
 
@@ -71,22 +70,6 @@ function SectionIcon({ id, partyLogo, partyShort, active, accent }) {
   return (
     <span className={base} style={{ backgroundColor: active ? 'rgba(255,255,255,0.18)' : 'rgba(30,38,54,0.9)', color: active ? '#fff' : '#8b94b8' }}>
       <Globe size={17} strokeWidth={1.9} />
-    </span>
-  );
-}
-
-function QuotaRing({ used, limit }) {
-  const r = 22;
-  const c = 2 * Math.PI * r;
-  const pct = limit ? Math.min(1, used / limit) : 0;
-  return (
-    <span className="relative inline-flex h-[54px] w-[54px] shrink-0">
-      <svg width="54" height="54" viewBox="0 0 54 54" aria-hidden="true">
-        <circle cx="27" cy="27" r={r} fill="none" stroke="#1e2a4a" strokeWidth="5" />
-        <circle cx="27" cy="27" r={r} fill="none" stroke="#3f9fff" strokeWidth="5" strokeLinecap="round"
-          strokeDasharray={c} strokeDashoffset={c * (1 - pct)} transform="rotate(-90 27 27)" />
-      </svg>
-      <span className="absolute inset-0 flex items-center justify-center font-count text-[14px] font-bold text-white">{used}/{limit}</span>
     </span>
   );
 }
@@ -193,7 +176,7 @@ function StoryRow({ article, count, onOpen }) {
 }
 
 export default function NewsDesk({
-  firstName, partyName, partyTags, partyLogo, partyShort, quota,
+  firstName, partyName, partyTags, partyLogo, partyShort,
   searchInput, onSearch, sortOrder, onSort, cardView, onCardView,
   sectionTabs, newsSection, onSection,
   dateFilter, availableDays, onDate, dayPrefix,
@@ -203,11 +186,7 @@ export default function NewsDesk({
   postCounts, onOpen,
 }) {
   const { t, lang } = useI18n();
-  const navigate = useNavigate();
   const active = sectionTabs.find((s) => s.id === newsSection) ?? sectionTabs[0];
-  const used = quota?.daily_used ?? 0;
-  const limit = quota?.daily_limit ?? 5;
-  const remaining = quota?.daily_remaining ?? Math.max(0, limit - used);
   const recentDays = availableDays.filter((d) => d.key !== 'undated').slice(0, 2);
   const titleWords = t('gen.v2.writeToday').split(' ');
   let leadShown = false;
@@ -309,22 +288,6 @@ export default function NewsDesk({
           )}
         </div>
 
-        <div className="flex-1" />
-
-        <button type="button" onClick={() => navigate('/posts')} className="flex items-center justify-between px-1 text-[13.5px] text-[#8b94b8] hover:text-white">
-          {t('gen.v2.recentPosts')}
-          <span className="font-semibold text-[#6aa8ff]">{t('gen.v2.seeAll')} →</span>
-        </button>
-
-        {quota && (
-          <div className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.03] p-3.5">
-            <QuotaRing used={used} limit={limit} />
-            <div className="min-w-0">
-              <p className="text-[14.5px] font-semibold leading-snug text-white">{t('gen.v2.published', { used, limit })}</p>
-              <p className="mt-0.5 text-[12.5px] text-[#8b94b8]">{t('gen.v2.reset', { n: remaining })}</p>
-            </div>
-          </div>
-        )}
       </aside>
 
       {/* The feed */}
