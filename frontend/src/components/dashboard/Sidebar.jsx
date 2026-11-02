@@ -351,7 +351,9 @@ export default function Sidebar({ active = 'dashboard', onSelect, mobileOpen = f
       // Sticky and one screen tall, so the rail (and its log out at the
       // bottom) stays in view on a page that scrolls the window; it used to
       // stretch to the page's height and leave log out below the last card.
-      <div className="sticky top-0 hidden h-screen w-[76px] shrink-0 self-start lg:block">
+      // The z-index sits here, not on the rail: sticky makes its own stacking
+      // context, and the page's later siblings (the avatar) painted over it.
+      <div className="sticky top-0 z-40 hidden h-screen w-[76px] shrink-0 self-start lg:block">
         <aside
           onMouseEnter={() => setHoverOpen(true)}
           onMouseLeave={() => setHoverOpen(false)}
