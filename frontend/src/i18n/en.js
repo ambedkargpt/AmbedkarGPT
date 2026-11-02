@@ -113,6 +113,7 @@ export default {
   'gen.postTo.whatsapp': 'Share on WhatsApp',
   'gen.postTo.facebook': 'Post on Facebook',
   'gen.pasteIn': 'Post copied. Paste it in {platform} (Ctrl+V, or long-press and Paste).',
+  'gen.pasteBody': 'Too long to send in the link, so the post is copied. Paste it into the text box on {platform}.',
   'gen.listen': 'Listen',
   'gen.stop': 'Stop',
   'gen.showHindi': 'Show Hindi',

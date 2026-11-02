@@ -72,13 +72,26 @@ const PLATFORMS = [
  * most) and the rest as the body. Facebook lets no site fill in a post, so
  * its text is copied (`copy`) and Facebook opens to paste it.
  */
+// Past this a share link is refused: Reddit answers "URI Too Long" at about
+// 8 KB. Each Devanagari letter is 9 characters once encoded (%E0%A4%B0), so a
+// long Hindi post crosses it at well under a thousand letters.
+const MAX_SHARE_URL = 6000;
+
+// A long post opens the platform without its body, and the body is copied
+// instead (`copy` is then the text to copy, and `pasteBody` says so).
 function shareTarget(platform, text) {
   const enc = encodeURIComponent;
   if (platform === 'twitter') return { url: `https://twitter.com/intent/tweet?text=${enc(text)}` };
-  if (platform === 'whatsapp') return { url: `https://wa.me/?text=${enc(text)}` };
+  if (platform === 'whatsapp') {
+    const url = `https://wa.me/?text=${enc(text)}`;
+    return url.length <= MAX_SHARE_URL ? { url } : { url: 'https://wa.me/', copy: text, pasteBody: true };
+  }
   if (platform === 'reddit') {
     const [first = '', ...rest] = text.trim().split('\n');
-    return { url: `https://www.reddit.com/submit?type=TEXT&title=${enc(first.trim().slice(0, 300))}&text=${enc(rest.join('\n').trim())}` };
+    const title = `https://www.reddit.com/submit?type=TEXT&title=${enc(first.trim().slice(0, 300))}`;
+    const body = rest.join('\n').trim();
+    const url = `${title}&text=${enc(body)}`;
+    return url.length <= MAX_SHARE_URL ? { url } : { url: title, copy: body, pasteBody: true };
   }
   if (platform === 'facebook') return { url: 'https://www.facebook.com/', copy: true };
   return { url: null, copy: true };
@@ -918,11 +931,11 @@ export default function SocialMediaPostGenerator() {
   async function handlePublish() {
     if (!selectedPostId || sharing) return;
     const text = showTranslated && translatedPost ? translatedPost : generatedPost;
-    const { url, copy } = shareTarget(platform, text);
+    const { url, copy, pasteBody } = shareTarget(platform, text);
     setShareMsg('');
     if (copy) {
-      await navigator.clipboard?.writeText(text).catch(() => {});
-      setShareMsg(t('gen.pasteIn', { platform: activePlatform.label }));
+      await navigator.clipboard?.writeText(typeof copy === 'string' ? copy : text).catch(() => {});
+      setShareMsg(t(pasteBody ? 'gen.pasteBody' : 'gen.pasteIn', { platform: activePlatform.label }));
     }
     if (postStatus === 'published') {
       if (url) window.open(url, '_blank', 'noopener,noreferrer');

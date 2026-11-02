@@ -119,6 +119,7 @@ export default {
   'gen.postTo.whatsapp': 'WhatsApp पर भेजें',
   'gen.postTo.facebook': 'Facebook पर पोस्ट करें',
   'gen.pasteIn': 'पोस्ट कॉपी हो गई। {platform} में पेस्ट कीजिए (Ctrl+V, या दबाकर रखें और पेस्ट करें)।',
+  'gen.pasteBody': 'पोस्ट लिंक में भेजने के लिए बहुत लंबी है, इसलिए कॉपी कर दी गई है। {platform} पर टेक्स्ट बॉक्स में पेस्ट करें।',
   'gen.listen': 'सुनें',
   'gen.stop': 'रोकें',
   'gen.showHindi': 'हिंदी में देखें',
