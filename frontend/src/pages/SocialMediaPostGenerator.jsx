@@ -994,6 +994,64 @@ export default function SocialMediaPostGenerator() {
   const welcomeName = (currentUser?.full_name || currentUser?.username || '').split(/[\s_]/)[0];
   const roleName = labelForId(currentUser?.party_position || '', currentUser?.political_party || '', lang);
 
+  // Today's posts, at the top of a story: five slots, the count in words, the
+  // streak, and how many are left in large type. It used to be a small grey
+  // line beside the generate button, easy to miss until the limit was hit.
+  function renderQuota() {
+    if (!quota) return null;
+    const limit = quota.daily_limit ?? 5;
+    const used = Math.min(quota.daily_used ?? 0, limit);
+    return (
+      <div
+        className="mb-5 flex items-center gap-4 rounded-2xl border px-4 py-3.5 sm:px-5 sm:py-4"
+        style={{
+          borderColor: atDailyLimit ? 'rgba(248,113,113,0.45)' : 'rgba(63,159,255,0.35)',
+          background: atDailyLimit
+            ? 'linear-gradient(100deg, rgba(60,14,20,0.55) 0%, rgba(14,19,32,0.9) 70%)'
+            : 'linear-gradient(100deg, rgba(20,40,96,0.55) 0%, rgba(14,19,32,0.9) 70%)',
+        }}
+      >
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-semibold leading-snug text-white sm:text-[16.5px]">
+            {atDailyLimit ? t('gen.quota.allUsed', { limit }) : t('gen.quota.today', { used, limit })}
+          </p>
+          <div className="mt-2 flex items-center gap-1.5" aria-hidden="true">
+            {Array.from({ length: limit }, (_, i) => (
+              <span
+                key={i}
+                className="h-2 flex-1 rounded-full sm:max-w-[48px]"
+                style={{ background: i < used ? (atDailyLimit ? '#f87171' : '#3f9fff') : 'rgba(63,159,255,0.14)' }}
+              />
+            ))}
+          </div>
+          {quota.streak_days > 0 && (
+            <p className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-amber-400">
+              <Flame size={14} strokeWidth={2.2} />
+              {t('gen.quota.streak', { n: quota.streak_days })}
+            </p>
+          )}
+        </div>
+        <div className="shrink-0 text-right">
+          {atDailyLimit ? (
+            <>
+              <p className="font-count text-[20px] font-bold leading-none tabular-nums text-red-400 sm:text-[24px]">
+                {quotaCountdown}
+              </p>
+              <p className="mt-1 text-[12.5px] font-medium text-[#8b94b8]">{t('gen.quota.resets')}</p>
+            </>
+          ) : (
+            <>
+              <p className="font-count text-[30px] font-bold leading-none tabular-nums text-[#6aa8ff] sm:text-[34px]">
+                {quota.daily_remaining ?? Math.max(0, limit - used)}
+              </p>
+              <p className="mt-1 text-[12.5px] font-medium text-[#8b94b8]">{t('gen.quota.left')}</p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // The party's banner: logo, name and what it stands for. It heads the feed,
   // the story and the post alike, so you always see whose voice you write in.
   function renderPartyBanner() {
@@ -1006,7 +1064,7 @@ export default function SocialMediaPostGenerator() {
       .filter((v) => v && !v.startsWith('ptag.'));
     return (
       <div
-        className="mb-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 rounded-2xl border px-5 py-4"
+        className="mb-4 mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 rounded-2xl border px-5 py-4 sm:mt-6"
         style={{
           borderColor: `${pt.accent}3d`,
           background: `linear-gradient(100deg, #0e1320 0%, #0e1320 45%, ${pt.tint} 100%)`,
@@ -1833,6 +1891,7 @@ export default function SocialMediaPostGenerator() {
           return (
           <div className="ag-page-in flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
             {renderPartyBanner()}
+            {renderQuota()}
             <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
               <span className="inline-block rounded-full border border-[#1e3a6e]/60 bg-[#0d1840]/60 px-2.5 py-0.5 font-count text-[10px] uppercase tracking-widest text-[#6aa8ff]">
                 {selectedArticle.category}
@@ -1918,34 +1977,6 @@ export default function SocialMediaPostGenerator() {
                 ))}
               </div>
             </div>
-
-            {/* Quota indicator */}
-            {quota && (
-              <div className="mt-4 flex items-center justify-between rounded-xl border border-[#1e3260]/50 bg-[#0a1130]/60 px-4 py-2.5">
-                <div>
-                  <span className="text-[12px] text-[#8b94b8]">
-                    {atDailyLimit
-                      ? "You've used all 5 posts for today"
-                      : `${quota.daily_used} of ${quota.daily_limit ?? 5} published today`}
-                  </span>
-                  {quota.streak_days > 0 && (
-                    <span className="ml-2 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400">
-                      <Flame size={12} strokeWidth={2} />
-                      {quota.streak_days}-day streak
-                    </span>
-                  )}
-                </div>
-                {atDailyLimit ? (
-                  <span className="font-count text-[12px] font-bold tabular-nums text-red-400">
-                    Resets {quotaCountdown}
-                  </span>
-                ) : (
-                  <span className="font-count text-[12px] font-semibold text-[#6aa8ff]">
-                    {quota.daily_remaining} left
-                  </span>
-                )}
-              </div>
-            )}
 
             {/* ── Mobile preferences (right panel is hidden on mobile) ── */}
             {PREFERENCES_ENABLED && (
