@@ -14,7 +14,7 @@ import ChakraIcon from './ChakraIcon';
 
 const TAG_SPLIT = /(\s#[^\s#]+)/;
 
-function Tagged({ text, tagColor }) {
+export function Tagged({ text, tagColor }) {
   return text.split(TAG_SPLIT).filter(Boolean).map((part, i) => (
     /^\s#/.test(part)
       ? <span key={i} style={{ color: tagColor }}>{part}</span>
@@ -33,7 +33,7 @@ function Avatar({ name, size = 40 }) {
   );
 }
 
-function BusyBody({ genSeconds }) {
+export function BusyBody({ genSeconds }) {
   const { t } = useI18n();
   const step = genSeconds < 2 ? 0 : genSeconds < 5 ? 1 : 2;
   const steps = [t('cmp.st1'), t('cmp.st2'), t('cmp.st3')];

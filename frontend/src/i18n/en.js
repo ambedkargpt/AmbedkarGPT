@@ -1280,5 +1280,6 @@ export default {
   "cmp.q.assertive": "More assertive",
   "cmp.storyPosts": "Your posts on this story",
   "cmp.storyPostsEmpty": "Nothing written on this story yet.",
+  "cmp.phonePreview": "Preview in phone",
   "cmp.draft": "Draft",
 };

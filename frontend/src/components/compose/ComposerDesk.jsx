@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronLeft, Check, X as XIcon } from 'lucide-react';
 import { useI18n } from '../../i18n/index.jsx';
 import StoryStrip from './StoryStrip';
 import PlatformCards from './PlatformCards';
 import PartyPrefsGrid from './PartyPrefsGrid';
 import PhonePreview from './PhonePreview';
+import PostDraft from './PostDraft';
 import ComposeActions from './ComposeActions';
 import StoryPosts from './StoryPosts';
 import ChakraIcon from './ChakraIcon';
@@ -24,13 +26,14 @@ export default function ComposerDesk({ c }) {
   const { t, lang, changeLanguage } = useI18n();
   const [storyCount, setStoryCount] = useState(0);
   const [storyOpen, setStoryOpen] = useState(false);
+  const [phoneOpen, setPhoneOpen] = useState(false);
 
   useEffect(() => {
-    if (!storyOpen) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') setStoryOpen(false); };
+    if (!storyOpen && !phoneOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') { setStoryOpen(false); setPhoneOpen(false); } };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [storyOpen]);
+  }, [storyOpen, phoneOpen]);
   const look = PLATFORM_LOOK[c.platform];
 
   const text = c.showTranslated && c.translatedPost ? c.translatedPost : c.generatedPost;
@@ -127,19 +130,16 @@ export default function ComposerDesk({ c }) {
         {/* ── STAGE ── */}
         <section
           aria-label={t('cmp.preview')}
-          className="relative grid min-h-0 grid-cols-[auto_minmax(0,1fr)] grid-rows-[minmax(0,1fr)] gap-4 overflow-hidden rounded-[20px] border border-[#22305c]/80 py-[18px] pl-5 pr-4 xl:gap-[22px] xl:pl-[26px] xl:pr-5"
+          className="relative grid min-h-0 grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] grid-rows-[minmax(0,1fr)] gap-4 overflow-hidden rounded-[20px] border border-[#22305c]/80 py-[18px] pl-5 pr-4 xl:gap-[22px] xl:pl-[26px] xl:pr-5"
           style={{ background: `radial-gradient(420px 420px at 30% 46%, rgba(${look.hue},0.18), transparent 70%), rgba(8,13,36,0.72)` }}
         >
-          <PhonePreview
+          <PostDraft
             platform={c.platform}
             state={phoneState}
             text={phoneState === 'error' ? c.generatedPost : text}
-            authorName={c.authorName}
-            authorHandle={c.authorHandle}
-            article={c.article}
-            lensLabel={c.lensLabel}
             translated={Boolean(c.showTranslated && c.translatedPost)}
             genSeconds={c.genSeconds}
+            onPreview={() => setPhoneOpen(true)}
           />
           <ComposeActions
             platform={c.platform}
@@ -181,8 +181,37 @@ export default function ComposerDesk({ c }) {
           </ComposeActions>
         </section>
       </div>
+      {/* ── the post in a phone, on request ──
+          Both dialogs go to document.body: the page column is its own
+          stacking context, and inside it the sidebar stayed on top. */}
+      {phoneOpen && ready && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-6" role="dialog" aria-modal="true" aria-label={t('cmp.phonePreview')}>
+          <div className="absolute inset-0 bg-[#03060f]/78 backdrop-blur-[3px]" onClick={() => setPhoneOpen(false)} />
+          <div
+            className="cmp-fadein relative h-[min(620px,calc(100vh-48px))]"
+            style={{ filter: `drop-shadow(0 0 60px rgba(${look.hue},0.35))` }}
+          >
+            <PhonePreview
+              platform={c.platform}
+              state={phoneState}
+              text={phoneState === 'error' ? c.generatedPost : text}
+              authorName={c.authorName}
+              authorHandle={c.authorHandle}
+              article={c.article}
+              lensLabel={c.lensLabel}
+              translated={Boolean(c.showTranslated && c.translatedPost)}
+              genSeconds={c.genSeconds}
+            />
+            <button type="button" onClick={() => setPhoneOpen(false)} aria-label={t('common.close')} className="absolute -right-14 top-0 flex h-10 w-10 items-center justify-center rounded-full border border-[#22305c] bg-[#0c1430] text-[#c0cde8] transition hover:text-white">
+              <XIcon size={17} />
+            </button>
+          </div>
+        </div>,
+        document.body,
+      )}
+
       {/* ── the full story, over the composer ── */}
-      {storyOpen && (
+      {storyOpen && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-6" role="dialog" aria-modal="true" aria-label={c.article.title}>
           <div className="absolute inset-0 bg-[#03060f]/78 backdrop-blur-[3px]" onClick={() => setStoryOpen(false)} />
           <article className="cmp-fadein relative max-h-[86vh] w-full max-w-[760px] overflow-y-auto rounded-2xl border border-[#1e3260]/60 bg-[#0a1130] p-8">
@@ -196,7 +225,8 @@ export default function ComposerDesk({ c }) {
               <p className="font-hindi mt-5 border-t border-[#1e3260]/50 pt-5 text-[18px] leading-[1.95] text-[#c3d3ee]">{c.article.content}</p>
             )}
           </article>
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

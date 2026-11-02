@@ -1285,5 +1285,6 @@ export default {
   "cmp.q.assertive": "और दमदार",
   "cmp.storyPosts": "इस ख़बर पर आपकी पोस्ट",
   "cmp.storyPostsEmpty": "इस ख़बर पर अभी कोई पोस्ट नहीं।",
+  "cmp.phonePreview": "फ़ोन में देखें",
   "cmp.draft": "ड्राफ़्ट",
 };
