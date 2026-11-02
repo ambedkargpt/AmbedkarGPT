@@ -30,6 +30,7 @@ import SpeakButton from '../components/generate/SpeakButton';
 import Sidebar from '../components/dashboard/Sidebar';
 import NotificationBell from '../components/dashboard/NotificationBell';
 import ProfileMenu from '../components/dashboard/ProfileMenu';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import { labelForId } from '../utils/partyRoles';
 import { PREFERENCES_ENABLED } from '../data/features';
 import PhonePreview from '../components/compose/PhonePreview';
@@ -981,6 +982,7 @@ export default function SocialMediaPostGenerator() {
   }, [phoneOpen]);
 
   const authorName = currentUser?.full_name || currentUser?.username || 'AmbedkarGPT';
+  const welcomeLogo = partyLogo(currentUser?.political_party);
   const welcomeName = (currentUser?.full_name || currentUser?.username || '').split(/[\s_]/)[0];
   const roleName = labelForId(currentUser?.party_position || '', currentUser?.political_party || '', lang);
 
@@ -1163,10 +1165,10 @@ export default function SocialMediaPostGenerator() {
         style={{ background: 'linear-gradient(180deg,#0a0e18 0%,#080b12 100%)' }}
       >
 
-        {/* The dashboard's welcome, now that the dashboard is off: who you
-            are writing as, and your account (notifications, profile, log out)
-            on the right. */}
-        <header className="flex items-center gap-3 px-4 pb-3 pt-4 sm:gap-4 sm:px-6 md:px-8">
+        {/* The dashboard's top bar, now that the dashboard is off: back and
+            the page's name on the left, and the account (language,
+            notifications, profile, log out) on the right. */}
+        <header className="dash-header flex h-14 shrink-0 items-center gap-3 px-4 sm:gap-4 sm:px-6 md:h-16 md:px-8">
           <button
             type="button"
             onClick={goBack}
@@ -1177,21 +1179,12 @@ export default function SocialMediaPostGenerator() {
             <ArrowLeft size={12} strokeWidth={2} />
           </button>
 
-          <div className="min-w-0 flex-1">
-            <h1 className="truncate font-display text-[19px] font-bold leading-tight tracking-tight sm:text-[23px]">
-              <span className="text-white">{t('dash.welcomeBack')} </span>
-              <span className="gradient-text-blue">{welcomeName}</span>
-            </h1>
-            {(activeParty || roleName) && (
-              <p className="mt-1 flex min-w-0 items-center gap-x-2 text-[12.5px] font-medium text-[#9aa8cc] sm:text-[13.5px]">
-                {activeParty && <span className="truncate">{partyLabel(activeParty.name, lang)}</span>}
-                {activeParty && roleName && <span className="text-[#4f7fd4]" aria-hidden="true">·</span>}
-                {roleName && <span className="shrink-0 font-semibold text-white">{roleName}</span>}
-              </p>
-            )}
-          </div>
+          <span className="min-w-0 flex-1 truncate font-display text-[14.5px] font-semibold tracking-tight text-white">
+            {t('gen.title')}
+          </span>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <LanguageSwitcher />
             <NotificationBell totalPosts={quota?.total_streak_posts ?? 0} />
             <ProfileMenu
               name={currentUser?.full_name || currentUser?.username || '—'}
@@ -1207,6 +1200,38 @@ export default function SocialMediaPostGenerator() {
         {/* ── Feed view ── */}
         {view === 'feed' && (
           <div className="ag-page-in flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+            <div className="mb-6 mt-5 flex items-center gap-4">
+              {welcomeLogo && (
+                <span
+                  className="relative inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full bg-white shadow-[0_0_0_2px_rgba(63,159,255,0.45),0_0_26px_rgba(63,159,255,0.28)]"
+                  title={currentUser?.political_party || ''}
+                >
+                  <img
+                    src={welcomeLogo}
+                    alt={currentUser?.political_party || 'Party'}
+                    className="h-[48px] w-[48px] object-contain"
+                    onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
+                  />
+                  <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-[2.5px] border-[#070b1c] bg-[#22c55e]" />
+                </span>
+              )}
+              <div className="min-w-0">
+                <h1 className="font-display text-[26px] font-bold leading-tight tracking-tight sm:text-[28px] md:text-[32px]">
+                  <span className="text-white">{t('dash.welcomeBack')} </span>
+                  <span className="gradient-text-blue">{welcomeName}</span>
+                </h1>
+                {(activeParty || roleName) && (
+                  <p className="mt-2 inline-flex max-w-full flex-wrap items-center gap-x-2 gap-y-1 rounded-full border border-[#2a4a8a]/60 bg-[#0d1838]/80 px-3 py-1 text-[13px] font-medium text-[#c7d6ee]">
+                    {activeParty && <span className="truncate">{partyLabel(activeParty.name, lang)}</span>}
+                    {activeParty && roleName && <span className="text-[#4f7fd4]" aria-hidden="true">·</span>}
+                    {roleName && <span className="font-semibold text-white">{roleName}</span>}
+                  </p>
+                )}
+                <p className="mt-1.5 text-[15px] leading-snug text-[#9aa5c4] md:text-[16.5px]">
+                  {t('dash.subtitle')}
+                </p>
+              </div>
+            </div>
             {/* Three news sections: chosen party, opposition (BJP, empty
                 until it is scraped), and general (neutral) news. Underlined
                 tabs rather than pills, and each section carries its own
