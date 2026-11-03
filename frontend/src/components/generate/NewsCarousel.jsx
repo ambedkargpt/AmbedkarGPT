@@ -139,13 +139,13 @@ export default function NewsCarousel({
                 type="button"
                 data-story-card
                 onClick={() => onOpen(a)}
-                className="ag-rise ag-card group flex h-[196px] w-[78vw] max-w-[320px] shrink-0 snap-start flex-col rounded-2xl border bg-[#0e1320] p-5 text-left sm:w-[320px]"
+                className="ag-rise ag-card group flex h-[214px] w-[78vw] max-w-[320px] shrink-0 snap-start flex-col rounded-2xl border bg-[#0e1320] p-5 text-left sm:w-[320px]"
                 style={{ borderColor: 'rgba(30,38,54,0.9)', borderTop: `3px solid ${cardAccent}`, '--i': i, '--cat': cardAccent }}
               >
                 <span className="mb-2 text-[12.5px] font-semibold" style={{ color: cardAccent }}>
                   {a.source || a.category}
                 </span>
-                <span className="font-hindi line-clamp-3 text-[18px] font-bold leading-[1.55] text-white">
+                <span className="font-hindi line-clamp-3 text-[clamp(19px,0.6vw+14px,21px)] font-semibold leading-[1.5] text-white">
                   {a.title}
                 </span>
                 <span className="mt-auto flex items-center justify-between gap-2 pt-4 text-[13px]">
