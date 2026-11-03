@@ -21,6 +21,7 @@ import { useI18n } from '../../i18n/index.jsx';
 import { useRadio } from '../../context/RadioContext';
 import { RADIO_REQUIRES_LOGIN } from '../../data/radioAccess';
 import AdminNavLink from './AdminNavLink';
+import { DASHBOARD_ENABLED, HOME_ROUTE, PREFERENCES_ENABLED } from '../../data/features';
 
 // Generating a post is the product's primary action, so it leads the nav and is
 // styled as a call to action rather than another list item.
@@ -43,7 +44,13 @@ const ALL_NAV = [
 // The radio is a standalone public page for now, reached from the navbar or a
 // shared link, so it has no row in the rail. It comes back with the login wall
 // (see data/radioAccess.js), which is when it is a signed-in feature again.
-const NAV = ALL_NAV.filter((item) => item.id !== 'radio' || RADIO_REQUIRES_LOGIN);
+// Also left out: anything not built yet (a row that only says "soon" is
+// noise to someone who came to write a post), and the dashboard and the
+// preferences while they are switched off (data/features.js).
+const NAV = ALL_NAV.filter((item) => (item.id !== 'radio' || RADIO_REQUIRES_LOGIN)
+  && !item.soon
+  && (item.id !== 'dashboard' || DASHBOARD_ENABLED)
+  && (item.id !== 'prefs' || PREFERENCES_ENABLED));
 
 // The rail remembers whether it was collapsed. It frames every signed-in
 // screen, so a state that reset on navigation would be a state nobody could
@@ -111,10 +118,10 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
           type="button"
           onClick={() => {
             if (collapsed && onToggleCollapse) { onToggleCollapse(); return; }
-            navigate('/dashboard'); onClose?.();
+            navigate(HOME_ROUTE); onClose?.();
           }}
           className="group/mark flex min-w-0 flex-1 items-center gap-2.5 text-left transition-opacity hover:opacity-85"
-          aria-label={collapsed && onToggleCollapse ? t('side.expand') : t('nav.dashboard')}
+          aria-label={collapsed && onToggleCollapse ? t('side.expand') : (DASHBOARD_ENABLED ? t('nav.dashboard') : t('brand.wordmark'))}
           title={collapsed && onToggleCollapse ? t('side.expand') : undefined}
         >
           <span className="relative flex h-9 w-9 shrink-0 items-center justify-center">
@@ -341,7 +348,12 @@ export default function Sidebar({ active = 'dashboard', onSelect, mobileOpen = f
     return (
       // The placeholder keeps the strip's width in the layout, so the page
       // never moves; the rail itself opens over it.
-      <div className="relative hidden w-[76px] shrink-0 lg:block">
+      // Sticky and one screen tall, so the rail (and its log out at the
+      // bottom) stays in view on a page that scrolls the window; it used to
+      // stretch to the page's height and leave log out below the last card.
+      // The z-index sits here, not on the rail: sticky makes its own stacking
+      // context, and the page's later siblings (the avatar) painted over it.
+      <div className="sticky top-0 z-40 hidden h-screen w-[76px] shrink-0 self-start lg:block">
         <aside
           onMouseEnter={() => setHoverOpen(true)}
           onMouseLeave={() => setHoverOpen(false)}

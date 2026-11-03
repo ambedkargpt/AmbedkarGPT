@@ -397,33 +397,15 @@ class AuthService:
             if existing and str(existing["_id"]) != str(user["_id"]):
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken.")
             fields["username"] = username
-        # The party is set once and then fixed.
+        # The party and the role can both be changed.
         #
-        # Every answer is stored against an id that names the party -
-        # party_inc_q1, pos_inc_national_q3 - so moving to another party leaves
-        # all fifteen behind at once and the posts quietly change character
-        # with nothing on screen to explain it.
-        #
-        # The role can be changed. Its five answers are written for one level,
-        # so a new level brings its own five questions; the party's ten stay.
-        #
-        # Re-sending the same value is allowed, so saving the form again is not
-        # an error. Setting one that was never set is allowed too: this locks a
-        # choice, it does not force one. Correcting a genuine mistake is a
-        # database edit, deliberately - it should involve someone who can also
-        # clear the answers left behind.
-        #
-        # Both screens say so before the choice is made, because a lock the
-        # user only meets as a 409 is a trap rather than a rule.
+        # Answers are stored against ids that name the party and the level -
+        # party_inc_q1, pos_inc_national_q3 - so a new party or level starts
+        # from that set's defaults (see party_questions / position_questions)
+        # and the old answers simply stop being read. Nobody has to answer
+        # anything again: the defaults are a complete set on their own.
         if political_party is not None:
-            new_party = political_party.strip()
-            current_party = str(user.get("political_party") or "").strip()
-            if current_party and new_party != current_party:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="Your party is already set and cannot be changed.",
-                )
-            fields["political_party"] = new_party
+            fields["political_party"] = political_party.strip()
         if party_position is not None:
             # Unknown keys are dropped rather than stored: a stale id would sit
             # on the user forever and resolve to no guidance at generation time,

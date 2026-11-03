@@ -3,16 +3,15 @@ import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { clearPendingQuestions } from '../hooks/usePendingQuestions';
 import {
-  ArrowLeft, Search, Filter, Sparkles,
+  ArrowLeft, Filter, Sparkles,
   Copy, Check, RefreshCw, ChevronDown, FileText, Star, Radio,
-  ArrowUpDown, List, LayoutGrid, Users, Globe, ArrowRight,
+  ArrowUpDown, List, LayoutGrid, Users, ArrowRight,
   CalendarDays, Clock, ChevronRight, X as XIcon,
   MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle, Smartphone,
 } from 'lucide-react';
 
 import PreferencesPanel from '../components/generate/PreferencesPanel';
 import DevSourceTag from '../components/DevSourceTag';
-import ScrollRow from '../components/ui/ScrollRow';
 import PostContent from '../components/generate/PostContent';
 import AgMark from '../components/brand/AgMark';
 import { useAuth } from '../context/AuthContext';
@@ -28,6 +27,11 @@ import Spinner from '../components/Spinner';
 import { useI18n } from '../i18n/index.jsx';
 import SpeakButton from '../components/generate/SpeakButton';
 import Sidebar from '../components/dashboard/Sidebar';
+import NotificationBell from '../components/dashboard/NotificationBell';
+import ProfileMenu from '../components/dashboard/ProfileMenu';
+import LanguageSwitcher from '../components/LanguageSwitcher';
+import { labelForId } from '../utils/partyRoles';
+import { PREFERENCES_ENABLED } from '../data/features';
 import PhonePreview from '../components/compose/PhonePreview';
 import { PLATFORM_LOOK } from '../components/compose/platformLook';
 import '../components/compose/compose.css';
@@ -55,15 +59,16 @@ function useCountdown(resetAt) {
   return label;
 }
 
+// WhatsApp first and X last: in the order these posts are most shared.
 const PLATFORMS = [
-  { id: 'twitter',   label: 'Twitter / X',  short: '𝕏',   limit: 280,  color: '#1d9bf0' },
+  { id: 'whatsapp',  label: 'WhatsApp',      short: 'WA',  limit: 65536, color: '#25d366' },
   // Reddit's self-post body limit really is 40,000 — the counter says so
   // rather than a rounder number that would be a guess.
   { id: 'reddit',    label: 'Reddit',        short: 'r/',  limit: 40000, color: '#ff4500' },
   // WhatsApp and Facebook accept far more than anyone writes (65,536 and
   // 63,206 characters); the length the post aims for is set on the server.
-  { id: 'whatsapp',  label: 'WhatsApp',      short: 'WA',  limit: 65536, color: '#25d366' },
   { id: 'facebook',  label: 'Facebook',      short: 'f',   limit: 63206, color: '#1877f2' },
+  { id: 'twitter',   label: 'Twitter / X',  short: '𝕏',   limit: 280,  color: '#1d9bf0' },
 ];
 
 /**
@@ -326,7 +331,7 @@ export default function SocialMediaPostGenerator() {
   const [selectedPostId,  setSelectedPostId]  = useState(null);
   const [copied,          setCopied]          = useState(false);
   const [panelWidth,      setPanelWidth]      = useState(300);
-  const [searchInput,     setSearchInput]     = useState('');
+  const [searchInput] = useState('');
   const [prefQuestions,   setPrefQuestions]   = useState([]);
   const [preferences,     setPreferences]     = useState({});
   const [savedPrefs,      setSavedPrefs]      = useState({});
@@ -335,7 +340,8 @@ export default function SocialMediaPostGenerator() {
   const [translating,     setTranslating]     = useState(false);
   const [quota,           setQuota]           = useState(null);
   const [postStatus,      setPostStatus]      = useState('draft');
-  const [platform,        setPlatform]        = useState('twitter');
+  // WhatsApp first: it is where these posts are mostly shared.
+  const [platform,        setPlatform]        = useState('whatsapp');
   // Always the platform preview. The Post/Preview toggle is gone: a plain-text
   // rendering of the same words told nobody anything the preview did not, and
   // the preview is what someone is actually about to publish.
@@ -386,7 +392,7 @@ export default function SocialMediaPostGenerator() {
     // Ask for the chosen party plus general and opposition news in one call;
     // the UI splits them into the three sections locally.
     const query = { limit: 100, language: siteLang };
-    if (selectedParty) { query.tenant = selectedParty; query.includeGeneral = true; query.includeOpposition = true; }
+    if (selectedParty) { query.tenant = selectedParty; query.includeGeneral = false; query.includeOpposition = true; }
     getNews(query)
       .then((data) => {
         if (data?.length) {
@@ -394,7 +400,7 @@ export default function SocialMediaPostGenerator() {
           setNewsLoading(false);
         } else {
           const fallback = { limit: 100 };
-          if (selectedParty) { fallback.tenant = selectedParty; fallback.includeGeneral = true; fallback.includeOpposition = true; }
+          if (selectedParty) { fallback.tenant = selectedParty; fallback.includeGeneral = false; fallback.includeOpposition = true; }
           getNews(fallback).then((all) => {
             if (all?.length) setArticles(all.map(adaptNews));
           }).catch(() => setNewsError(true)).finally(() => setNewsLoading(false));
@@ -519,17 +525,13 @@ export default function SocialMediaPostGenerator() {
     () => articles.filter((a) => a.tenantSlug === 'bjp'),
     [articles]
   );
-  const generalArticles = useMemo(
-    () => articles.filter((a) => a.tenantSlug === 'general'),
-    [articles]
-  );
-
-  // Without a party chosen there is only one list, so show everything.
+  // General news is no longer shown: two feeds, the party's and the
+  // opposition's. Without a party chosen there is only one list, so show
+  // everything except general.
   const sectionArticles = !activeParty
-    ? articles
-    : newsSection === 'party' ? partyArticles
+    ? articles.filter((a) => a.tenantSlug !== 'general')
     : newsSection === 'opposition' ? oppositionArticles
-    : generalArticles;
+    : partyArticles;
 
   // The three feeds, described once. Phones show them as a chip row and wider
   // screens as the three cards; both read this and both call chooseSection.
@@ -539,16 +541,15 @@ export default function SocialMediaPostGenerator() {
       count: partyArticles.length },
     { id: 'opposition', Icon: Users, label: t('gen.oppositionNews'),
       sub: t('gen.oppositionNewsSub'), count: oppositionArticles.length },
-    { id: 'general', Icon: Globe, label: t('gen.generalNews'),
-      sub: t('gen.generalNewsSub'), count: generalArticles.length },
   ];
 
   function chooseSection(id) {
+    if (id === 'general') id = 'party';
     setNewsSection(id);
     setPage(1);
     // Neither general nor opposition has press conferences, so carrying that
     // filter across from the party tab would show an empty section.
-    if (id === 'general' || id === 'opposition') setTypeFilter('all');
+    if (id === 'opposition') setTypeFilter('all');
   }
 
   // Accent for the section currently on screen; falls back to the party colour
@@ -717,7 +718,7 @@ export default function SocialMediaPostGenerator() {
       .then((item) => {
         if (!item) return;
         const article = adaptNews(item);
-        if (section) setNewsSection(section);
+        if (section) setNewsSection(section === 'general' ? 'party' : section);
         setSelectedArticle(article);
         setGeneratedPost('');
         setSelectedPostId(null);
@@ -976,6 +977,80 @@ export default function SocialMediaPostGenerator() {
   }, [phoneOpen]);
 
   const authorName = currentUser?.full_name || currentUser?.username || 'AmbedkarGPT';
+  const welcomeLogo = partyLogo(currentUser?.political_party);
+  const accountControls = (
+    <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+      <LanguageSwitcher />
+      <NotificationBell totalPosts={quota?.total_streak_posts ?? 0} />
+      <ProfileMenu
+        name={currentUser?.full_name || currentUser?.username || '—'}
+        email={currentUser?.email ?? currentUser?.phone ?? ''}
+        initial={(currentUser?.full_name || currentUser?.username || 'A')[0].toUpperCase()}
+        party={currentUser?.political_party ?? ''}
+        onLogout={async () => { await logout(); navigate('/', { replace: true }); }}
+      />
+    </div>
+  );
+  const welcomeName = (currentUser?.full_name || currentUser?.username || '').split(/[\s_]/)[0];
+  const roleName = labelForId(currentUser?.party_position || '', currentUser?.political_party || '', lang);
+
+  // Today's posts, at the top of a story: five slots, the count in words, the
+  // streak, and how many are left in large type. It used to be a small grey
+  // line beside the generate button, easy to miss until the limit was hit.
+  function renderQuota() {
+    if (!quota) return null;
+    const limit = quota.daily_limit ?? 5;
+    const used = Math.min(quota.daily_used ?? 0, limit);
+    return (
+      <div
+        className="mb-5 flex items-center gap-4 rounded-2xl border px-4 py-3.5 sm:px-5 sm:py-4"
+        style={{
+          borderColor: atDailyLimit ? 'rgba(248,113,113,0.45)' : 'rgba(63,159,255,0.35)',
+          background: atDailyLimit
+            ? 'linear-gradient(100deg, rgba(60,14,20,0.55) 0%, rgba(14,19,32,0.9) 70%)'
+            : 'linear-gradient(100deg, rgba(20,40,96,0.55) 0%, rgba(14,19,32,0.9) 70%)',
+        }}
+      >
+        <div className="min-w-0 flex-1">
+          <p className="text-[15px] font-semibold leading-snug text-white sm:text-[16.5px]">
+            {atDailyLimit ? t('gen.quota.allUsed', { limit }) : t('gen.quota.today', { used, limit })}
+          </p>
+          <div className="mt-2 flex items-center gap-1.5" aria-hidden="true">
+            {Array.from({ length: limit }, (_, i) => (
+              <span
+                key={i}
+                className="h-2 flex-1 rounded-full sm:max-w-[48px]"
+                style={{ background: i < used ? (atDailyLimit ? '#f87171' : '#3f9fff') : 'rgba(63,159,255,0.14)' }}
+              />
+            ))}
+          </div>
+          {quota.streak_days > 0 && (
+            <p className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-amber-400">
+              <Flame size={14} strokeWidth={2.2} />
+              {t('gen.quota.streak', { n: quota.streak_days })}
+            </p>
+          )}
+        </div>
+        <div className="shrink-0 text-right">
+          {atDailyLimit ? (
+            <>
+              <p className="font-count text-[20px] font-bold leading-none tabular-nums text-red-400 sm:text-[24px]">
+                {quotaCountdown}
+              </p>
+              <p className="mt-1 text-[12.5px] font-medium text-[#8b94b8]">{t('gen.quota.resets')}</p>
+            </>
+          ) : (
+            <>
+              <p className="font-count text-[30px] font-bold leading-none tabular-nums text-[#6aa8ff] sm:text-[34px]">
+                {quota.daily_remaining ?? Math.max(0, limit - used)}
+              </p>
+              <p className="mt-1 text-[12.5px] font-medium text-[#8b94b8]">{t('gen.quota.left')}</p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   // The party's banner: logo, name and what it stands for. It heads the feed,
   // the story and the post alike, so you always see whose voice you write in.
@@ -989,7 +1064,7 @@ export default function SocialMediaPostGenerator() {
       .filter((v) => v && !v.startsWith('ptag.'));
     return (
       <div
-        className="mb-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 rounded-2xl border px-5 py-4"
+        className="mb-4 mt-5 flex flex-wrap items-center justify-center gap-x-5 gap-y-4 rounded-2xl border px-5 py-4 sm:mt-6"
         style={{
           borderColor: `${pt.accent}3d`,
           background: `linear-gradient(100deg, #0e1320 0%, #0e1320 45%, ${pt.tint} 100%)`,
@@ -1156,8 +1231,11 @@ export default function SocialMediaPostGenerator() {
         style={{ background: 'linear-gradient(180deg,#0a0e18 0%,#080b12 100%)' }}
       >
 
-        {/* Search + filter */}
-        <header className="flex flex-wrap items-center gap-2.5 px-4 pb-3 pt-4 sm:flex-nowrap sm:gap-3 sm:px-6 md:px-8">
+        {/* On a story or a post: back on the left, the account (language,
+            notifications, profile, log out) on the right. The feed carries
+            both in its welcome row instead. */}
+        {view !== 'feed' && (
+        <header className="dash-header flex h-14 shrink-0 items-center gap-3 px-4 sm:gap-4 sm:px-6 md:h-16 md:px-8">
           <button
             type="button"
             onClick={goBack}
@@ -1168,103 +1246,62 @@ export default function SocialMediaPostGenerator() {
             <ArrowLeft size={12} strokeWidth={2} />
           </button>
 
-          <div className="relative order-last w-full sm:order-none sm:w-auto sm:flex-1">
-            <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6b78a0]" strokeWidth={2} />
-            <input
-              type="text"
-              value={searchInput}
-              onChange={(e) => { setSearchInput(e.target.value); setPage(1); goView('feed'); }}
-              placeholder={t('gen.searchContent')}
-              className="w-full rounded-full border border-[#1e3260]/70 bg-[#0a1130]/80 py-2.5 pl-9 pr-4 text-[13px] text-white placeholder-[#6b78a0] outline-none transition focus:border-[#3f9fff]/70 focus:shadow-[0_0_0_3px_rgba(63,159,255,0.12)]"
-            />
-          </div>
-
-          <div ref={filterRef} className="relative ml-auto sm:ml-0">
-            <button
-              type="button"
-              onClick={() => { setFilterOpen((p) => !p); goView('feed'); }}
-              className={`inline-flex items-center gap-2 rounded-full border px-4 py-2.5 text-[12.5px] font-medium transition ${
-                filtersActive
-                  ? 'border-[#3f9fff]/60 bg-[#0d1a3a] text-[#6aa8ff]'
-                  : 'border-[#1e3260]/70 bg-[#0d1531]/80 text-[#8b94b8] hover:border-[#3a6bc4]/60 hover:text-white'
-              }`}
-            >
-              <Filter size={13} strokeWidth={2} />
-              {selectedDayLabel ?? t('gen.filterNewsBtn')}
-              {filtersActive > 0 && (
-                <span className="rounded-full bg-[#3f9fff] px-1.5 py-0.5 font-count text-[10px] leading-none text-white">
-                  {filtersActive}
-                </span>
-              )}
-            </button>
-
-            {filterOpen && (
-              <div className="absolute right-0 top-[calc(100%+6px)] z-40 w-64 overflow-hidden rounded-xl border border-[#1e3260]/70 bg-[#0d1531] shadow-xl">
-                {/* Date */}
-                <p className="px-4 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#5a6e9a]">
-                  {t('gen.date')}
-                </p>
-                {DATE_RANGES.map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => { setDateFilter(d.id); setPage(1); goView('feed'); }}
-                    className={`flex w-full items-center justify-between px-4 py-2 text-[12.5px] transition hover:bg-[#0f1a3a] ${
-                      d.id === dateFilter ? 'text-[#3f9fff]' : 'text-white/80'
-                    }`}
-                  >
-                    {d.label}
-                    {d.id === dateFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#3f9fff]" />}
-                  </button>
-                ))}
-
-                {availableDays.length > 0 && (
-                  <>
-                    <p className="mt-1 border-t border-[#1e3260]/60 px-4 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#5a6e9a]">
-                      {t('gen.pickADay')}
-                    </p>
-                    <div className="max-h-52 overflow-y-auto">
-                      {availableDays.map((d) => {
-                        const id = `${DAY_PREFIX}${d.key}`;
-                        const selected = id === dateFilter;
-                        return (
-                          <button
-                            key={id}
-                            type="button"
-                            onClick={() => { setDateFilter(id); setPage(1); goView('feed'); }}
-                            className={`flex w-full items-center justify-between gap-3 px-4 py-2 text-[12.5px] transition hover:bg-[#0f1a3a] ${
-                              selected ? 'text-[#3f9fff]' : 'text-white/80'
-                            }`}
-                          >
-                            <span className="truncate">{d.label}</span>
-                            <span className="flex shrink-0 items-center gap-2">
-                              <span className="font-count text-[11px] text-[#5a6e9a]">{d.count}</span>
-                              {selected && <span className="h-1.5 w-1.5 rounded-full bg-[#3f9fff]" />}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </>
-                )}
-
-                {filtersActive > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => { setDateFilter('all'); setTypeFilter('all'); setActiveFilter('All'); setPage(1); }}
-                    className="w-full border-t border-[#1e3260]/60 px-4 py-2.5 text-left text-[12px] text-[#8b94b8] transition hover:bg-[#0f1a3a] hover:text-white"
-                  >
-                    {t('gen.clearFilters')}
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+          <span className="flex-1" />
+          {accountControls}
         </header>
+        )}
 
         {/* ── Feed view ── */}
         {view === 'feed' && (
           <div className="ag-page-in flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
+            {/* On a phone the back button and the account share the first
+                line and the greeting gets the full width under them; from sm
+                up it is one row. */}
+            <div className="mb-5 mt-3 flex flex-wrap items-center gap-x-3.5 gap-y-4 sm:mb-7 sm:mt-5 sm:flex-nowrap sm:gap-5">
+              <button
+                type="button"
+                onClick={goBack}
+                aria-label={t('common.back')}
+                title={t('common.back')}
+                className="order-1 inline-flex items-center gap-1.5 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/60 px-3 py-2 text-[12px] font-medium text-[#8b94b8] transition hover:text-white"
+              >
+                <ArrowLeft size={12} strokeWidth={2} />
+              </button>
+              {welcomeLogo && (
+                <span
+                  className="relative order-4 inline-flex h-[52px] w-[52px] shrink-0 items-center justify-center self-start rounded-full bg-white shadow-[0_0_0_2px_rgba(63,159,255,0.45),0_0_24px_rgba(63,159,255,0.28)] sm:order-2 sm:ml-2 sm:h-[76px] sm:w-[76px] sm:self-center"
+                  title={currentUser?.political_party || ''}
+                >
+                  <img
+                    src={welcomeLogo}
+                    alt={currentUser?.political_party || 'Party'}
+                    className="h-[46px] w-[46px] object-contain sm:h-[70px] sm:w-[70px]"
+                    onError={(e) => { e.currentTarget.parentElement.style.display = 'none'; }}
+                  />
+                  <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-[2.5px] border-[#070b1c] bg-[#22c55e] sm:bottom-0.5 sm:right-0.5 sm:h-4 sm:w-4" />
+                </span>
+              )}
+              <div className="order-5 min-w-0 flex-1 sm:order-3">
+                {/* Phones: "Welcome back," is a small line above the name, so
+                    the name never breaks mid-greeting beside the logo. Sized
+                    in em: the Hindi type scale in index.css rewrites px tokens
+                    such as text-[13.5px] with a rule that beats sm:, which kept
+                    the greeting small on desktop in Hindi. */}
+                <h1 className="font-display text-[24px] font-bold leading-tight tracking-tight sm:text-[28px] md:text-[32px]">
+                  <span className="block text-[0.5625em] font-medium tracking-normal text-[#8b94b8] sm:inline sm:text-[1em] sm:font-bold sm:tracking-tight sm:text-white">{t('dash.welcomeBack')} </span>
+                  <span className="gradient-text-blue">{welcomeName}</span>
+                </h1>
+                {(activeParty || roleName) && (
+                  <p className="mt-1.5 flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] font-medium leading-snug text-[#9fb0d4] sm:mt-2 sm:inline-flex sm:gap-x-2 sm:rounded-full sm:border sm:border-[#2a4a8a]/60 sm:bg-[#0d1838]/80 sm:px-3 sm:py-1 sm:text-[#c7d6ee]">
+                    {activeParty && <span className="sm:truncate">{partyLabel(activeParty.name, lang)}</span>}
+                    {activeParty && roleName && <span className="text-[#4f7fd4]" aria-hidden="true">·</span>}
+                    {roleName && <span className="font-semibold text-white">{roleName}</span>}
+                  </p>
+                )}
+              </div>
+              <div className="order-2 ml-auto sm:order-4 sm:self-start">{accountControls}</div>
+              <span className="order-3 basis-full sm:hidden" aria-hidden="true" />
+            </div>
             {/* Three news sections: chosen party, opposition (BJP, empty
                 until it is scraped), and general (neutral) news. Underlined
                 tabs rather than pills, and each section carries its own
@@ -1276,7 +1313,6 @@ export default function SocialMediaPostGenerator() {
                   categories, and a long name pushed the other two off a narrow
                   screen. It gets its own band here, in the party's colour, so
                   the tabs below are three comparable things. */}
-              {renderPartyBanner()}
               {/* Section chooser. Cards rather than a tab strip: each one
                   now carries a count and a line saying what is in it, which a
                   tab has no room for, and the three read as siblings. */}
@@ -1284,7 +1320,7 @@ export default function SocialMediaPostGenerator() {
                   a description each pushed the headlines most of a screen
                   down, and on a phone the description is not what picks the
                   feed — the name and the count are. */}
-              <ScrollRow className="-mx-4 mb-4 gap-2 px-4 sm:hidden">
+              <div role="group" aria-label={t('gen.newsSections')} className="mb-5 grid grid-cols-2 gap-1 rounded-2xl border border-[#1e2636]/90 bg-[#0b101c] p-1 sm:hidden">
                 {sectionTabs.map((s) => {
                   const active = newsSection === s.id;
                   const tint = SECTION_THEME[s.id].accent;
@@ -1294,22 +1330,28 @@ export default function SocialMediaPostGenerator() {
                       type="button"
                       onClick={() => chooseSection(s.id)}
                       aria-pressed={active}
-                      className="inline-flex h-9 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border px-4 text-[12.5px] transition"
+                      aria-label={`${s.label} (${s.count})`}
+                      className="flex h-[52px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[13.5px] leading-tight transition"
                       style={{
-                        borderColor: active ? tint : 'rgba(30,38,54,0.9)',
-                        backgroundColor: active ? `${tint}18` : '#0b101c',
-                        color: active ? tint : '#8b94b8',
+                        backgroundColor: active ? `${tint}1f` : 'transparent',
+                        boxShadow: active ? `inset 0 0 0 1px ${tint}` : 'none',
+                        color: active ? '#ffffff' : '#8b94b8',
                         fontWeight: active ? 600 : 500,
                       }}
                     >
-                      {s.label}
-                      <span className="font-count text-[11px] opacity-70">{s.count}</span>
+                      <span className="truncate">{s.label}</span>
+                      <span
+                        className="font-count text-[11.5px] font-semibold leading-none"
+                        style={{ color: active ? tint : '#5a6e9a' }}
+                      >
+                        {s.count}
+                      </span>
                     </button>
                   );
                 })}
-              </ScrollRow>
+              </div>
 
-              <div className="mb-6 hidden gap-3 sm:grid sm:grid-cols-3">
+              <div className="mb-6 hidden gap-3 sm:grid sm:grid-cols-2">
                 {sectionTabs.map((s) => {
                   const active = newsSection === s.id;
                   const tint = SECTION_THEME[s.id].accent;
@@ -1435,50 +1477,143 @@ export default function SocialMediaPostGenerator() {
                   centred title leaves nowhere for them to sit. The accent bar
                   sits above the title, which is what a left-aligned block
                   wants. */}
-              <div className="mb-4 mt-1 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 sm:mb-6">
+              <div className="mb-4 mt-1 flex flex-wrap items-end justify-between gap-x-6 gap-y-3.5 sm:mb-6">
                 <div className="min-w-0">
                   <span
-                    className="mb-3 block h-[3px] w-14 rounded-full"
+                    className="mb-2.5 block h-[3px] w-12 rounded-full sm:mb-3 sm:w-14"
                     style={{ backgroundColor: theme.accent, boxShadow: `0 0 12px ${theme.accent}88` }}
                   />
-                  <h3 className="font-display text-[clamp(25px,7vw,30px)] font-bold leading-tight tracking-tight text-white md:text-[34px]">
+                  <h3 className="font-display text-[24px] font-bold leading-tight tracking-tight text-white sm:text-[30px] md:text-[34px]">
                     {t('gen.headlines')}
                   </h3>
-                  <p className="mt-1.5 text-[14px] text-[#7d8aa6]">
+                  <p className="mt-1 text-[13.5px] text-[#7d8aa6] sm:mt-1.5 sm:text-[14px]">
                     {t('gen.pickStory')}
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5">
+                {/* Phones: the count and the layout switch share the first
+                    line, and filter / type / sort split the second evenly, so
+                    nothing wraps into a stray half-row with loose dividers. */}
+                <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:gap-x-3 sm:gap-y-2.5">
                   {/* Counts the whole filtered feed, not the current page: it
                       answers "how much is here", which paging should not change. */}
-                  <span className="whitespace-nowrap font-count text-[13px] text-[#7d8aa6]">
+                  <span className="order-1 whitespace-nowrap font-count text-[13px] text-[#7d8aa6]">
                     <span className="font-semibold text-white">{orderedArticles.length}</span>{' '}
                     {t(orderedArticles.length === 1 ? 'gen.storyOne' : 'gen.storyMany')}
                   </span>
 
-                  <span className="h-5 w-px bg-[#1e2636]" />
+                  <span className="order-1 hidden h-5 w-px bg-[#1e2636] sm:block" />
+                  <span className="order-3 basis-full sm:hidden" aria-hidden="true" />
+
+                  {/* Date filter. It sat in the page header beside a search
+                      box; it belongs with the feed it filters. */}
+                    <div ref={filterRef} className="relative order-4 min-w-0 flex-1 sm:order-1 sm:flex-none">
+                      <button
+                        type="button"
+                        onClick={() => { setFilterOpen((p) => !p); goView('feed'); }}
+                        className={`inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border px-3 text-[12.5px] font-medium transition sm:h-auto sm:w-auto sm:px-4 sm:py-2.5 ${
+                          filtersActive
+                            ? 'border-[#3f9fff]/60 bg-[#0d1a3a] text-[#6aa8ff]'
+                            : 'border-[#1e3260]/70 bg-[#0d1531]/80 text-[#8b94b8] hover:border-[#3a6bc4]/60 hover:text-white'
+                        }`}
+                      >
+                        <Filter size={13} strokeWidth={2} className="shrink-0" />
+                        <span className="truncate">{selectedDayLabel ?? (
+                          <>
+                            <span className="sm:hidden">{t('gen.filterShort')}</span>
+                            <span className="hidden sm:inline">{t('gen.filterNewsBtn')}</span>
+                          </>
+                        )}</span>
+                        {filtersActive > 0 && (
+                          <span className="rounded-full bg-[#3f9fff] px-1.5 py-0.5 font-count text-[10px] leading-none text-white">
+                            {filtersActive}
+                          </span>
+                        )}
+                      </button>
+
+                      {filterOpen && (
+                        <div className="absolute left-0 top-[calc(100%+6px)] z-40 w-64 max-w-[calc(100vw-2rem)] sm:left-auto sm:right-0 overflow-hidden rounded-xl border border-[#1e3260]/70 bg-[#0d1531] shadow-xl">
+                          {/* Date */}
+                          <p className="px-4 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#5a6e9a]">
+                            {t('gen.date')}
+                          </p>
+                          {DATE_RANGES.map((d) => (
+                            <button
+                              key={d.id}
+                              type="button"
+                              onClick={() => { setDateFilter(d.id); setPage(1); goView('feed'); }}
+                              className={`flex w-full items-center justify-between px-4 py-2 text-[12.5px] transition hover:bg-[#0f1a3a] ${
+                                d.id === dateFilter ? 'text-[#3f9fff]' : 'text-white/80'
+                              }`}
+                            >
+                              {d.label}
+                              {d.id === dateFilter && <span className="h-1.5 w-1.5 rounded-full bg-[#3f9fff]" />}
+                            </button>
+                          ))}
+
+                          {availableDays.length > 0 && (
+                            <>
+                              <p className="mt-1 border-t border-[#1e3260]/60 px-4 pb-1.5 pt-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[#5a6e9a]">
+                                {t('gen.pickADay')}
+                              </p>
+                              <div className="max-h-52 overflow-y-auto">
+                                {availableDays.map((d) => {
+                                  const id = `${DAY_PREFIX}${d.key}`;
+                                  const selected = id === dateFilter;
+                                  return (
+                                    <button
+                                      key={id}
+                                      type="button"
+                                      onClick={() => { setDateFilter(id); setPage(1); goView('feed'); }}
+                                      className={`flex w-full items-center justify-between gap-3 px-4 py-2 text-[12.5px] transition hover:bg-[#0f1a3a] ${
+                                        selected ? 'text-[#3f9fff]' : 'text-white/80'
+                                      }`}
+                                    >
+                                      <span className="truncate">{d.label}</span>
+                                      <span className="flex shrink-0 items-center gap-2">
+                                        <span className="font-count text-[11px] text-[#5a6e9a]">{d.count}</span>
+                                        {selected && <span className="h-1.5 w-1.5 rounded-full bg-[#3f9fff]" />}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          )}
+
+                          {filtersActive > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => { setDateFilter('all'); setTypeFilter('all'); setActiveFilter('All'); setPage(1); }}
+                              className="w-full border-t border-[#1e3260]/60 px-4 py-2.5 text-left text-[12px] text-[#8b94b8] transition hover:bg-[#0f1a3a] hover:text-white"
+                            >
+                              {t('gen.clearFilters')}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
                   {/* Content type. General and Opposition are scraped from the
                       videos tab alone, so every item in them is one type and a
                       chooser over one option is furniture: it is left out for
                       those sections rather than shown with nothing to pick. */}
                   {newsSection === 'party' && (
-                    <div ref={typeRef} className="relative">
+                    <div ref={typeRef} className="relative order-4 min-w-0 flex-1 sm:order-1 sm:flex-none">
                       <button
                         type="button"
                         onClick={() => setTypeOpen((p) => !p)}
                         aria-expanded={typeOpen}
-                        className="inline-flex items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/80 px-4 py-2 text-[12.5px] font-medium text-[#a3b0d4] transition hover:border-[#3a6bc4]/60 hover:text-white"
+                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/80 px-3 text-[12.5px] sm:h-auto sm:w-auto sm:px-4 sm:py-2 font-medium text-[#a3b0d4] transition hover:border-[#3a6bc4]/60 hover:text-white"
                       >
                         {typeFilter === 'press_conference'
                           ? <Radio size={13} strokeWidth={2} />
                           : <FileText size={13} strokeWidth={2} />}
-                        {t(TYPE_OPTIONS.find((o) => o.id === typeFilter)?.label ?? 'gen.all')}
-                        <ChevronDown size={13} strokeWidth={2} className="text-[#6b78a0]" />
+                        <span className="truncate">{t(TYPE_OPTIONS.find((o) => o.id === typeFilter)?.label ?? 'gen.all')}</span>
+                        <ChevronDown size={13} strokeWidth={2} className="hidden shrink-0 text-[#6b78a0] sm:block" />
                       </button>
                       {typeOpen && (
-                        <div className="absolute right-0 top-[calc(100%+6px)] z-40 w-56 overflow-hidden rounded-xl border border-[#1e3260]/70 bg-[#0d1531] shadow-xl">
+                        <div className="absolute left-1/2 top-[calc(100%+6px)] z-40 w-56 -translate-x-1/2 overflow-hidden sm:left-auto sm:right-0 sm:translate-x-0 rounded-xl border border-[#1e3260]/70 bg-[#0d1531] shadow-xl">
                           {TYPE_OPTIONS.map((o) => {
                             const on = typeFilter === o.id;
                             const count = o.id === 'all'
@@ -1508,19 +1643,20 @@ export default function SocialMediaPostGenerator() {
                     </div>
                   )}
 
-                  {newsSection === 'party' && <span className="h-5 w-px bg-[#1e2636]" />}
+                  {newsSection === 'party' && <span className="order-1 hidden h-5 w-px bg-[#1e2636] sm:block" />}
 
                   {/* Sort */}
-                  <div ref={sortRef} className="relative">
+                  <div ref={sortRef} className="relative order-4 min-w-0 flex-1 sm:order-1 sm:flex-none">
                     <button
                       type="button"
                       onClick={() => setSortOpen((p) => !p)}
                       aria-expanded={sortOpen}
-                      className="inline-flex items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/80 px-4 py-2 text-[12.5px] font-medium text-[#a3b0d4] transition hover:border-[#3a6bc4]/60 hover:text-white"
+                      className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/80 px-3 text-[12.5px] sm:h-auto sm:w-auto sm:px-4 sm:py-2 font-medium text-[#a3b0d4] transition hover:border-[#3a6bc4]/60 hover:text-white"
                     >
-                      <ArrowUpDown size={13} strokeWidth={2} />
-                      {t(sortOrder === 'oldest' ? 'gen.oldestFirst' : 'gen.latestFirst')}
-                      <ChevronDown size={13} strokeWidth={2} className="text-[#6b78a0]" />
+                      <ArrowUpDown size={13} strokeWidth={2} className="shrink-0" />
+                      <span className="truncate sm:hidden">{t(sortOrder === 'oldest' ? 'gen.sortShortOldest' : 'gen.sortShortLatest')}</span>
+                      <span className="hidden truncate sm:inline">{t(sortOrder === 'oldest' ? 'gen.oldestFirst' : 'gen.latestFirst')}</span>
+                      <ChevronDown size={13} strokeWidth={2} className="hidden shrink-0 text-[#6b78a0] sm:block" />
                     </button>
                     {sortOpen && (
                       <div className="absolute right-0 top-[calc(100%+6px)] z-40 w-44 overflow-hidden rounded-xl border border-[#1e3260]/70 bg-[#0d1531] shadow-xl">
@@ -1547,7 +1683,7 @@ export default function SocialMediaPostGenerator() {
                   </div>
 
                   {/* Layout */}
-                  <div className="flex items-center gap-1 rounded-xl border border-[#1e3260]/70 bg-[#0d1531]/80 p-1">
+                  <div className="order-2 ml-auto flex items-center gap-1 rounded-xl border border-[#1e3260]/70 bg-[#0d1531]/80 p-1 sm:order-1 sm:ml-0">
                     {[
                       { id: 'list', Icon: List,       label: 'gen.viewList' },
                       { id: 'grid', Icon: LayoutGrid, label: 'gen.viewGrid' },
@@ -1587,7 +1723,7 @@ export default function SocialMediaPostGenerator() {
                     <span className="h-px flex-1 bg-[#1e2636]/80" />
                   </div>
 
-                  <div className={cardView === 'list' ? 'flex flex-col gap-3' : 'grid gap-5 lg:grid-cols-2'}>
+                  <div className={cardView === 'list' ? 'flex flex-col gap-3' : 'grid gap-3.5 sm:gap-5 lg:grid-cols-2'}>
                 {group.items.map((article, ai) => {
                   const dateLabel = formatNewsDate(article.date);
                   // Where the card sits in the page, for the rise stagger.
@@ -1603,7 +1739,7 @@ export default function SocialMediaPostGenerator() {
                       type="button"
                       onClick={() => handlePreview(article)}
                       className={`ag-rise ag-card group flex flex-col overflow-hidden rounded-2xl border text-left hover:bg-[#111726] ${
-                        cardView === 'list' ? 'px-5 py-4' : 'p-6'
+                        cardView === 'list' ? 'px-4 py-3.5 sm:px-5 sm:py-4' : 'p-4 sm:p-6'
                       }`}
                       style={{
                         borderColor: 'rgba(30,38,54,0.8)',
@@ -1621,9 +1757,9 @@ export default function SocialMediaPostGenerator() {
                           the category is wider than a phone card, and clipping
                           a party's name to "BHARATIYA JANATA PA…" is worse
                           than giving it a second line. */}
-                      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                      <div className="mb-2.5 flex flex-wrap items-center gap-x-2.5 gap-y-2 sm:mb-3 sm:gap-x-3">
                         <span
-                          className="inline-flex items-center gap-1.5 font-count text-[11px] font-semibold uppercase tracking-[0.18em]"
+                          className={`inline-flex items-center gap-1.5 font-count text-[11px] font-semibold uppercase ${lang === 'hi' ? 'tracking-normal text-[12px]' : 'tracking-[0.12em] sm:tracking-[0.18em]'}`}
                           style={{ color: (CONTENT_TYPES[article.contentType] ?? CONTENT_TYPES.news).color }}
                         >
                           {article.contentType === 'press_conference'
@@ -1634,7 +1770,7 @@ export default function SocialMediaPostGenerator() {
                             : t('gen.newsArticle')}
                         </span>
                         <span
-                          className="shrink-0 rounded-full border px-3 py-1 font-count text-[11px] uppercase tracking-wider"
+                          className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[12px] sm:px-3 sm:py-1 ${/[\u0900-\u097F]/.test(article.category) ? 'font-hindi' : 'font-count uppercase tracking-wider text-[11px]'}`}
                           style={{
                             borderColor: `${cardAccent}55`,
                             backgroundColor: `${cardAccent}14`,
@@ -1660,14 +1796,14 @@ export default function SocialMediaPostGenerator() {
                       <p className={`font-hindi mt-2 flex-1 leading-[1.65] text-[#b9c8e4] ${
                         cardView === 'list'
                           ? 'line-clamp-1 text-[clamp(13px,0.7vw+10.3px,15px)]'
-                          : 'mt-3 line-clamp-3 text-[clamp(13.5px,0.9vw+10px,16.5px)]'
+                          : 'line-clamp-2 text-[clamp(13.5px,0.9vw+10px,16.5px)] sm:mt-3 sm:line-clamp-3'
                       }`}>
                         {truncateText(article.summary || article.content, cardView === 'list' ? 120 : 200)}
                       </p>
 
                       {/* Footer — short by {source} · date */}
                       <div className={`flex items-center justify-between gap-2 border-t border-[#141d3a]/70 ${
-                        cardView === 'list' ? 'mt-2.5 pt-2.5' : 'mt-4 pt-3'
+                        cardView === 'list' ? 'mt-2.5 pt-2.5' : 'mt-3 pt-2.5 sm:mt-4 sm:pt-3'
                       }`}>
                         <span className="min-w-0 truncate font-count text-[11.5px] text-[#5a6e9a]">
                           {dateLabel || 'AmbedkarGPT'}
@@ -1755,6 +1891,7 @@ export default function SocialMediaPostGenerator() {
           return (
           <div className="ag-page-in flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
             {renderPartyBanner()}
+            {renderQuota()}
             <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
               <span className="inline-block rounded-full border border-[#1e3a6e]/60 bg-[#0d1840]/60 px-2.5 py-0.5 font-count text-[10px] uppercase tracking-widest text-[#6aa8ff]">
                 {selectedArticle.category}
@@ -1841,35 +1978,8 @@ export default function SocialMediaPostGenerator() {
               </div>
             </div>
 
-            {/* Quota indicator */}
-            {quota && (
-              <div className="mt-4 flex items-center justify-between rounded-xl border border-[#1e3260]/50 bg-[#0a1130]/60 px-4 py-2.5">
-                <div>
-                  <span className="text-[12px] text-[#8b94b8]">
-                    {atDailyLimit
-                      ? "You've used all 5 posts for today"
-                      : `${quota.daily_used} of ${quota.daily_limit ?? 5} published today`}
-                  </span>
-                  {quota.streak_days > 0 && (
-                    <span className="ml-2 inline-flex items-center gap-1 text-[11px] font-semibold text-amber-400">
-                      <Flame size={12} strokeWidth={2} />
-                      {quota.streak_days}-day streak
-                    </span>
-                  )}
-                </div>
-                {atDailyLimit ? (
-                  <span className="font-count text-[12px] font-bold tabular-nums text-red-400">
-                    Resets {quotaCountdown}
-                  </span>
-                ) : (
-                  <span className="font-count text-[12px] font-semibold text-[#6aa8ff]">
-                    {quota.daily_remaining} left
-                  </span>
-                )}
-              </div>
-            )}
-
             {/* ── Mobile preferences (right panel is hidden on mobile) ── */}
+            {PREFERENCES_ENABLED && (
             <div className="mt-4 lg:hidden">
               <button
                 type="button"
@@ -1884,11 +1994,12 @@ export default function SocialMediaPostGenerator() {
                 <ChevronRight size={14} strokeWidth={2} className="shrink-0 text-[#6b78a0]" />
               </button>
             </div>
+            )}
 
             {/* The preferences arrive as a sheet from the bottom rather than
                 pushing the rest of the page down: they are a detour from the
                 story, not part of reading it. */}
-            {showMobilePrefs && prefQuestions.length > 0 && (
+            {PREFERENCES_ENABLED && showMobilePrefs && prefQuestions.length > 0 && (
               <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label={t('gen.postPreferences')}>
                 <div
                   className="dash-backdrop absolute inset-0 bg-[#03060f]/78 backdrop-blur-[3px]"
@@ -2322,7 +2433,7 @@ export default function SocialMediaPostGenerator() {
       {/* ── RESIZE HANDLE + RIGHT SIDEBAR ──
           Only with a story open: the preferences shape a post, and on the
           feed they took a column from the stories for nothing. */}
-      {view !== 'feed' && (
+      {PREFERENCES_ENABLED && view !== 'feed' && (
       <div className="sticky top-0 z-20 hidden h-screen shrink-0 lg:flex" style={{ width: panelWidth + 8 }}>
         {/* Drag handle */}
         <div

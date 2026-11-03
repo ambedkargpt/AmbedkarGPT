@@ -7,7 +7,6 @@ import RevealOnScroll from '../components/ui/RevealOnScroll';
 
 import LandingBackground   from '../components/landing/LandingBackground';
 import HeroSection         from '../components/landing/HeroSection';
-import TrustedByStrip      from '../components/landing/TrustedByStrip';
 import KnowledgeSection    from '../components/landing/KnowledgeSection';
 import UseCasesGrid        from '../components/landing/UseCasesGrid';
 import DalitHistoryMakers  from '../components/landing/DalitHistoryMakers';
@@ -46,7 +45,6 @@ export default function Home({ splashDone = true }) {
 
       <HeroSection splashDone={splashDone} />
 
-      <TrustedByStrip />
 
       {/* Seams, not rules: a hairline that fades at both ends with a wide soft
           glow above it, so one section reads into the next instead of stacking

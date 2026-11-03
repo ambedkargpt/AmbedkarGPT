@@ -4,6 +4,7 @@ import { Menu, X } from 'lucide-react';
 import AgLogo from './brand/AgLogo';
 import { useAuth } from '../context/AuthContext';
 import LanguageSwitcher from './LanguageSwitcher';
+import { SITE_LANGUAGES } from '../utils/siteLanguage';
 import { useI18n } from '../i18n/index.jsx';
 import { RADIO_REQUIRES_LOGIN } from '../data/radioAccess';
 
@@ -27,7 +28,7 @@ const ITEM_FOR_PATH = {
 };
 
 export default function Navbar() {
-  const { t } = useI18n();
+  const { t, lang, changeLanguage } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser } = useAuth();
@@ -144,7 +145,12 @@ export default function Navbar() {
   return (
     <header
       ref={headerRef}
-      className="fixed inset-x-0 top-0 z-40 border-b border-[#1a2c55]/40 bg-[rgba(6,10,24,0.55)] backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
+      // While the menu is open the bar goes solid and drops its blur: a
+      // backdrop-filter on the header stops the menu (its child) from
+      // painting its own background in Chromium, and the page showed through.
+      className={`fixed inset-x-0 top-0 z-40 border-b border-[#1a2c55]/40 shadow-[0_8px_32px_rgba(0,0,0,0.35)] ${
+        menuOpen ? 'bg-[#060a18]' : 'bg-[rgba(6,10,24,0.55)] backdrop-blur-xl'
+      }`}
     >
       <div className="mx-auto flex h-[72px] w-full max-w-[1440px] items-center justify-between gap-2 px-4 sm:px-6 md:h-[80px] md:gap-3 md:px-10">
 
@@ -183,7 +189,10 @@ export default function Navbar() {
         </nav>
 
         {/* ── Right cluster: hamburger + CTAs ─── */}
-        <div className="flex shrink-0 items-center gap-2 md:gap-3">
+        {/* Phones: Get Started, then the menu at the edge. The language
+            switch moves into the menu below sm, where the bar had room for
+            three controls and the CTA ran off the screen. */}
+        <div className="flex min-w-0 shrink-0 items-center gap-2 md:gap-3">
 
           {/* Hamburger — mobile/tablet only */}
           <button
@@ -191,15 +200,15 @@ export default function Navbar() {
             onClick={() => setMenuOpen((o) => !o)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/70 transition hover:border-white/30 hover:text-white sm:h-8 sm:w-8 lg:hidden"
+            className="order-last flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/80 transition hover:border-white/30 hover:text-white sm:h-9 sm:w-9 lg:hidden"
           >
             {menuOpen
               ? <X    size={16} strokeWidth={1.8} />
-              : <Menu size={16} strokeWidth={1.8} />
+              : <Menu size={18} strokeWidth={1.8} />
             }
           </button>
 
-          <LanguageSwitcher />
+          <div className="hidden sm:block"><LanguageSwitcher /></div>
 
           <Link
             to="/login"
@@ -209,7 +218,7 @@ export default function Navbar() {
           </Link>
           <Link
             to="/signup"
-            className="inline-flex h-9 shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-linear-to-r from-[#0a7dff] to-[#3a9fff] px-4 font-count text-[12.5px] font-semibold text-white shadow-[0_4px_14px_rgba(17,122,255,0.4)] transition hover:-translate-y-0.5 hover:brightness-110 sm:h-8 sm:px-3.5 sm:text-[11.5px] md:h-10 md:px-5 md:text-[13px] md:shadow-[0_6px_24px_rgba(17,122,255,0.45)]"
+            className="inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap rounded-lg bg-linear-to-r from-[#0a7dff] to-[#3a9fff] px-4 font-count text-[13px] font-semibold text-white shadow-[0_4px_14px_rgba(17,122,255,0.4)] transition hover:-translate-y-0.5 hover:brightness-110 sm:h-8 sm:px-3.5 sm:text-[11.5px] md:h-10 md:px-5 md:text-[13px] md:shadow-[0_6px_24px_rgba(17,122,255,0.45)]"
           >
             {t('nav.getStarted')}
           </Link>
@@ -219,7 +228,7 @@ export default function Navbar() {
       {/* ── Mobile dropdown menu ─────────────── */}
       {menuOpen && (
         <div
-          className="absolute inset-x-0 top-full z-10 border-b border-[#1a2c55]/50 bg-[rgba(5,8,20,0.96)] backdrop-blur-xl lg:hidden"
+          className="absolute inset-x-0 top-full z-10 max-h-[calc(100dvh-72px)] overflow-y-auto border-b border-[#1a2c55]/50 bg-[#050814] lg:hidden"
           style={{ animation: 'nav-dropdown 160ms ease-out both' }}
         >
           <nav className="mx-auto w-full max-w-[1440px] px-4 py-2">
@@ -232,7 +241,9 @@ export default function Navbar() {
                   onClick={() => handleNav(item)}
                   aria-current={isActive ? (location.pathname === '/' ? 'location' : 'page') : undefined}
                   className={[
-                    'flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-count text-[11.5px] font-medium tracking-[0.14em] transition-all duration-150',
+                    `flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium transition-all duration-150 ${
+                      lang === 'hi' ? 'text-[15px]' : 'font-count text-[11.5px] tracking-[0.14em]'
+                    }`,
                     isActive
                       ? 'bg-[#0d1a36] text-[#3f9fff] border border-[#3f6bd4]/35'
                       : 'border border-transparent text-white/70 hover:text-[#3f9fff] hover:bg-[#3f9fff]/10 hover:border-[#3f9fff]/25',
@@ -252,10 +263,31 @@ export default function Navbar() {
             <Link
               to="/login"
               onClick={() => setMenuOpen(false)}
-              className="mt-1 flex w-full items-center gap-3 rounded-xl border border-[#3f9fff]/40 bg-[#3f9fff]/10 px-4 py-3 text-left font-count text-[12px] font-semibold tracking-[0.14em] text-[#7fc8ff] sm:hidden"
+              className={`mt-1 flex w-full items-center gap-3 rounded-xl border border-[#3f9fff]/40 bg-[#3f9fff]/10 px-4 py-3 text-left font-semibold text-[#7fc8ff] sm:hidden ${
+                lang === 'hi' ? 'text-[15px]' : 'font-count text-[12px] tracking-[0.14em]'
+              }`}
             >
               {t('nav.login')}
             </Link>
+
+            {/* Language, here on phones (the bar keeps the globe from sm). */}
+            <div className="mb-1 mt-2 flex items-center justify-between gap-3 rounded-xl border border-white/10 px-4 py-2.5 sm:hidden">
+              <span className={`font-medium text-white/60 ${lang === 'hi' ? 'text-[14px]' : 'font-count text-[11.5px] tracking-[0.14em]'}`}>{t('lang.heading')}</span>
+              <div role="group" aria-label={t('lang.change')} className="flex rounded-full border border-[#2a4375]/80 p-0.5">
+                {SITE_LANGUAGES.map((l) => (
+                  <button
+                    key={l.code}
+                    type="button"
+                    aria-pressed={lang === l.code}
+                    onClick={() => changeLanguage(l.code)}
+                    className="min-h-8 rounded-full px-3.5 text-[13px] font-semibold transition"
+                    style={lang === l.code ? { background: '#EDEEF2', color: '#0a0e18' } : { color: '#a3b0d4' }}
+                  >
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </nav>
         </div>
       )}

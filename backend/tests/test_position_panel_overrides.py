@@ -92,16 +92,19 @@ def test_saved_answers_still_apply_when_the_panel_sends_nothing(service):
     assert answers[ids[1]] == "Saved answer"
 
 
-def test_an_unanswered_writer_changes_no_prompt(service):
-    """Empty rather than a half-filled block, so those prompts are untouched."""
+def test_an_unanswered_writer_gets_the_defaults(service):
+    """Nobody is asked these any more, so the set's defaults stand in."""
+    from backend.pipeline.position_questions import defaults_for
+
     prose, answers = service._position_preferences("user-1", USER, overrides=None)
-    assert (prose, answers) == ("", {})
+    assert answers == defaults_for("inc", "National")
+    assert len(answers) == 5 and prose
 
 
 def test_a_party_with_no_position_set_is_not_an_error(service):
-    """Samajwadi has no questions written yet; that is ordinary, not a failure."""
+    """A party with no questions written is ordinary, not a failure."""
     prose, answers = service._position_preferences(
-        "user-1", {"political_party": "Samajwadi Party (SP)", "party_position": POSITION},
+        "user-1", {"political_party": "Aam Aadmi Party (AAP)", "party_position": POSITION},
         overrides={"pos_inc_national_q1": "ignored"},
     )
     assert (prose, answers) == ("", {})

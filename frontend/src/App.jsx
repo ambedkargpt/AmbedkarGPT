@@ -46,6 +46,7 @@ import ScrollProgress      from './components/ScrollProgress';
 import OpeningSplash       from './components/OpeningSplash';
 import LanguagePopup       from './components/LanguagePopup';
 import DashboardLayout from './layouts/DashboardLayout';
+import { DASHBOARD_ENABLED, HOME_ROUTE } from './data/features';
 import Spinner             from './components/Spinner';
 import { I18nProvider }    from './i18n/index.jsx';
 import TransitionCurtain   from './components/TransitionCurtain';
@@ -196,7 +197,8 @@ export default function App() {
                 changes only the content column. Before this each page
                 rendered its own shell and the whole sidebar was rebuilt. */}
             <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-              <Route path="/dashboard" element={<Dashboard />} />
+              {/* Switched off, not removed: see data/features.js. */}
+              <Route path="/dashboard" element={DASHBOARD_ENABLED ? <Dashboard /> : <Navigate to={HOME_ROUTE} replace />} />
               <Route path="/generate" element={<ServiceSelection />} />
               <Route path="/preferences" element={<Preferences />} />
               <Route path="/posts" element={<PostHistory />} />

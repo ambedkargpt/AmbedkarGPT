@@ -44,7 +44,7 @@ const RAIL = 'aside, nav';
 test.describe('the dashboard frame', () => {
   test('the rail is the same element before and after navigating', async ({ page }) => {
     await signedIn(page);
-    await page.goto('/dashboard');
+    await page.goto('/generate');
 
     const rail = page.locator(RAIL).first();
     await expect(rail).toBeVisible();
@@ -61,12 +61,12 @@ test.describe('the dashboard frame', () => {
 
   test('it survives several moves, not just one', async ({ page }) => {
     await signedIn(page);
-    await page.goto('/dashboard');
+    await page.goto('/posts');
 
     const rail = page.locator(RAIL).first();
     await rail.evaluate((el) => { el.dataset.e2eMark = 'kept'; });
 
-    for (const name of [/preferences|प्राथमिकता/i, /generate|पोस्ट बनाएँ/i, /dashboard|डैशबोर्ड/i]) {
+    for (const name of [/generate|पोस्ट बनाएँ/i, /post history|पोस्ट इतिहास/i, /generate|पोस्ट बनाएँ/i]) {
       await page.getByRole('button', { name }).first().click();
       await page.waitForTimeout(400);
       await expect(page.locator(RAIL).first()).toHaveAttribute('data-e2e-mark', 'kept');
@@ -77,7 +77,7 @@ test.describe('the dashboard frame', () => {
     // The app-wide Suspense fallback was 100vh, so a chunk arriving late
     // covered the rail as well. Scoped to the content column, the rail stays.
     await signedIn(page);
-    await page.goto('/dashboard');
+    await page.goto('/posts');
     await page.locator(RAIL).first().evaluate((el) => { el.dataset.e2eMark = 'kept'; });
 
     // Hold the chunk back so the fallback is actually on screen.

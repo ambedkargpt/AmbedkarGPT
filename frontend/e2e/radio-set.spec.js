@@ -72,19 +72,6 @@ test.describe('the broadcast desk', () => {
     expect(await countdown.textContent()).not.toBe(first);
   });
 
-  test('the tape layout draws the bulletin against a needle', async ({ page }) => {
-    await signedInAs(page, 'someone.else@example.com');
-    await page.goto('/bhimradio');
-
-    await page.getByRole('button', { name: /^tape|टेप$/i }).click();
-    await expect(page.getByText(/^NOW \d{2}:\d{2}:\d{2}$/)).toBeVisible();
-
-    // The choice is remembered for this viewer, which is the point of shipping
-    // both: compare them without re-picking on every visit.
-    await page.reload();
-    await expect(page.getByText(/^NOW \d{2}:\d{2}:\d{2}$/)).toBeVisible();
-  });
-
   test('the demo account still gets its transport', async ({ page }) => {
     await signedInAs(page, DEMO_EMAIL);
     await page.goto('/bhimradio');
@@ -142,9 +129,9 @@ test.describe('the broadcast desk', () => {
     }));
     expect(scrollHeight).toBeGreaterThan(clientHeight);
   });
-  test('the meter moves while tuned out, on both layouts', async ({ page }) => {
+  test('the meter moves while tuned out', async ({ page }) => {
     // The station does not stop because nobody is listening: the clock
-    // counts, the headline changes, the tape slides. The meter sitting still
+    // counts and the headline changes. The meter sitting still
     // was the one part that said otherwise. Measured by sampling a bar's
     // height, because the class is applied either way.
     await signedInAs(page, 'someone.else@example.com');
@@ -163,34 +150,5 @@ test.describe('the broadcast desk', () => {
     }
 
     expect(await barMoves()).toBe(true);
-
-    // The keyframes used to live in the desk's own style tag, so the tape's
-    // bars never moved for anyone.
-    await page.getByRole('button', { name: /^tape|टेप$/i }).click();
-    expect(await barMoves()).toBe(true);
-  });
-  test('the tape slides while tuned out, demo account included', async ({ page }) => {
-    // The panel used to be drawn from the audio position for the demo
-    // account, so pausing froze the tape: the station appeared to stop
-    // because one listener had. Measured by a segment's x, not by the clock
-    // label, which ticks from a different source and moved either way.
-    for (const email of ['someone.else@example.com', DEMO_EMAIL]) {
-      await signedInAs(page, email);
-      await page.addInitScript(() => {
-        try { localStorage.setItem('bhim-radio-layout', 'tape'); } catch { /* blocked */ }
-      });
-      await page.goto('/bhimradio');
-
-      // A segment inside the sliding strip. The strip itself is the second
-      // child of the tape now, and it resets to zero on every clock tick, so
-      // measuring it would read the frame-rate slide rather than the tape.
-      const segment = page.locator('[role="img"] > div[aria-hidden="true"] > div').nth(1);
-      await expect(segment).toBeVisible();
-      const before = (await segment.boundingBox()).x;
-      await page.waitForTimeout(2200);
-      const after = (await segment.boundingBox()).x;
-
-      expect(after, `tape is frozen for ${email}`).toBeLessThan(before);
-    }
   });
 });

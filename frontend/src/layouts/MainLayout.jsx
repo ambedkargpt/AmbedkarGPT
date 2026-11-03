@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import RadioLiveStrip from '../components/RadioLiveStrip';
 import NewsTicker from '../components/NewsTicker';
+import RadioBeacon from '../components/radio/RadioBeacon';
 
 // Tailwind needs these spellings present in the source to emit the classes,
 // so they are a lookup rather than a computed `md:pt-${n}`.
@@ -82,6 +83,9 @@ export default function MainLayout({ children, bare = false, noNav = false }) {
         {showTicker && <NewsTicker docked />}
         <Footer />
       </main>
+      {/* The landing page's floating on-air card: rises once the hero has
+          scrolled away, and shrinks to a pulsing button when closed. */}
+      {pathname === '/' && !bare && <RadioBeacon />}
     </>
   );
 }

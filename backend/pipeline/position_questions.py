@@ -1061,6 +1061,33 @@ def group_for_position(position_id: str | None) -> str:
     return str(role.get("group") or "") if role else ""
 
 
+# The option each position question starts on, one-based, per set.
+#
+# Nobody is asked these any more, so the default is what a writer generates
+# with until they change it. Each set lists its options with the one that
+# states the role's own job first (the national voice argues the
+# constitutional case, the state leader holds the state government to account,
+# the booth worker speaks to the neighbourhood), and that is the choice a
+# writer at that level most often wants. A set can override this with its own
+# tuple here.
+DEFAULT_NUMBERS: dict[tuple[str, str], tuple[int, ...]] = {}
+
+
+def default_numbers(party: str, group: str) -> tuple[int, ...]:
+    questions = POSITION_QUESTIONS.get((party, group)) or []
+    return DEFAULT_NUMBERS.get((party, group)) or tuple(1 for _ in questions)
+
+
+def defaults_for(party: str, group: str) -> dict[str, str]:
+    """{question_id: default answer} for this set. Empty when there is none."""
+    questions = POSITION_QUESTIONS.get((party, group)) or []
+    picks = default_numbers(party, group)
+    return {
+        question_id(party, group, n): q["options"][picks[n - 1] - 1][0]
+        for n, q in enumerate(questions, start=1)
+    }
+
+
 def question_id(party: str, group: str, number: int) -> str:
     return f"pos_{party}_{GROUP_SLUGS[group]}_q{number}"
 

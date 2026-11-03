@@ -1,10 +1,9 @@
 """
-The party is set once and then fixed; the position can be changed.
+The party and the position can both be changed.
 
-Every answer is stored against an id that names the party - `party_inc_q1`,
-`pos_inc_national_q3` - so a writer who moves party leaves all of them behind
-at once, and the posts change character with nothing on screen to explain it.
-A new position only brings the five questions for its level.
+Every answer is stored against an id that names the party and level -
+`party_inc_q1`, `pos_inc_national_q3` - so a new party or level starts from
+that set's defaults. Nothing has to be answered again.
 """
 from __future__ import annotations
 
@@ -62,7 +61,6 @@ def _update(svc, **kwargs):
 
 
 def test_a_party_can_be_set_when_there_is_none(service):
-    """Locking a choice is not the same as forcing one."""
     service.users_repo.row = {"_id": "u1"}
 
     _update(service, political_party=INC)
@@ -70,16 +68,12 @@ def test_a_party_can_be_set_when_there_is_none(service):
     assert service.users_repo.saved["political_party"] == INC
 
 
-def test_the_party_cannot_be_changed_once_set(service):
-    """The whole point."""
+def test_the_party_can_be_changed_once_set(service):
     service.users_repo.row = {"_id": "u1", "political_party": INC}
 
-    with pytest.raises(HTTPException) as caught:
-        _update(service, political_party=BSP)
+    _update(service, political_party=BSP)
 
-    assert caught.value.status_code == 409
-    assert "cannot be changed" in caught.value.detail
-    assert service.users_repo.saved == {}
+    assert service.users_repo.saved["political_party"] == BSP
 
 
 def test_resending_the_same_party_is_not_an_error(service):
@@ -133,15 +127,13 @@ def test_an_unknown_position_leaves_the_set_one_alone(service):
     assert "party_position" not in service.users_repo.saved
 
 
-def test_changing_the_position_does_not_let_the_party_move_with_it(service):
-    """Neither field may ride in on the other's update."""
+def test_party_and_position_can_change_together(service):
     service.users_repo.row = {"_id": "u1", "political_party": INC, "party_position": POSITION}
 
-    with pytest.raises(HTTPException) as caught:
-        _update(service, political_party=BSP, party_position="national_president")
+    _update(service, political_party=BSP, party_position="national_president")
 
-    assert caught.value.status_code == 409
-    assert service.users_repo.saved == {}
+    assert service.users_repo.saved["political_party"] == BSP
+    assert service.users_repo.saved["party_position"] == "national_president"
 
 
 def test_an_unknown_position_is_never_stored(service):
@@ -157,7 +149,6 @@ def test_an_unknown_position_is_never_stored(service):
 
 
 def test_other_profile_fields_are_still_editable(service):
-    """This locks one field, not the whole profile."""
     service.users_repo.row = {"_id": "u1", "political_party": INC, "party_position": POSITION}
 
     _update(service, state="Uttar Pradesh", city="Lucknow")
