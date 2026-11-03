@@ -39,6 +39,11 @@ python3 -m backend.trials.manusmriti_critique.generate --verses 8.268 8.270 --va
 python3 -m backend.trials.manusmriti_critique.generate --verses 8.267-8.268 --format thread --variants 2
 python3 -m backend.trials.manusmriti_critique.generate --theme women_control --top 4
 python3 -m backend.trials.manusmriti_critique.generate --verses 8.270 --dry-run     # print the prompts only
+
+# you edited a post by hand (or wrote one)? Run the file through the same checks.
+# A thread: separate the parts with a line of ---. Verses named in the text are picked up on their own;
+# add --verses for neighbouring verses the post relies on (for example 8.270, which says who "he" is in 8.272).
+python3 -m backend.trials.manusmriti_critique.generate --check-file my_post.txt
 ```
 
 Themes: `punishment_by_birth`, `sudra_exclusion`, `women_control`, `brahmana_privilege`,
@@ -75,6 +80,11 @@ Settings (environment): `TRIAL_LLM_PROVIDERS` (default `gemini,openai`), `TRIAL_
 
 Each run is saved under `output/runs/<UTC time>-<format>/` as `run.json` and a readable `review.md`
 (post, verses with their text and PDF page, issues, the fact-check). `output/` is not committed.
+
+A post you edit by hand goes through steps 2 and 4 with `--check-file`. The fact-check only sees the verses a post
+cites (or that you add with `--verses`), so a claim that rests on a neighbouring verse needs that verse named: a
+post saying "a Sudra" about 8.272 ("If he arrogantly teaches…") passed once and failed once until 8.270, which says
+who "he" is, was cited too. Treat a single "approved" as a good sign, not a proof.
 
 ## 4. Redo guide
 
