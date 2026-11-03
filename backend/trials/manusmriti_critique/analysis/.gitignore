@@ -1,0 +1,6 @@
+# These two quote the third-party YouTube transcripts (the per-video files about a third of their words
+# in all), so they stay on the machine that holds the transcripts and are never committed.
+# They are rebuilt with the tools; see ../README.md. The curated playbook.json / playbook.md,
+# which contain none of the transcripts' text, are committed.
+per_video/*.json
+aggregate.json
