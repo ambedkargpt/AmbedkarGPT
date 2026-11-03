@@ -1148,4 +1148,18 @@ export default {
   "gen.filterShort": "छाँटें",
   "gen.sortShortLatest": "नई पहले",
   "gen.sortShortOldest": "पुरानी पहले",
+  // Bhim Radio on the landing page: the red on-air bar and the floating beacon.
+  "radioStrip.onAir": "ऑन एयर",
+  "radioStrip.station": "भीम रेडियो",
+  "radioStrip.nowLabel": "अभी:",
+  "radioBeacon.live": "लाइव",
+  "radioBeacon.title": "भीम रेडियो",
+  "radioBeacon.now": "अभी प्रसारण में",
+  "radioBeacon.today": "आज का बुलेटिन",
+  "radioBeacon.fallback": "ख़बरें, इतिहास और आंदोलन — हिंदी में, दिन भर।",
+  "radioBeacon.playHere": "यहीं सुनिए",
+  "radioBeacon.openFull": "पूरा रेडियो खोलें",
+  "radioBeacon.minimise": "छोटा करें",
+  "radioBeacon.fabLabel": "भीम रेडियो लाइव है",
+  "radioBeacon.aria": "भीम रेडियो ऑन एयर है",
 };

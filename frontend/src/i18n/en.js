@@ -1143,4 +1143,18 @@ export default {
   "gen.filterShort": "Filter",
   "gen.sortShortLatest": "Latest",
   "gen.sortShortOldest": "Oldest",
+  // Bhim Radio on the landing page: the red on-air bar and the floating beacon.
+  "radioStrip.onAir": "ON AIR",
+  "radioStrip.station": "Bhim Radio",
+  "radioStrip.nowLabel": "Now:",
+  "radioBeacon.live": "LIVE",
+  "radioBeacon.title": "Bhim Radio",
+  "radioBeacon.now": "On air right now",
+  "radioBeacon.today": "Today’s bulletin",
+  "radioBeacon.fallback": "News, history and the movement — read out in Hindi, all day.",
+  "radioBeacon.playHere": "Listen right here",
+  "radioBeacon.openFull": "Open the full radio",
+  "radioBeacon.minimise": "Minimise",
+  "radioBeacon.fabLabel": "Bhim Radio is live",
+  "radioBeacon.aria": "Bhim Radio is on air",
 };
