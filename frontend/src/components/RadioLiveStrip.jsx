@@ -59,7 +59,7 @@ export default function RadioLiveStrip({ className = '', onHide }) {
       {/* A slow light sweep, so the bar moves in the corner of the eye. */}
       <span aria-hidden="true" className="onair-sweep pointer-events-none absolute inset-y-0 -left-1/3 w-1/3" />
 
-      <div className="relative mx-auto flex min-h-[48px] max-w-[1440px] flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2 md:h-[46px] md:flex-nowrap md:px-10 md:py-0">
+      <div className="relative mx-auto flex min-h-[48px] max-w-[1440px] flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2 md:h-[56px] md:flex-nowrap md:px-10 md:py-0">
         {/* ऑन एयर tag, as on the news crawl */}
         <span className="order-1 inline-flex shrink-0 items-center gap-1.5 rounded-[5px] bg-[#ffc72c] px-2 py-1 text-[12px] font-black leading-none text-[#3a0a0d]">
           <span className="relative flex h-2 w-2" aria-hidden="true">
@@ -78,9 +78,12 @@ export default function RadioLiveStrip({ className = '', onHide }) {
           {[0, 1, 2, 3].map((i) => <span key={i} className="onair-eq w-[3px] rounded-sm bg-[#ffc72c]" style={{ animationDelay: `${i * 0.18}s` }} />)}
         </span>
 
-        <p className="order-5 m-0 min-w-0 basis-full text-[13px] leading-[1.45] text-white md:order-3 md:basis-auto md:flex-1 md:truncate md:text-[14px]">
+        {/* Large and bold for older eyes, with room between words rather than
+            letters (letter-spacing breaks Devanagari conjuncts). Sized with
+            clamp() so the Hindi type scale in index.css leaves it alone. */}
+        <p className="order-5 m-0 min-w-0 basis-full text-[clamp(16px,0.9vw+12px,19px)] font-semibold leading-[1.5] text-white [word-spacing:0.08em] md:order-3 md:basis-auto md:flex-1 md:truncate">
           {now
-            ? <><span className="font-semibold text-[#ffd75e]">{t('radioStrip.nowLabel')}</span> {now}</>
+            ? <><span className="font-bold text-[#ffd75e]">{t('radioStrip.nowLabel')}</span> {now}</>
             : t('radioStrip.body')}
         </p>
 
