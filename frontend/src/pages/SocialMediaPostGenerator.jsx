@@ -7,7 +7,7 @@ import {
   Copy, Check, RefreshCw, ChevronDown, FileText, Star, Radio,
   ArrowUpDown, List, LayoutGrid, Users, ArrowRight,
   CalendarDays, Clock, ChevronRight, X as XIcon,
-  MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle, Smartphone,
+  MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle, Smartphone, PenLine,
 } from 'lucide-react';
 
 import PreferencesPanel from '../components/generate/PreferencesPanel';
@@ -2437,19 +2437,55 @@ export default function SocialMediaPostGenerator() {
               </div>
             )}
 
-            {/* Refinement note */}
+            {/* Refinement: change the post in your own words. It was a faint
+                one-line input that nobody noticed; now a card with a title,
+                a large box, ready-made asks and a button that says what it does. */}
             {!generating && !translating && generatedPost && selectedPostId && !refinedAt && (
-              <div className="mt-3">
-                <input
-                  type="text"
+              <div
+                className="mt-4 rounded-2xl border p-4 sm:p-5"
+                style={{ borderColor: 'rgba(240,166,58,0.5)', background: 'linear-gradient(135deg, rgba(240,166,58,0.12) 0%, rgba(10,17,48,0.75) 60%)' }}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f0a63a] text-[#2a1600]">
+                    <PenLine size={19} strokeWidth={2.2} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[17px] font-bold leading-snug text-white sm:text-[18px]">{t('gen.refine.title')}</p>
+                    <p className="mt-0.5 text-[14px] leading-snug text-[#c9b48f]">{t('gen.refine.sub')}</p>
+                  </div>
+                </div>
+                <textarea
+                  rows={2}
                   value={refinementNote}
                   onChange={(e) => { setRefinementNote(e.target.value); if (refineHint) setRefineHint(''); }}
-                  onKeyDown={(e) => e.key === 'Enter' && refinementNote.trim() && handleRegenerate()}
-                  placeholder={t('gen.refinementPlaceholder')}
-                  className="w-full rounded-xl border border-[#1e3260]/50 bg-[#0a1130]/60 px-4 py-2.5 text-[12.5px] text-white placeholder-[#3a4e70] outline-none transition focus:border-[#3f9fff]/50 focus:shadow-[0_0_0_3px_rgba(63,159,255,0.1)]"
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && refinementNote.trim()) { e.preventDefault(); handleRegenerate(); } }}
+                  placeholder={t('gen.refine.placeholder')}
+                  className="mt-3.5 w-full resize-none rounded-xl border border-[#f0a63a]/40 bg-[#0a1130]/80 px-4 py-3 text-[16px] leading-relaxed text-white placeholder-[#7d89ad] outline-none transition focus:border-[#f0a63a] focus:shadow-[0_0_0_3px_rgba(240,166,58,0.18)]"
                 />
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  {['gen.refine.q.shorter', 'gen.refine.q.stronger', 'gen.refine.q.question', 'gen.refine.q.number', 'gen.refine.q.simpler'].map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => { setRefinementNote(t(k)); if (refineHint) setRefineHint(''); }}
+                      className="rounded-full border border-[#f0a63a]/40 bg-[#f0a63a]/10 px-3.5 py-1.5 text-[14px] font-medium text-[#ffd59a] transition hover:border-[#f0a63a] hover:bg-[#f0a63a]/20"
+                    >
+                      {t(k)}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRegenerate}
+                  disabled={!refinementNote.trim()}
+                  className="mt-3.5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#f0a63a] text-[16px] font-bold text-[#2a1600] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto sm:px-6"
+                >
+                  <RefreshCw size={17} strokeWidth={2.4} />
+                  {t('gen.refine.button')}
+                </button>
+                <p className="mt-2 text-[12.5px] text-[#9a8f7c]">{t('gen.refine.once')}</p>
                 {refineHint && (
-                  <p className="mt-1.5 text-[11.5px] text-[#fbbf24]">{refineHint}</p>
+                  <p className="mt-1.5 text-[13px] text-[#fbbf24]">{refineHint}</p>
                 )}
               </div>
             )}

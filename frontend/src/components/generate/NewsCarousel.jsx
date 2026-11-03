@@ -69,22 +69,6 @@ export default function NewsCarousel({
           <div className="flex shrink-0 items-center gap-2">
             <button
               type="button"
-              onClick={() => slide(-1)}
-              aria-label={t('gen.levels.prev')}
-              className="hidden h-10 w-10 items-center justify-center rounded-full border border-[#1e3260]/70 bg-[#0d1531]/80 text-[#a3b0d4] transition hover:border-[#3f9fff]/60 hover:text-white sm:flex"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <button
-              type="button"
-              onClick={() => slide(1)}
-              aria-label={t('gen.levels.next')}
-              className="hidden h-10 w-10 items-center justify-center rounded-full border border-[#1e3260]/70 bg-[#0d1531]/80 text-[#a3b0d4] transition hover:border-[#3f9fff]/60 hover:text-white sm:flex"
-            >
-              <ChevronRight size={18} />
-            </button>
-            <button
-              type="button"
               onClick={onViewAll}
               className="inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-[14px] font-semibold text-white transition hover:brightness-110"
               style={{ backgroundColor: `${accent}26`, border: `1px solid ${accent}66` }}
@@ -112,6 +96,27 @@ export default function NewsCarousel({
           {emptyText || t('gen.levels.empty')}
         </div>
       ) : (
+        <div className="relative">
+        {/* The arrows sit on the row itself, halfway down the cards, where the
+            eye already is. In the heading's corner nobody saw them. From sm the
+            row is inset 64px each side, so they stand in that gutter beside
+            the cards rather than over a headline. */}
+        <button
+          type="button"
+          onClick={() => slide(-1)}
+          aria-label={t('gen.levels.prev')}
+          className="absolute -left-4 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#3a4e85] bg-[#0d1531]/95 text-white shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition hover:border-[#3f9fff] hover:bg-[#13205a] sm:flex md:-left-6"
+        >
+          <ChevronLeft size={22} strokeWidth={2.4} />
+        </button>
+        <button
+          type="button"
+          onClick={() => slide(1)}
+          aria-label={t('gen.levels.next')}
+          className="absolute -right-4 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-[#3a4e85] bg-[#0d1531]/95 text-white shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition hover:border-[#3f9fff] hover:bg-[#13205a] sm:flex md:-right-6"
+        >
+          <ChevronRight size={22} strokeWidth={2.4} />
+        </button>
         <div
           ref={rowRef}
           onMouseEnter={() => setHeld(true)}
@@ -124,7 +129,7 @@ export default function NewsCarousel({
           // Room above and below (pt / pb, pulled back with -mt): a scrolling
           // row clips both ways, and a hovered card rises 6px with a shadow,
           // which cut its top off.
-          className="-mx-4 -mt-3 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto scroll-smooth px-4 pb-6 pt-3 [scrollbar-width:none] sm:-mx-6 sm:scroll-px-6 sm:px-6 md:-mx-8 md:scroll-px-8 md:px-8 [&::-webkit-scrollbar]:hidden"
+          className="-mx-4 -mt-3 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto scroll-smooth px-4 pb-6 pt-3 [scrollbar-width:none] sm:-mx-6 sm:scroll-px-16 sm:px-16 md:-mx-8 md:scroll-px-16 md:px-16 [&::-webkit-scrollbar]:hidden"
         >
           {shown.map((a, i) => {
             const cardAccent = accentFor ? accentFor(a) : accent;
@@ -134,17 +139,14 @@ export default function NewsCarousel({
                 type="button"
                 data-story-card
                 onClick={() => onOpen(a)}
-                className="ag-rise ag-card group flex w-[78vw] max-w-[320px] shrink-0 snap-start flex-col rounded-2xl border bg-[#0e1320] p-5 text-left sm:w-[320px]"
+                className="ag-rise ag-card group flex h-[196px] w-[78vw] max-w-[320px] shrink-0 snap-start flex-col rounded-2xl border bg-[#0e1320] p-5 text-left sm:w-[320px]"
                 style={{ borderColor: 'rgba(30,38,54,0.9)', borderTop: `3px solid ${cardAccent}`, '--i': i, '--cat': cardAccent }}
               >
                 <span className="mb-2 text-[12.5px] font-semibold" style={{ color: cardAccent }}>
                   {a.source || a.category}
                 </span>
-                <span className="font-hindi line-clamp-3 text-[17.5px] font-bold leading-[1.55] text-white">
+                <span className="font-hindi line-clamp-3 text-[18px] font-bold leading-[1.55] text-white">
                   {a.title}
-                </span>
-                <span className="font-hindi mt-2 line-clamp-2 text-[14px] leading-[1.6] text-[#a9b6d4]">
-                  {a.summary}
                 </span>
                 <span className="mt-auto flex items-center justify-between gap-2 pt-4 text-[13px]">
                   <span className="font-count text-[#6b7a9e]">{dateLabel ? dateLabel(a.date) : ''}</span>
@@ -157,6 +159,7 @@ export default function NewsCarousel({
               </button>
             );
           })}
+        </div>
         </div>
       )}
     </section>
