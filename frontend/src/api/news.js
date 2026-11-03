@@ -4,12 +4,14 @@ import client from './client';
 // `tenant` selects a political party (id or slug); `includeGeneral` controls
 // whether neutral/general news is mixed in alongside that party's news, and
 // `includeOpposition` likewise for the opposition's (BJP) own news.
-export async function getNews({ limit = 100, skip = 0, language, tenant, includeGeneral, includeOpposition } = {}) {
+export async function getNews({ limit = 100, skip = 0, language, tenant, includeGeneral, includeOpposition, scope } = {}) {
   const params = { limit, skip };
   if (language) params.language = language;
   if (tenant !== undefined && tenant !== null && tenant !== '') params.tenant = tenant;
   if (includeGeneral !== undefined) params.include_general = includeGeneral;
   if (includeOpposition !== undefined) params.include_opposition = includeOpposition;
+  // national (the server's default), state or city.
+  if (scope) params.scope = scope;
   const { data } = await client.get('/news/', { params });
   return data;
 }

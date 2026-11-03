@@ -16,6 +16,10 @@ export function adaptNews(item) {
     tenantId:   item.tenant_id ?? 0,
     tenantSlug: item.tenant_slug || 'general',
     contentType: item.content_type || 'news',
+    // Level of politics. Absent on stories published before levels existed,
+    // which all came from the parties' central channels.
+    scope:      item.scope || 'national',
+    region:     item.region || '',
     sourceUrl:  item.source_url || '',
   };
 }

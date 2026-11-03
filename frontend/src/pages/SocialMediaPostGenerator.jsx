@@ -27,6 +27,7 @@ import Spinner from '../components/Spinner';
 import { useI18n } from '../i18n/index.jsx';
 import SpeakButton from '../components/generate/SpeakButton';
 import Sidebar from '../components/dashboard/Sidebar';
+import NewsCarousel from '../components/generate/NewsCarousel';
 import NotificationBell from '../components/dashboard/NotificationBell';
 import ProfileMenu from '../components/dashboard/ProfileMenu';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -269,6 +270,16 @@ const PARTY_TAG_KEYS = {
   bjp:       ['ptag.bjp.1', 'ptag.bjp.2', 'ptag.bjp.3'],
 };
 
+// Newest first, for the overview's rows.
+function byNewest(list) {
+  return [...list].sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0));
+}
+
+// A card's colour in the overview: the opposition's red, otherwise the party's.
+function levelCardAccent(article) {
+  return article.tenantSlug === 'bjp' ? '#e5484d' : '#3f9fff';
+}
+
 function formatNewsDate(d) {
   if (!d) return '';
   const dt = new Date(d);
@@ -302,7 +313,16 @@ export default function SocialMediaPostGenerator() {
   }
   const { currentUser, logout } = useAuth();
 
-  const [articles,        setArticles]        = useState([]);
+  const [nationalArticles, setArticles]       = useState([]);
+  // The news page is split by level of politics. National is the parties'
+  // central channels (everything there was before), state is the state units
+  // (INC MP, BJP MP for now); city and social come later.
+  const [stateArticles,   setStateArticles]   = useState([]);
+  const [stateLoading,    setStateLoading]    = useState(true);
+  // null: the overview, a row per level. 'national' / 'state': that level's
+  // full grid, which is the feed as it was.
+  const [level,           setLevel]           = useState(null);
+  const articles = level === 'state' ? stateArticles : nationalArticles;
   const [newsLoading,     setNewsLoading]     = useState(true);
   const [newsError,       setNewsError]       = useState(false);
   const [search,          setSearch]          = useState('');
@@ -396,17 +416,25 @@ export default function SocialMediaPostGenerator() {
     getNews(query)
       .then((data) => {
         if (data?.length) {
-          setArticles(data.map(adaptNews));
+          setArticles(data.map(adaptNews).filter((a) => a.scope !== 'state'));
           setNewsLoading(false);
         } else {
           const fallback = { limit: 100 };
           if (selectedParty) { fallback.tenant = selectedParty; fallback.includeGeneral = false; fallback.includeOpposition = true; }
           getNews(fallback).then((all) => {
-            if (all?.length) setArticles(all.map(adaptNews));
+            if (all?.length) setArticles(all.map(adaptNews).filter((a) => a.scope !== 'state'));
           }).catch(() => setNewsError(true)).finally(() => setNewsLoading(false));
         }
       })
       .catch(() => { setNewsLoading(false); setNewsError(true); });
+
+    setStateLoading(true);
+    const stateQuery = { limit: 100, scope: 'state' };
+    if (selectedParty) { stateQuery.tenant = selectedParty; stateQuery.includeGeneral = false; stateQuery.includeOpposition = true; }
+    getNews(stateQuery)
+      .then((data) => setStateArticles((data || []).map(adaptNews).filter((a) => a.scope === 'state')))
+      .catch(() => setStateArticles([]))
+      .finally(() => setStateLoading(false));
   }, [siteLang, selectedParty]);
 
   // Debounce search input 300ms before filtering
@@ -703,7 +731,14 @@ export default function SocialMediaPostGenerator() {
   function goBack() {
     if (view === 'generated') goView('preview');
     else if (view === 'preview') goView('feed');
+    else if (level !== null) { setLevel(null); setPage(1); }
     else navigate('/generate');
+  }
+
+  function openLevel(id) {
+    setLevel(id);
+    setPage(1);
+    setNewsSection('party');
   }
   const handoffDone = useRef(false);
 
@@ -977,6 +1012,12 @@ export default function SocialMediaPostGenerator() {
   }, [phoneOpen]);
 
   const authorName = currentUser?.full_name || currentUser?.username || 'AmbedkarGPT';
+  // "Madhya Pradesh" as the reader says it, and a fallback before any state
+  // story has arrived.
+  function regionLabel(region) {
+    const r = region || 'Madhya Pradesh';
+    return lang === 'hi' ? ({ 'Madhya Pradesh': 'मध्य प्रदेश' }[r] ?? r) : r;
+  }
   const welcomeLogo = partyLogo(currentUser?.political_party);
   const accountControls = (
     <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -1302,6 +1343,51 @@ export default function SocialMediaPostGenerator() {
               <div className="order-2 ml-auto sm:order-4 sm:self-start">{accountControls}</div>
               <span className="order-3 basis-full sm:hidden" aria-hidden="true" />
             </div>
+            {level === null ? (
+              <>
+                <NewsCarousel
+                  title={t('gen.levels.national')}
+                  subtitle={t('gen.levels.nationalSub')}
+                  accent="#3f9fff"
+                  items={byNewest(nationalArticles.filter((a) => a.tenantSlug !== 'general'))}
+                  loading={newsLoading}
+                  onOpen={handlePreview}
+                  onViewAll={() => openLevel('national')}
+                  accentFor={levelCardAccent}
+                  dateLabel={formatNewsDate}
+                />
+                <NewsCarousel
+                  title={t('gen.levels.state', { region: regionLabel(stateArticles[0]?.region) })}
+                  subtitle={t('gen.levels.stateSub')}
+                  accent="#f0a63a"
+                  items={byNewest(stateArticles)}
+                  loading={stateLoading}
+                  onOpen={handlePreview}
+                  onViewAll={() => openLevel('state')}
+                  accentFor={levelCardAccent}
+                  dateLabel={formatNewsDate}
+                  emptyText={t('gen.levels.stateEmpty')}
+                />
+                <NewsCarousel title={t('gen.levels.city')} subtitle={t('gen.levels.citySub')} accent="#22c55e" comingSoon />
+                <NewsCarousel title={t('gen.levels.social')} subtitle={t('gen.levels.socialSub')} accent="#a78bfa" comingSoon />
+              </>
+            ) : (
+            <>
+            {/* Inside a level: the way back to the overview, then the feed as it was. */}
+            <button
+              type="button"
+              onClick={() => { setLevel(null); setPage(1); }}
+              className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/70 px-4 py-2 text-[14px] font-semibold text-[#c7d1eb] transition hover:border-[#3f9fff]/60 hover:text-white"
+            >
+              <ArrowLeft size={15} strokeWidth={2.2} />
+              {t('gen.levels.allLevels')}
+              <span className="text-[#6b7a9e]">·</span>
+              <span className="text-white">
+                {level === 'state'
+                  ? t('gen.levels.state', { region: regionLabel(stateArticles[0]?.region) })
+                  : t('gen.levels.national')}
+              </span>
+            </button>
             {/* Three news sections: chosen party, opposition (BJP, empty
                 until it is scraped), and general (neutral) news. Underlined
                 tabs rather than pills, and each section carries its own
@@ -1870,6 +1956,8 @@ export default function SocialMediaPostGenerator() {
                 </div>
               )}
               </>
+            )}
+            </>
             )}
           </div>
         )}
