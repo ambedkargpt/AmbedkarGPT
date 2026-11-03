@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, Clock, Sparkles } from 'lucide-react';
 import { useI18n } from '../../i18n/index.jsx';
 
@@ -26,12 +26,36 @@ export default function NewsCarousel({
   const { t } = useI18n();
   const rowRef = useRef(null);
   const shown = items.slice(0, 12);
+  // Paused while the reader's pointer, finger or keyboard focus is on the row.
+  const [held, setHeld] = useState(false);
 
   function slide(dir) {
     const row = rowRef.current;
     if (!row) return;
     row.scrollBy({ left: dir * Math.max(280, row.clientWidth * 0.8), behavior: 'smooth' });
   }
+
+  // Moves on by one card every few seconds, as the landing page's carousels
+  // do, and starts over at the end. Only while the row is on screen, never
+  // while held, and not at all under reduced motion.
+  useEffect(() => {
+    const row = rowRef.current;
+    if (!row || held || shown.length < 2) return undefined;
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
+    let visible = true;
+    const io = typeof IntersectionObserver !== 'undefined'
+      ? new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0.3 })
+      : null;
+    io?.observe(row);
+    const id = setInterval(() => {
+      if (!visible) return;
+      const card = row.querySelector('[data-story-card]');
+      const step = card ? card.getBoundingClientRect().width + 16 : 300;
+      const atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 8;
+      row.scrollTo({ left: atEnd ? 0 : row.scrollLeft + step, behavior: 'smooth' });
+    }, 4000);
+    return () => { clearInterval(id); io?.disconnect(); };
+  }, [held, shown.length]);
 
   return (
     <section className="mb-8 last:mb-2" aria-label={title}>
@@ -90,7 +114,17 @@ export default function NewsCarousel({
       ) : (
         <div
           ref={rowRef}
-          className="-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto scroll-smooth px-4 pb-3 sm:scroll-px-6 md:scroll-px-8 [scrollbar-width:thin] sm:-mx-6 sm:px-6 md:-mx-8 md:px-8"
+          onMouseEnter={() => setHeld(true)}
+          onMouseLeave={() => setHeld(false)}
+          onTouchStart={() => setHeld(true)}
+          onTouchEnd={() => setHeld(false)}
+          onFocus={() => setHeld(true)}
+          onBlur={() => setHeld(false)}
+          // No scrollbar: the arrows, a swipe and the auto-advance move it.
+          // Room above and below (pt / pb, pulled back with -mt): a scrolling
+          // row clips both ways, and a hovered card rises 6px with a shadow,
+          // which cut its top off.
+          className="-mx-4 -mt-3 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto scroll-smooth px-4 pb-6 pt-3 [scrollbar-width:none] sm:-mx-6 sm:scroll-px-6 sm:px-6 md:-mx-8 md:scroll-px-8 md:px-8 [&::-webkit-scrollbar]:hidden"
         >
           {shown.map((a, i) => {
             const cardAccent = accentFor ? accentFor(a) : accent;
