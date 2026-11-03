@@ -26,7 +26,7 @@ export default function RadioLiveStrip({ className = '', onHide }) {
   const { t } = useI18n();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const { primeStation, track, configured } = useRadio();
+  const { primeStation, track, configured, play } = useRadio();
   const [visible, setVisible] = useState(true);
 
   const show = visible && !currentUser;
@@ -39,6 +39,8 @@ export default function RadioLiveStrip({ className = '', onHide }) {
 
   function goListen() {
     if (!RADIO_REQUIRES_LOGIN) {
+      // Start the sound with the same press, then show the station.
+      play();
       navigate('/bhimradio');
       return;
     }
