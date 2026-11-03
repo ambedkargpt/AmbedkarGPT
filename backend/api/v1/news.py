@@ -51,6 +51,12 @@ def list_news(
         default=True,
         description="When a tenant is given, also include the opposition's (BJP) own news.",
     ),
+    scope: str = Query(
+        default="national",
+        pattern="^(national|state|city|all)$",
+        description="Level of politics: national (the default, and every story "
+        "published before scopes existed), state, city, or all.",
+    ),
 ) -> list[NewsResponse]:
     return service.list(
         limit=limit,
@@ -60,6 +66,7 @@ def list_news(
         tenant=tenant,
         include_general=include_general,
         include_opposition=include_opposition,
+        scope=None if scope == "all" else scope,
     )
 
 

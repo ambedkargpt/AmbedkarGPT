@@ -736,6 +736,12 @@ def generate_post(
             "title": news.get("title", ""),
             "description": news.get("description", ""),
             "content": news.get("content", ""),
+            # Which level of politics this story belongs to. See the field
+            # guide in post_generation_user.txt for what it changes.
+            "level": {
+                "scope": news.get("scope") or "national",
+                "region": news.get("region") or None,
+            },
         },
         # What the speaker actually said, which the workflow puts in front of
         # the writer alongside the research. Chunks are excerpts chosen by a

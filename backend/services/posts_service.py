@@ -820,6 +820,9 @@ class PostsService:
             # Needed downstream to keep one channel's research off another's
             # posts. Without it every tenant shared one cache.
             "tenant_slug": str(doc.get("tenant_slug") or "general").strip().lower(),
+            # National, state or city: the post is written for that level.
+            "scope": str(doc.get("scope") or "national").strip().lower(),
+            "region": str(doc.get("region") or "").strip(),
             # The brief researched for this story ahead of time, when there is
             # one. Dropped here, _research_for_article found nothing stored and
             # searched again on every request - the twenty seconds this exists

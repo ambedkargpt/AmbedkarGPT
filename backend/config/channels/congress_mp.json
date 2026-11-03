@@ -1,0 +1,31 @@
+{
+  "name": "congress_mp",
+  "channel_url": "https://www.youtube.com/@incmp/videos",
+  "channel_urls": [
+    "https://www.youtube.com/@incmp/videos",
+    "https://www.youtube.com/@incmp/streams"
+  ],
+  "scope": "state",
+  "region": "Madhya Pradesh",
+  "tenant_slug": "congress",
+  "source_name": "INC Madhya Pradesh",
+  "lookback_days": 5,
+  "max_videos_per_run": 6,
+  "max_consecutive_transcript_failures": 4,
+  "channel_slug": "incmp",
+  "transcripts_dir": "outputs/transcripts/incmp",
+  "consolidated_txt_path": "outputs/transcripts/incmp/congress_mp_all_transcripts.txt",
+  "processed_json_path": "outputs/transcripts/incmp/processed.json",
+  "master_transcript_path": "data/congress_mp_all_transcripts.txt",
+  "video_summaries_path": "data/video_summaries_congress_mp.json",
+  "generated_news_path": "outputs/generated_news_congress_mp.json",
+  "generated_news_legacy_path": "outputs/generated_news_legacy_congress_mp.json",
+  "news_mode": "multi",
+  "stories_per_video": 1,
+  "stories_per_stream": 4,
+  "rebuild_rag": false,
+  "rebuild_semrag": false,
+  "run_summarizer": false,
+  "run_news_generator": true,
+  "run_news_publish": true
+}
