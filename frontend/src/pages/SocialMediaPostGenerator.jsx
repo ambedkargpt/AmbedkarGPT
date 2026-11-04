@@ -7,7 +7,7 @@ import {
   Copy, Check, RefreshCw, ChevronDown, FileText, Star, Radio,
   ArrowUpDown, List, LayoutGrid, Users, ArrowRight,
   CalendarDays, Clock, ChevronRight, X as XIcon,
-  MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle, Smartphone, PenLine,
+  MessageCircle, Repeat2, Heart, Share, AlertTriangle, Smartphone, PenLine,
 } from 'lucide-react';
 
 import PreferencesPanel from '../components/generate/PreferencesPanel';
@@ -27,7 +27,6 @@ import Spinner from '../components/Spinner';
 import { useI18n } from '../i18n/index.jsx';
 import SpeakButton from '../components/generate/SpeakButton';
 import Sidebar from '../components/dashboard/Sidebar';
-import NewsCarousel from '../components/generate/NewsCarousel';
 import NotificationBell from '../components/dashboard/NotificationBell';
 import ProfileMenu from '../components/dashboard/ProfileMenu';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -41,24 +40,6 @@ import { partyLogo } from '../utils/politicalParties';
 import { trackEvent } from '../analytics/metrics';
 
 const CATEGORIES = ['All', 'Legacy', 'Policy', 'Education', 'Research', 'Grassroots'];
-
-function useCountdown(resetAt) {
-  const [label, setLabel] = useState('');
-  useEffect(() => {
-    if (!resetAt) return;
-    function tick() {
-      const diff = Math.max(0, Math.floor((new Date(resetAt) - Date.now()) / 1000));
-      const h = Math.floor(diff / 3600);
-      const m = Math.floor((diff % 3600) / 60);
-      const s = diff % 60;
-      setLabel(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
-    }
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [resetAt]);
-  return label;
-}
 
 // WhatsApp first and X last: in the order these posts are most shared.
 const PLATFORMS = [
@@ -270,16 +251,6 @@ const PARTY_TAG_KEYS = {
   bjp:       ['ptag.bjp.1', 'ptag.bjp.2', 'ptag.bjp.3'],
 };
 
-// Newest first, for the overview's rows.
-function byNewest(list) {
-  return [...list].sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0));
-}
-
-// A card's colour in the overview: the opposition's red, otherwise the party's.
-function levelCardAccent(article) {
-  return article.tenantSlug === 'bjp' ? '#e5484d' : '#3f9fff';
-}
-
 function formatNewsDate(d) {
   if (!d) return '';
   const dt = new Date(d);
@@ -314,19 +285,23 @@ export default function SocialMediaPostGenerator() {
   const { currentUser, logout } = useAuth();
 
   const [nationalArticles, setArticles]       = useState([]);
-  // The news page is split by level of politics. National is the parties'
-  // central channels (everything there was before), state is the state units
-  // (INC MP, BJP MP for now); city and social come later.
+  // The feed switches between national, state and city news. State and city
+  // entries are fetched separately because they are published by local units.
   const [stateArticles,   setStateArticles]   = useState([]);
   const [stateLoading,    setStateLoading]    = useState(true);
+  const [cityArticles,    setCityArticles]    = useState([]);
+  const [cityLoading,     setCityLoading]     = useState(true);
   const [selectedState,   setSelectedState]   = useState('all');
-  // null: the overview, a row per level. 'national' / 'state': that level's
-  // full grid, which is the feed as it was.
-  const [level,           setLevel]           = useState(null);
+  const [selectedCity,    setSelectedCity]    = useState('all');
+  const [level,           setLevel]           = useState('national');
   const visibleStateArticles = stateArticles.filter((a) => selectedState === 'all'
     ? ['madhya pradesh', 'uttar pradesh'].includes(String(a.region || '').toLowerCase())
     : String(a.region || '').toLowerCase() === selectedState.toLowerCase());
-  const articles = level === 'state' ? visibleStateArticles : nationalArticles;
+  const visibleCityArticles = cityArticles.filter((a) => selectedCity === 'all'
+    || String(a.region || '').toLowerCase() === selectedCity.toLowerCase());
+  const articles = level === 'state' ? visibleStateArticles
+    : level === 'city' ? visibleCityArticles
+    : nationalArticles;
   const [newsLoading,     setNewsLoading]     = useState(true);
   const [newsError,       setNewsError]       = useState(false);
   const [search,          setSearch]          = useState('');
@@ -335,7 +310,6 @@ export default function SocialMediaPostGenerator() {
   const [typeFilter,      setTypeFilter]      = useState('all'); // all | news | press_conference
   const [page,            setPage]            = useState(1);
   const [tenants,         setTenants]         = useState([]);
-  const [newsSection,     setNewsSection]     = useState('party'); // 'party' | 'opposition' | 'general'
   const [sharing,         setSharing]         = useState(false);  // a share is marking the post published
   const [shareMsg,        setShareMsg]        = useState('');     // "paste it in Facebook", or why the share failed
   const [articleOpen,     setArticleOpen]     = useState(false);   // phones: the article starts as a preview
@@ -394,7 +368,6 @@ export default function SocialMediaPostGenerator() {
   const { t, lang } = useI18n();
   const siteLang = getSiteLanguage() ?? 'hi';
   const atDailyLimit = quota?.daily_remaining === 0;
-  const quotaCountdown = useCountdown(atDailyLimit ? quota?.reset_at : null);
 
   // Fetch daily quota on mount
   useEffect(() => {
@@ -435,11 +408,17 @@ export default function SocialMediaPostGenerator() {
     setStateLoading(true);
     // State selection is independent of the reader's party: show both state
     // units' coverage so the MP feed can include BJP and Congress stories.
-    const stateQuery = { limit: 100, scope: 'state' };
+    const stateQuery = { limit: 100, scope: 'state', language: siteLang };
     getNews(stateQuery)
       .then((data) => setStateArticles((data || []).map(adaptNews).filter((a) => a.scope === 'state')))
       .catch(() => setStateArticles([]))
       .finally(() => setStateLoading(false));
+
+    setCityLoading(true);
+    getNews({ limit: 100, scope: 'city', language: siteLang })
+      .then((data) => setCityArticles((data || []).map(adaptNews).filter((a) => a.scope === 'city')))
+      .catch(() => setCityArticles([]))
+      .finally(() => setCityLoading(false));
   }, [siteLang, selectedParty]);
 
   // Debounce search input 300ms before filtering
@@ -544,50 +523,16 @@ export default function SocialMediaPostGenerator() {
   }
 
 
-  // Split the feed into three sections: the chosen party's news, the
-  // opposition's (BJP, not scraped yet), and the neutral/general news
-  // (Ravish) that every user sees.
-  const partyArticles = useMemo(
-    () => (activeParty ? articles.filter((a) => a.tenantSlug === activeParty.slug) : []),
-    [articles, activeParty]
-  );
-  // No tenant scrapes BJP yet, so this is always empty for now — the tab
-  // exists so the section has a home once that scraping exists, rather than
-  // needing this whole area rewired later.
-  const oppositionArticles = useMemo(
-    () => articles.filter((a) => a.tenantSlug === 'bjp'),
-    [articles]
-  );
-  // General news is no longer shown: two feeds, the party's and the
-  // opposition's. Without a party chosen there is only one list, so show
-  // everything except general.
-  const sectionArticles = !activeParty
-    ? articles.filter((a) => a.tenantSlug !== 'general')
-    : newsSection === 'opposition' ? oppositionArticles
-    : partyArticles;
-
-  // The three feeds, described once. Phones show them as a chip row and wider
-  // screens as the three cards; both read this and both call chooseSection.
-  const sectionTabs = [
-    { id: 'party', Icon: FileText, label: t('gen.partyNews'),
-      sub: t('gen.partyNewsSub', { party: partyLabel(activeParty?.name ?? '', lang) }),
-      count: partyArticles.length },
-    { id: 'opposition', Icon: Users, label: t('gen.oppositionNews'),
-      sub: t('gen.oppositionNewsSub'), count: oppositionArticles.length },
-  ];
-
-  function chooseSection(id) {
-    if (id === 'general') id = 'party';
-    setNewsSection(id);
-    setPage(1);
-    // Neither general nor opposition has press conferences, so carrying that
-    // filter across from the party tab would show an empty section.
-    if (id === 'opposition') setTypeFilter('all');
-  }
+  // Party and opposition stories are both part of each geographic feed.
+  const sectionArticles = articles;
 
   // Accent for the section currently on screen; falls back to the party colour
   // when no party is set, so the heading is never unstyled.
-  const theme = SECTION_THEME[activeParty ? newsSection : 'party'] ?? SECTION_THEME.party;
+  const theme = {
+    ...SECTION_THEME.party,
+    accent: ({ national: '#3f9fff', state: '#f0a63a', city: '#22c55e' })[level] ?? '#3f9fff',
+  };
+  const feedLoading = level === 'state' ? stateLoading : level === 'city' ? cityLoading : newsLoading;
 
   // Everything except the date rule. The day picker counts off this list, so the
   // number beside each day is what that day will actually show.
@@ -673,7 +618,7 @@ export default function SocialMediaPostGenerator() {
   // Group the current page into day buckets, preserving the newest-first order
   // the API already applied.
   // Changes whenever a different set of cards is shown, so they rise again.
-  const feedKey = `${newsSection}|${dateFilter}|${typeFilter}|${page}|${cardView}`;
+  const feedKey = `${level}|${selectedState}|${selectedCity}|${dateFilter}|${typeFilter}|${page}|${cardView}`;
   const pagedGroups = useMemo(() => {
     const groups = [];
     let current = null;
@@ -736,15 +681,9 @@ export default function SocialMediaPostGenerator() {
   function goBack() {
     if (view === 'generated') goView('preview');
     else if (view === 'preview') goView('feed');
-    else if (level !== null) { setLevel(null); setPage(1); }
     else navigate('/generate');
   }
 
-  function openLevel(id) {
-    setLevel(id);
-    setPage(1);
-    setNewsSection('party');
-  }
   const handoffDone = useRef(false);
 
   useEffect(() => {
@@ -752,13 +691,12 @@ export default function SocialMediaPostGenerator() {
     handoffDone.current = true;
     // newsId is the database id (the dashboard's top story); storyId is the
     // story's own id, which is what the radio knows it by.
-    const { newsId, storyId, section } = topStory;
+    const { newsId, storyId } = topStory;
     navigate(location.pathname, { replace: true, state: null });
     (newsId ? getNewsById(newsId) : getNewsByStoryId(storyId))
       .then((item) => {
         if (!item) return;
         const article = adaptNews(item);
-        if (section) setNewsSection(section === 'general' ? 'party' : section);
         setSelectedArticle(article);
         setGeneratedPost('');
         setSelectedPostId(null);
@@ -1017,13 +955,6 @@ export default function SocialMediaPostGenerator() {
   }, [phoneOpen]);
 
   const authorName = currentUser?.full_name || currentUser?.username || 'AmbedkarGPT';
-  // "Madhya Pradesh" as the reader says it, and a fallback before any state
-  // story has arrived.
-  function regionLabel(region) {
-    const r = region || 'Madhya Pradesh';
-    if (r === 'all') return t('gen.stateAll');
-    return lang === 'hi' ? ({ 'Madhya Pradesh': 'मध्य प्रदेश' }[r] ?? r) : r;
-  }
   const welcomeLogo = partyLogo(currentUser?.political_party);
   const accountControls = (
     <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -1040,64 +971,6 @@ export default function SocialMediaPostGenerator() {
   );
   const welcomeName = (currentUser?.full_name || currentUser?.username || '').split(/[\s_]/)[0];
   const roleName = labelForId(currentUser?.party_position || '', currentUser?.political_party || '', lang);
-
-  // Today's posts, at the top of a story: five slots, the count in words, the
-  // streak, and how many are left in large type. It used to be a small grey
-  // line beside the generate button, easy to miss until the limit was hit.
-  function renderQuota() {
-    if (!quota) return null;
-    const limit = quota.daily_limit ?? 5;
-    const used = Math.min(quota.daily_used ?? 0, limit);
-    return (
-      <div
-        className="mb-5 flex items-center gap-4 rounded-2xl border px-4 py-3.5 sm:px-5 sm:py-4"
-        style={{
-          borderColor: atDailyLimit ? 'rgba(248,113,113,0.45)' : 'rgba(63,159,255,0.35)',
-          background: atDailyLimit
-            ? 'linear-gradient(100deg, rgba(60,14,20,0.55) 0%, rgba(14,19,32,0.9) 70%)'
-            : 'linear-gradient(100deg, rgba(20,40,96,0.55) 0%, rgba(14,19,32,0.9) 70%)',
-        }}
-      >
-        <div className="min-w-0 flex-1">
-          <p className="text-[15px] font-semibold leading-snug text-white sm:text-[16.5px]">
-            {atDailyLimit ? t('gen.quota.allUsed', { limit }) : t('gen.quota.today', { used, limit })}
-          </p>
-          <div className="mt-2 flex items-center gap-1.5" aria-hidden="true">
-            {Array.from({ length: limit }, (_, i) => (
-              <span
-                key={i}
-                className="h-2 flex-1 rounded-full sm:max-w-[48px]"
-                style={{ background: i < used ? (atDailyLimit ? '#f87171' : '#3f9fff') : 'rgba(63,159,255,0.14)' }}
-              />
-            ))}
-          </div>
-          {quota.streak_days > 0 && (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-amber-400">
-              <Flame size={14} strokeWidth={2.2} />
-              {t('gen.quota.streak', { n: quota.streak_days })}
-            </p>
-          )}
-        </div>
-        <div className="shrink-0 text-right">
-          {atDailyLimit ? (
-            <>
-              <p className="font-count text-[20px] font-bold leading-none tabular-nums text-red-400 sm:text-[24px]">
-                {quotaCountdown}
-              </p>
-              <p className="mt-1 text-[12.5px] font-medium text-[#8b94b8]">{t('gen.quota.resets')}</p>
-            </>
-          ) : (
-            <>
-              <p className="font-count text-[30px] font-bold leading-none tabular-nums text-[#6aa8ff] sm:text-[34px]">
-                {quota.daily_remaining ?? Math.max(0, limit - used)}
-              </p>
-              <p className="mt-1 text-[12.5px] font-medium text-[#8b94b8]">{t('gen.quota.left')}</p>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
 
   // The party's banner: logo, name and what it stands for. It heads the feed,
   // the story and the post alike, so you always see whose voice you write in.
@@ -1169,7 +1042,7 @@ export default function SocialMediaPostGenerator() {
 
   return (
     <div
-      className="ag-page-in relative flex min-h-screen text-[#e5e7eb]"
+      className="ag-page-in relative flex min-h-screen text-[17px] text-[#e5e7eb]"
       style={{ background: 'radial-gradient(1200px 700px at 50% -10%, #0c111e 0%, #080b13 55%, #06080e 100%)' }}
     >
       {/* The dashboard's own navigation, closed to icons; it opens over the
@@ -1182,95 +1055,8 @@ export default function SocialMediaPostGenerator() {
       />
 
       {/* ambient glows */}
-      <div className="pointer-events-none fixed left-[240px] top-0 h-[500px] w-[500px] rounded-full bg-[#3f9fff]/8 blur-[140px]" />
+      <div className="pointer-events-none fixed left-[72px] top-0 h-[500px] w-[500px] rounded-full bg-[#3f9fff]/8 blur-[140px]" />
       <div className="pointer-events-none fixed bottom-0 right-[300px] h-[420px] w-[420px] rounded-full bg-[#7b5cff]/8 blur-[140px]" />
-
-      {/* ── LEFT SIDEBAR ── */}
-      <aside
-        className="hidden lg:flex w-[240px] shrink-0 flex-col overflow-y-auto border-r border-[#1a2130]/70"
-        style={{ background: 'linear-gradient(180deg,#0a0e18 0%,#080b13 100%)' }}
-      >
-        {/* Brand header */}
-        <div className="border-b border-[#141d3a]/70 px-5 py-4">
-          {/* Which tool you are in. This used to sit as a banner across the top
-              of the feed, where it repeated the logo already shown here and ate
-              a strip of vertical space above the stories. In the rail it still
-              names the page, and the feed starts at the search bar. */}
-          {/* The brand and the way to Services live in the dashboard sidebar
-              beside this rail, so it starts with the tool's name. */}
-          <div>
-            <p className="font-display text-[16px] font-bold leading-snug text-white">
-              {t('gen.title')}
-            </p>
-            <p className="mt-1 text-[11.5px] leading-relaxed text-[#6b78a0]">
-              {t('gen.motto')}
-              <span className="block text-[#5a6584]">{t('brand.attrib')}</span>
-            </p>
-            <span className="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-[#3f9fff]/20 bg-[#3f9fff]/8 px-2.5 py-1 text-[10.5px] font-semibold text-[#6aa8ff]">
-              <Sparkles size={9} strokeWidth={2} />
-              {t('gen.aiPowered')}
-            </span>
-          </div>
-        </div>
-
-        {/* User profile card */}
-        <div className="px-4 pt-4">
-          <div className="rounded-2xl border border-[#1e2636]/80 bg-[#0e1320] px-5 py-5">
-            <div className="flex flex-col items-center">
-              <div className="relative">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#3f9fff] to-[#7b5cff] text-[22px] font-bold text-white shadow-[0_0_24px_rgba(63,159,255,0.35)]">
-                  {(currentUser?.username?.[0] ?? '?').toUpperCase()}
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full border-2 border-[#0e1320] bg-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
-              </div>
-              <p className="mt-3 font-display text-[16px] font-semibold text-white">{currentUser?.username ?? '—'}</p>
-              <p className="mt-0.5 text-[11.5px] text-[#8b93a5]">{currentUser?.email ?? currentUser?.phone ?? ''}</p>
-              <button
-                type="button"
-                onClick={() => navigate('/profile-setup')}
-                className="mt-1.5 text-[11.5px] font-medium text-[#6aa8ff] transition hover:text-white"
-              >
-                {t('gen.customize')}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Target platform */}
-        <div className="px-4 pt-5">
-          <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-[#8b93a5]">{t('gen.targetPlatform')}</p>
-          <div className="space-y-2">
-            {PLATFORMS.map((p) => {
-              const active = platform === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => setPlatform(p.id)}
-                  className="flex w-full items-center gap-3 rounded-xl border px-3.5 py-3 text-left text-[13px] font-medium transition"
-                  style={{
-                    borderColor: active ? p.color : 'rgba(30,38,54,0.8)',
-                    backgroundColor: active ? `${p.color}1f` : '#0e1320',
-                    color: active ? '#ffffff' : '#8b93a5',
-                  }}
-                >
-                  <span className="flex h-6 w-6 items-center justify-center text-[13px] font-bold" style={{ color: p.color }}>
-                    {p.short}
-                  </span>
-                  {p.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Keeps the version line at the foot of the sidebar. */}
-        <div className="flex-1" />
-
-        <div className="px-6 py-5 text-[11px] font-count text-[#4e5a80] tracking-wide">
-          v1.0 · AmbedkarGPT
-        </div>
-      </aside>
 
       {/* ── MAIN CONTENT ── */}
       <div
@@ -1349,188 +1135,68 @@ export default function SocialMediaPostGenerator() {
               <div className="order-2 ml-auto sm:order-4 sm:self-start">{accountControls}</div>
               <span className="order-3 basis-full sm:hidden" aria-hidden="true" />
             </div>
-            {level === null ? (
-              <>
-                <NewsCarousel
-                  title={t('gen.levels.national')}
-                  subtitle={t('gen.levels.nationalSub')}
-                  accent="#3f9fff"
-                  items={byNewest(nationalArticles.filter((a) => a.tenantSlug !== 'general'))}
-                  loading={newsLoading}
-                  onOpen={handlePreview}
-                  onViewAll={() => openLevel('national')}
-                  accentFor={levelCardAccent}
-                  dateLabel={formatNewsDate}
-                />
-                <NewsCarousel
-                  title={t('gen.levels.state', { region: regionLabel(selectedState) })}
-                  subtitle={t('gen.levels.stateSub')}
-                  accent="#f0a63a"
-                  items={byNewest(visibleStateArticles)}
-                  loading={stateLoading}
-                  onOpen={handlePreview}
-                  onViewAll={() => openLevel('state')}
-                  accentFor={levelCardAccent}
-                  dateLabel={formatNewsDate}
-                  emptyText={t('gen.levels.stateEmpty')}
-                  headingControl={(
-                    <label className="flex items-center gap-2 text-sm font-semibold text-[#c7d1eb]">
-                      <span className="sr-only">{t('gen.statePicker')}</span>
-                      <select
-                        value={selectedState}
-                        onChange={(event) => setSelectedState(event.target.value)}
-                        className="max-w-full rounded-xl border border-[#344766] bg-[#0d1531] px-3 py-2 text-sm text-white outline-none transition focus:border-[#3f9fff] focus:ring-2 focus:ring-[#3f9fff]/25"
-                      >
-                        <option value="all">{t('gen.stateAll')}</option>
-                        <option value="Madhya Pradesh">Madhya Pradesh (MP)</option>
-                        <option value="Uttar Pradesh">Uttar Pradesh (UP)</option>
-                      </select>
-                    </label>
-                  )}
-                />
-                <NewsCarousel title={t('gen.levels.city')} subtitle={t('gen.levels.citySub')} accent="#22c55e" comingSoon />
-                <NewsCarousel title={t('gen.levels.social')} subtitle={t('gen.levels.socialSub')} accent="#a78bfa" comingSoon />
-              </>
-            ) : (
             <>
-            {/* Inside a level: the way back to the overview, then the feed as it was. */}
-            <button
-              type="button"
-              onClick={() => { setLevel(null); setPage(1); }}
-              className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/70 px-4 py-2 text-[14px] font-semibold text-[#c7d1eb] transition hover:border-[#3f9fff]/60 hover:text-white"
-            >
-              <ArrowLeft size={15} strokeWidth={2.2} />
-              {t('gen.levels.allLevels')}
-              <span className="text-[#6b7a9e]">·</span>
-              <span className="text-white">
-                {level === 'state'
-                  ? t('gen.levels.state', { region: regionLabel(selectedState) })
-                  : t('gen.levels.national')}
-              </span>
-            </button>
-            {level === 'state' && (
-              <label className="mb-4 flex items-center gap-3 text-sm font-semibold text-[#c7d1eb]">
-                <span>{t('gen.statePicker')}</span>
-                <select
-                  value={selectedState}
-                  onChange={(event) => { setSelectedState(event.target.value); setPage(1); }}
-                  className="rounded-xl border border-[#263654] bg-[#0d1531] px-3 py-2 text-white outline-none focus:border-[#3f9fff]"
-                >
-                  <option value="all">{t('gen.stateAll')}</option>
-                  <option value="Madhya Pradesh">Madhya Pradesh (MP)</option>
-                  <option value="Uttar Pradesh">Uttar Pradesh (UP)</option>
-                </select>
-              </label>
-            )}
-            {/* Three news sections: chosen party, opposition (BJP, empty
-                until it is scraped), and general (neutral) news. Underlined
-                tabs rather than pills, and each section carries its own
-                accent so it is obvious which feed you are reading. */}
-            {activeParty && (
-              <>
-              {/* Party banner. The name used to be the first tab's label,
-                  which made three tabs read as one proper noun beside two
-                  categories, and a long name pushed the other two off a narrow
-                  screen. It gets its own band here, in the party's colour, so
-                  the tabs below are three comparable things. */}
-              {/* Section chooser. Cards rather than a tab strip: each one
-                  now carries a count and a line saying what is in it, which a
-                  tab has no room for, and the three read as siblings. */}
-              {/* Phones: one scrolling row of chips. Three stacked cards with
-                  a description each pushed the headlines most of a screen
-                  down, and on a phone the description is not what picks the
-                  feed — the name and the count are. */}
-              <div role="group" aria-label={t('gen.newsSections')} className="mb-5 grid grid-cols-2 gap-1 rounded-2xl border border-[#1e2636]/90 bg-[#0b101c] p-1 sm:hidden">
-                {sectionTabs.map((s) => {
-                  const active = newsSection === s.id;
-                  const tint = SECTION_THEME[s.id].accent;
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+              <div role="tablist" aria-label={t('gen.newsLevels')} className="inline-flex max-w-full items-center gap-1 rounded-2xl border border-[#1e2636]/90 bg-[#0b101c] p-1">
+                {[
+                  { id: 'national', label: t('gen.scope.national'), accent: '#3f9fff' },
+                  { id: 'state', label: t('gen.scope.state'), accent: '#f0a63a' },
+                  { id: 'city', label: t('gen.scope.city'), accent: '#22c55e' },
+                ].map((item) => {
+                  const active = level === item.id;
+                  const count = item.id === 'national' ? nationalArticles.length
+                    : item.id === 'state' ? visibleStateArticles.length : visibleCityArticles.length;
                   return (
                     <button
-                      key={s.id}
+                      key={item.id}
                       type="button"
-                      onClick={() => chooseSection(s.id)}
-                      aria-pressed={active}
-                      aria-label={`${s.label} (${s.count})`}
-                      className="flex h-[52px] min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-[13.5px] leading-tight transition"
+                      role="tab"
+                      aria-selected={active}
+                      onClick={() => { setLevel(item.id); setPage(1); }}
+                      className="inline-flex h-10 items-center gap-2 rounded-xl px-3 text-[13px] font-semibold transition sm:px-4 sm:text-[14px]"
                       style={{
-                        backgroundColor: active ? `${tint}1f` : 'transparent',
-                        boxShadow: active ? `inset 0 0 0 1px ${tint}` : 'none',
-                        color: active ? '#ffffff' : '#8b94b8',
-                        fontWeight: active ? 600 : 500,
+                        backgroundColor: active ? `${item.accent}20` : 'transparent',
+                        boxShadow: active ? `inset 0 0 0 1px ${item.accent}` : 'none',
+                        color: active ? '#fff' : '#8b94b8',
                       }}
                     >
-                      <span className="truncate">{s.label}</span>
-                      <span
-                        className="font-count text-[11.5px] font-semibold leading-none"
-                        style={{ color: active ? tint : '#5a6e9a' }}
-                      >
-                        {s.count}
-                      </span>
+                      <span>{item.label}</span>
+                      <span className="font-count text-[11px]" style={{ color: active ? item.accent : '#5a6e9a' }}>{count}</span>
                     </button>
                   );
                 })}
               </div>
-
-              <div className="mb-6 hidden gap-3 sm:grid sm:grid-cols-2">
-                {sectionTabs.map((s) => {
-                  const active = newsSection === s.id;
-                  const tint = SECTION_THEME[s.id].accent;
-                  return (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => chooseSection(s.id)}
-                      aria-pressed={active}
-                      className="flex items-start gap-3 rounded-2xl border px-4 py-3.5 text-left transition duration-150"
-                      style={{
-                        borderColor: active ? tint : 'rgba(30,38,54,0.9)',
-                        backgroundColor: active ? `${tint}12` : '#0b101c',
-                        boxShadow: active ? `0 0 0 1px ${tint}, 0 8px 24px ${tint}22` : 'none',
-                      }}
-                      onMouseEnter={(e) => { if (!active) e.currentTarget.style.borderColor = 'rgba(58,107,196,0.5)'; }}
-                      onMouseLeave={(e) => { if (!active) e.currentTarget.style.borderColor = 'rgba(30,38,54,0.9)'; }}
-                    >
-                      <span
-                        className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition"
-                        style={{
-                          backgroundColor: active ? `${tint}22` : 'rgba(30,38,54,0.75)',
-                          color: active ? tint : '#6b78a0',
-                        }}
-                      >
-                        <s.Icon size={16} strokeWidth={2} />
-                      </span>
-
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-2">
-                          <span
-                            className="truncate text-[14px] font-semibold"
-                            style={{ color: active ? '#ffffff' : '#c0cde8' }}
-                          >
-                            {s.label}
-                          </span>
-                          <span
-                            className="shrink-0 rounded-md px-1.5 py-0.5 font-count text-[11px] leading-none"
-                            style={{
-                              backgroundColor: active ? `${tint}26` : 'rgba(30,38,54,0.9)',
-                              color: active ? tint : '#5a6e9a',
-                            }}
-                          >
-                            {s.count}
-                          </span>
-                        </span>
-                        <span className="mt-0.5 block truncate text-[12px] text-[#6b78a0]">
-                          {s.sub}
-                        </span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-              </>
-            )}
-
-
-            {newsLoading && (
+              {level === 'state' && (
+                <label className="flex items-center gap-2 text-sm font-semibold text-[#c7d1eb]">
+                  <span>{t('gen.statePicker')}</span>
+                  <select
+                    value={selectedState}
+                    onChange={(event) => { setSelectedState(event.target.value); setPage(1); }}
+                    className="max-w-[min(64vw,260px)] rounded-xl border border-[#344766] bg-[#0d1531] px-3 py-2 text-sm text-white outline-none transition focus:border-[#3f9fff] focus:ring-2 focus:ring-[#3f9fff]/25"
+                  >
+                    <option value="all">{t('gen.stateAll')}</option>
+                    <option value="Madhya Pradesh">Madhya Pradesh (MP)</option>
+                    <option value="Uttar Pradesh">Uttar Pradesh (UP)</option>
+                  </select>
+                </label>
+              )}
+              {level === 'city' && (
+                <label className="flex items-center gap-2 text-sm font-semibold text-[#c7d1eb]">
+                  <span>{t('gen.cityPicker')}</span>
+                  <select
+                    value={selectedCity}
+                    onChange={(event) => { setSelectedCity(event.target.value); setPage(1); }}
+                    className="max-w-[min(64vw,260px)] rounded-xl border border-[#344766] bg-[#0d1531] px-3 py-2 text-sm text-white outline-none transition focus:border-[#3f9fff] focus:ring-2 focus:ring-[#3f9fff]/25"
+                  >
+                    <option value="all">{t('gen.cityAll')}</option>
+                    {[...new Set(cityArticles.map((article) => article.region).filter(Boolean))].sort().map((city) => (
+                      <option key={city} value={city}>{city}</option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
+            {feedLoading && (
               <>
                 {/* A spinner above the grid, because six empty rectangles
                     pulsing at low contrast read as a broken page rather than
@@ -1561,7 +1227,7 @@ export default function SocialMediaPostGenerator() {
                 </div>
               </>
             )}
-            {!newsLoading && newsError && (
+            {!feedLoading && newsError && level === 'national' && (
               <div className="flex flex-col items-center gap-3 rounded-2xl border border-red-500/20 bg-red-500/5 px-6 py-10 text-center">
                 <p className="text-[13px] text-red-400">{t('gen.failedToLoad')}</p>
                 <button
@@ -1573,23 +1239,17 @@ export default function SocialMediaPostGenerator() {
                 </button>
               </div>
             )}
-            {!newsLoading && !newsError && filteredArticles.length === 0 && newsSection === 'opposition' && (
-              // Distinct from the generic empty state below: there is no
-              // filter to change here, the scrape just does not exist yet.
+            {!feedLoading && !newsError && filteredArticles.length === 0 && (
               <div className="flex flex-col items-center gap-2 py-16 text-center">
-                <p className="text-[14px] font-medium" style={{ color: SECTION_THEME.opposition.accent }}>
-                  {t('gen.oppositionComingSoon')}
+                <p className="text-[14px] font-medium text-[#6aa8ff]">
+                  {level === 'state' ? t('gen.levels.stateEmpty')
+                    : level === 'city' ? t('gen.levels.cityEmpty')
+                    : t('gen.noArticlesFound')}
                 </p>
-                <p className="text-[12px] text-[#4a5a80]">{t('gen.oppositionComingSoonSub')}</p>
-              </div>
-            )}
-            {!newsLoading && !newsError && filteredArticles.length === 0 && newsSection !== 'opposition' && (
-              <div className="flex flex-col items-center gap-2 py-16 text-center">
-                <p className="text-[14px] font-medium text-[#6aa8ff]">{t('gen.noArticlesFound')}</p>
                 <p className="text-[12px] text-[#4a5a80]">{t('gen.tryDifferent')}</p>
               </div>
             )}
-            {!newsLoading && !newsError && filteredArticles.length > 0 && (
+            {!feedLoading && !newsError && filteredArticles.length > 0 && (
               <>
               {/* Section heading for the cards, with the feed's own controls.
                   Left-aligned rather than centred: the count, the ordering and
@@ -1718,8 +1378,7 @@ export default function SocialMediaPostGenerator() {
                       videos tab alone, so every item in them is one type and a
                       chooser over one option is furniture: it is left out for
                       those sections rather than shown with nothing to pick. */}
-                  {newsSection === 'party' && (
-                    <div ref={typeRef} className="relative order-4 min-w-0 flex-1 sm:order-1 sm:flex-none">
+                  <div ref={typeRef} className="relative order-4 min-w-0 flex-1 sm:order-1 sm:flex-none">
                       <button
                         type="button"
                         onClick={() => setTypeOpen((p) => !p)}
@@ -1761,9 +1420,8 @@ export default function SocialMediaPostGenerator() {
                         </div>
                       )}
                     </div>
-                  )}
 
-                  {newsSection === 'party' && <span className="order-1 hidden h-5 w-px bg-[#1e2636] sm:block" />}
+                  <span className="order-1 hidden h-5 w-px bg-[#1e2636] sm:block" />
 
                   {/* Sort */}
                   <div ref={sortRef} className="relative order-4 min-w-0 flex-1 sm:order-1 sm:flex-none">
@@ -1904,8 +1562,8 @@ export default function SocialMediaPostGenerator() {
 
                       <p className={`font-hindi font-bold leading-[1.6] pt-0.5 text-white ${
                         cardView === 'list'
-                          ? 'line-clamp-2 text-[clamp(15.5px,1.1vw+11px,19px)]'
-                          : 'line-clamp-3 text-[clamp(16px,1.2vw+11px,21px)]'
+                          ? 'line-clamp-2 text-[clamp(17px,1.1vw+12px,21px)]'
+                          : 'line-clamp-3 text-[clamp(18px,1.2vw+12px,23px)]'
                       }`}>
                         {article.title}
                       </p>
@@ -1915,8 +1573,8 @@ export default function SocialMediaPostGenerator() {
                           which has two columns to fill, keeps three. */}
                       <p className={`font-hindi mt-2 flex-1 leading-[1.65] text-[#b9c8e4] ${
                         cardView === 'list'
-                          ? 'line-clamp-1 text-[clamp(13px,0.7vw+10.3px,15px)]'
-                          : 'line-clamp-2 text-[clamp(13.5px,0.9vw+10px,16.5px)] sm:mt-3 sm:line-clamp-3'
+                          ? 'line-clamp-1 text-[clamp(14.5px,0.7vw+11px,16px)]'
+                          : 'line-clamp-2 text-[clamp(15px,0.9vw+11px,18px)] sm:mt-3 sm:line-clamp-3'
                       }`}>
                         {truncateText(article.summary || article.content, cardView === 'list' ? 120 : 200)}
                       </p>
@@ -1992,7 +1650,6 @@ export default function SocialMediaPostGenerator() {
               </>
             )}
             </>
-            )}
           </div>
         )}
 
@@ -2013,7 +1670,6 @@ export default function SocialMediaPostGenerator() {
           return (
           <div className="ag-page-in flex-1 overflow-y-auto px-4 pb-10 sm:px-6 md:px-8">
             {renderPartyBanner()}
-            {renderQuota()}
             <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-2">
               <span className="inline-block rounded-full border border-[#1e3a6e]/60 bg-[#0d1840]/60 px-2.5 py-0.5 font-count text-[10px] uppercase tracking-widest text-[#6aa8ff]">
                 {selectedArticle.category}
@@ -2199,10 +1855,9 @@ export default function SocialMediaPostGenerator() {
                 disabled={atDailyLimit}
                 className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 lg:h-auto lg:py-3.5 ${atDailyLimit ? '' : 'btn-gradient shadow-[0_6px_24px_rgba(17,122,255,0.35)]'}`}
                 style={{ background: atDailyLimit ? 'rgba(30,50,100,0.4)' : undefined }}
-                title={atDailyLimit ? `Come back in ${quotaCountdown}` : undefined}
               >
                 {atDailyLimit ? (
-                  <>⏳ Come back in {quotaCountdown}</>
+                  <>{t('gen.quota.allUsed', { limit: quota?.daily_limit ?? 5 })}</>
                 ) : (
                   <><Sparkles size={15} strokeWidth={2} /> {t('gen.generatePost')}</>
                 )}

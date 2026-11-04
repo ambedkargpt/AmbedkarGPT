@@ -65,8 +65,8 @@ export default function NewsCarousel({
             <span className="block h-[3px] w-10 shrink-0 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 10px ${accent}88` }} />
             {headingControl}
           </div>
-          <h2 className="break-words font-display text-[22px] font-bold leading-tight text-white [overflow-wrap:anywhere] sm:text-[26px]">{title}</h2>
-          {subtitle && <p className="mt-1 text-[14px] text-[#8a97b8] sm:text-[15px]">{subtitle}</p>}
+          <h2 className="break-words font-display text-[24px] font-bold leading-tight text-white [overflow-wrap:anywhere] sm:text-[28px]">{title}</h2>
+          {subtitle && <p className="mt-1 text-[15px] text-[#8a97b8] sm:text-[16px]">{subtitle}</p>}
         </div>
         {!comingSoon && shown.length > 0 && (
           <div className="flex shrink-0 items-center gap-2">
@@ -132,7 +132,7 @@ export default function NewsCarousel({
           // Room above and below (pt / pb, pulled back with -mt): a scrolling
           // row clips both ways, and a hovered card rises 6px with a shadow,
           // which cut its top off.
-          className="-mx-4 -mt-3 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto scroll-smooth px-4 pb-6 pt-3 [scrollbar-width:none] sm:-mx-6 sm:scroll-px-16 sm:px-16 md:-mx-8 md:scroll-px-16 md:px-16 [&::-webkit-scrollbar]:hidden"
+          className="-mx-4 -mt-3 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto scroll-smooth px-4 pb-6 pt-3 [scrollbar-width:none] sm:mx-0 sm:scroll-px-16 sm:px-16 md:mx-0 md:scroll-px-16 md:px-16 [&::-webkit-scrollbar]:hidden"
         >
           {shown.map((a, i) => {
             const cardAccent = accentFor ? accentFor(a) : accent;
@@ -142,17 +142,17 @@ export default function NewsCarousel({
                 type="button"
                 data-story-card
                 onClick={() => onOpen(a)}
-                className="ag-rise ag-card group flex h-[214px] w-[78vw] max-w-[320px] shrink-0 snap-start flex-col rounded-2xl border bg-[#0e1320] p-5 text-left sm:w-[320px]"
+                className="ag-rise ag-card group flex h-[230px] w-[82vw] max-w-[340px] shrink-0 snap-start flex-col rounded-2xl border bg-[#0e1320] p-5 text-left sm:w-[340px]"
                 style={{ borderColor: 'rgba(30,38,54,0.9)', borderTop: `3px solid ${cardAccent}`, '--i': i, '--cat': cardAccent }}
               >
-                <span className="mb-2 text-[12.5px] font-semibold" style={{ color: cardAccent }}>
+                <span className="mb-2 text-[14px] font-semibold" style={{ color: cardAccent }}>
                   {a.source || a.category}
                 </span>
-                <span className="font-hindi line-clamp-3 text-[clamp(19px,0.6vw+14px,21px)] font-semibold leading-[1.5] text-white">
+                <span className="font-hindi line-clamp-3 text-[clamp(21px,0.6vw+15px,23px)] font-semibold leading-[1.5] text-white">
                   {a.title}
                 </span>
                 <span className="mt-auto flex items-center justify-between gap-2 pt-4 text-[13px]">
-                  <span className="font-count text-[#6b7a9e]">{dateLabel ? dateLabel(a.date) : ''}</span>
+                  <span className="font-count text-[14px] text-[#6b7a9e]">{dateLabel ? dateLabel(a.date) : ''}</span>
                   <span className="inline-flex items-center gap-1 font-semibold" style={{ color: cardAccent }}>
                     <Sparkles size={13} />
                     {t('gen.generate')}
