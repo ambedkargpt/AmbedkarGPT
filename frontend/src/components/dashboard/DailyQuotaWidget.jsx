@@ -1,27 +1,8 @@
-import { useEffect, useState } from 'react';
 import { Zap, Flame, AlertTriangle, Trophy } from 'lucide-react';
 import { useI18n } from '../../i18n/index.jsx';
 
 const DAILY_LIMIT = 5;
 const MILESTONE   = 200;
-
-function useCountdown(resetAt) {
-  const [label, setLabel] = useState('');
-  useEffect(() => {
-    if (!resetAt) return;
-    function tick() {
-      const diff = Math.max(0, Math.floor((new Date(resetAt) - Date.now()) / 1000));
-      const h = Math.floor(diff / 3600);
-      const m = Math.floor((diff % 3600) / 60);
-      const s = diff % 60;
-      setLabel(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
-    }
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [resetAt]);
-  return label;
-}
 
 /**
  * quota prop shape (from GET /posts/daily-quota):
@@ -31,7 +12,6 @@ function useCountdown(resetAt) {
  */
 export default function DailyQuotaWidget({ quota, loading }) {
   const { t } = useI18n();
-  const countdown = useCountdown(quota?.daily_remaining === 0 ? quota?.reset_at : null);
 
   if (loading) {
     return (
@@ -48,7 +28,6 @@ export default function DailyQuotaWidget({ quota, loading }) {
   const {
     daily_used = 0,
     daily_remaining = DAILY_LIMIT,
-    reset_at,
     streak_days = 0,
     total_streak_posts = 0,
     streak_at_risk = false,
@@ -144,8 +123,8 @@ export default function DailyQuotaWidget({ quota, loading }) {
       {/* Countdown at limit */}
       {atLimit && (
         <div className="flex items-center justify-between rounded-xl border border-red-500/20 bg-red-500/8 px-3.5 py-2.5">
-          <span className="text-[12px] text-red-400/80">{t('quota.allUsed')}</span>
-          <span className="font-count text-[14px] font-bold tabular-nums text-red-400">{countdown}</span>
+          <span className="text-[14px] text-red-300">{t('quota.limitReached')}</span>
+          <span className="text-[14px] font-bold text-red-300">{t('quota.zeroLeft')}</span>
         </div>
       )}
 

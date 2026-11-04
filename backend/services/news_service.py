@@ -37,9 +37,12 @@ class NewsService:
         tenant: str | int | None = None,
         include_general: bool = True,
         include_opposition: bool = True,
+        scope: str | None = "national",
     ) -> list[NewsResponse]:
         tenant_ids = self._resolve_tenant_ids(tenant, include_general, include_opposition)
-        docs = self.repo.list(limit=limit, skip=skip, language=language, tenant_ids=tenant_ids)
+        docs = self.repo.list(
+            limit=limit, skip=skip, language=language, tenant_ids=tenant_ids, scope=scope,
+        )
         return [self._to_response(doc, include_summary=include_summary) for doc in docs]
 
     def count(

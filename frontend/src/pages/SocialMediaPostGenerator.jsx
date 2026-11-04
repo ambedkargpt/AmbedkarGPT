@@ -7,7 +7,7 @@ import {
   Copy, Check, RefreshCw, ChevronDown, FileText, Star, Radio,
   ArrowUpDown, List, LayoutGrid, Users, ArrowRight,
   CalendarDays, Clock, ChevronRight, X as XIcon,
-  MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle, Smartphone,
+  MessageCircle, Repeat2, Heart, Share, Flame, AlertTriangle, Smartphone, PenLine,
 } from 'lucide-react';
 
 import PreferencesPanel from '../components/generate/PreferencesPanel';
@@ -27,6 +27,7 @@ import Spinner from '../components/Spinner';
 import { useI18n } from '../i18n/index.jsx';
 import SpeakButton from '../components/generate/SpeakButton';
 import Sidebar from '../components/dashboard/Sidebar';
+import NewsCarousel from '../components/generate/NewsCarousel';
 import NotificationBell from '../components/dashboard/NotificationBell';
 import ProfileMenu from '../components/dashboard/ProfileMenu';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -40,24 +41,6 @@ import { partyLogo } from '../utils/politicalParties';
 import { trackEvent } from '../analytics/metrics';
 
 const CATEGORIES = ['All', 'Legacy', 'Policy', 'Education', 'Research', 'Grassroots'];
-
-function useCountdown(resetAt) {
-  const [label, setLabel] = useState('');
-  useEffect(() => {
-    if (!resetAt) return;
-    function tick() {
-      const diff = Math.max(0, Math.floor((new Date(resetAt) - Date.now()) / 1000));
-      const h = Math.floor(diff / 3600);
-      const m = Math.floor((diff % 3600) / 60);
-      const s = diff % 60;
-      setLabel(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`);
-    }
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, [resetAt]);
-  return label;
-}
 
 // WhatsApp first and X last: in the order these posts are most shared.
 const PLATFORMS = [
@@ -269,6 +252,16 @@ const PARTY_TAG_KEYS = {
   bjp:       ['ptag.bjp.1', 'ptag.bjp.2', 'ptag.bjp.3'],
 };
 
+// Newest first, for the overview's rows.
+function byNewest(list) {
+  return [...list].sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0));
+}
+
+// A card's colour in the overview: the opposition's red, otherwise the party's.
+function levelCardAccent(article) {
+  return article.tenantSlug === 'bjp' ? '#e5484d' : '#3f9fff';
+}
+
 function formatNewsDate(d) {
   if (!d) return '';
   const dt = new Date(d);
@@ -302,7 +295,20 @@ export default function SocialMediaPostGenerator() {
   }
   const { currentUser, logout } = useAuth();
 
-  const [articles,        setArticles]        = useState([]);
+  const [nationalArticles, setArticles]       = useState([]);
+  // The news page is split by level of politics. National is the parties'
+  // central channels (everything there was before), state is the state units
+  // (INC MP, BJP MP for now); city and social come later.
+  const [stateArticles,   setStateArticles]   = useState([]);
+  const [stateLoading,    setStateLoading]    = useState(true);
+  const [selectedState,   setSelectedState]   = useState('all');
+  // null: the overview, a row per level. 'national' / 'state': that level's
+  // full grid, which is the feed as it was.
+  const [level,           setLevel]           = useState(null);
+  const visibleStateArticles = stateArticles.filter((a) => selectedState === 'all'
+    ? ['madhya pradesh', 'uttar pradesh'].includes(String(a.region || '').toLowerCase())
+    : String(a.region || '').toLowerCase() === selectedState.toLowerCase());
+  const articles = level === 'state' ? visibleStateArticles : nationalArticles;
   const [newsLoading,     setNewsLoading]     = useState(true);
   const [newsError,       setNewsError]       = useState(false);
   const [search,          setSearch]          = useState('');
@@ -370,7 +376,6 @@ export default function SocialMediaPostGenerator() {
   const { t, lang } = useI18n();
   const siteLang = getSiteLanguage() ?? 'hi';
   const atDailyLimit = quota?.daily_remaining === 0;
-  const quotaCountdown = useCountdown(atDailyLimit ? quota?.reset_at : null);
 
   // Fetch daily quota on mount
   useEffect(() => {
@@ -396,17 +401,26 @@ export default function SocialMediaPostGenerator() {
     getNews(query)
       .then((data) => {
         if (data?.length) {
-          setArticles(data.map(adaptNews));
+          setArticles(data.map(adaptNews).filter((a) => a.scope !== 'state'));
           setNewsLoading(false);
         } else {
           const fallback = { limit: 100 };
           if (selectedParty) { fallback.tenant = selectedParty; fallback.includeGeneral = false; fallback.includeOpposition = true; }
           getNews(fallback).then((all) => {
-            if (all?.length) setArticles(all.map(adaptNews));
+            if (all?.length) setArticles(all.map(adaptNews).filter((a) => a.scope !== 'state'));
           }).catch(() => setNewsError(true)).finally(() => setNewsLoading(false));
         }
       })
       .catch(() => { setNewsLoading(false); setNewsError(true); });
+
+    setStateLoading(true);
+    // State selection is independent of the reader's party: show both state
+    // units' coverage so the MP feed can include BJP and Congress stories.
+    const stateQuery = { limit: 100, scope: 'state' };
+    getNews(stateQuery)
+      .then((data) => setStateArticles((data || []).map(adaptNews).filter((a) => a.scope === 'state')))
+      .catch(() => setStateArticles([]))
+      .finally(() => setStateLoading(false));
   }, [siteLang, selectedParty]);
 
   // Debounce search input 300ms before filtering
@@ -703,7 +717,14 @@ export default function SocialMediaPostGenerator() {
   function goBack() {
     if (view === 'generated') goView('preview');
     else if (view === 'preview') goView('feed');
+    else if (level !== null) { setLevel(null); setPage(1); }
     else navigate('/generate');
+  }
+
+  function openLevel(id) {
+    setLevel(id);
+    setPage(1);
+    setNewsSection('party');
   }
   const handoffDone = useRef(false);
 
@@ -977,6 +998,13 @@ export default function SocialMediaPostGenerator() {
   }, [phoneOpen]);
 
   const authorName = currentUser?.full_name || currentUser?.username || 'AmbedkarGPT';
+  // "Madhya Pradesh" as the reader says it, and a fallback before any state
+  // story has arrived.
+  function regionLabel(region) {
+    const r = region || 'Madhya Pradesh';
+    if (r === 'all') return t('gen.stateAll');
+    return lang === 'hi' ? ({ 'Madhya Pradesh': 'मध्य प्रदेश' }[r] ?? r) : r;
+  }
   const welcomeLogo = partyLogo(currentUser?.political_party);
   const accountControls = (
     <div className="flex shrink-0 items-center gap-2 sm:gap-3">
@@ -1033,12 +1061,7 @@ export default function SocialMediaPostGenerator() {
         </div>
         <div className="shrink-0 text-right">
           {atDailyLimit ? (
-            <>
-              <p className="font-count text-[20px] font-bold leading-none tabular-nums text-red-400 sm:text-[24px]">
-                {quotaCountdown}
-              </p>
-              <p className="mt-1 text-[12.5px] font-medium text-[#8b94b8]">{t('gen.quota.resets')}</p>
-            </>
+            <p className="text-[14px] font-semibold text-red-300">{t('gen.quota.allUsed', { limit })}</p>
           ) : (
             <>
               <p className="font-count text-[30px] font-bold leading-none tabular-nums text-[#6aa8ff] sm:text-[34px]">
@@ -1302,6 +1325,79 @@ export default function SocialMediaPostGenerator() {
               <div className="order-2 ml-auto sm:order-4 sm:self-start">{accountControls}</div>
               <span className="order-3 basis-full sm:hidden" aria-hidden="true" />
             </div>
+            {level === null ? (
+              <>
+                <NewsCarousel
+                  title={t('gen.levels.national')}
+                  subtitle={t('gen.levels.nationalSub')}
+                  accent="#3f9fff"
+                  items={byNewest(nationalArticles.filter((a) => a.tenantSlug !== 'general'))}
+                  loading={newsLoading}
+                  onOpen={handlePreview}
+                  onViewAll={() => openLevel('national')}
+                  accentFor={levelCardAccent}
+                  dateLabel={formatNewsDate}
+                />
+                <NewsCarousel
+                  title={t('gen.levels.state', { region: regionLabel(selectedState) })}
+                  subtitle={t('gen.levels.stateSub')}
+                  accent="#f0a63a"
+                  items={byNewest(visibleStateArticles)}
+                  loading={stateLoading}
+                  onOpen={handlePreview}
+                  onViewAll={() => openLevel('state')}
+                  accentFor={levelCardAccent}
+                  dateLabel={formatNewsDate}
+                  emptyText={t('gen.levels.stateEmpty')}
+                  headingControl={(
+                    <label className="flex items-center gap-2 text-sm font-semibold text-[#c7d1eb]">
+                      <span className="sr-only">{t('gen.statePicker')}</span>
+                      <select
+                        value={selectedState}
+                        onChange={(event) => setSelectedState(event.target.value)}
+                        className="max-w-full rounded-xl border border-[#344766] bg-[#0d1531] px-3 py-2 text-sm text-white outline-none transition focus:border-[#3f9fff] focus:ring-2 focus:ring-[#3f9fff]/25"
+                      >
+                        <option value="all">{t('gen.stateAll')}</option>
+                        <option value="Madhya Pradesh">Madhya Pradesh (MP)</option>
+                        <option value="Uttar Pradesh">Uttar Pradesh (UP)</option>
+                      </select>
+                    </label>
+                  )}
+                />
+                <NewsCarousel title={t('gen.levels.city')} subtitle={t('gen.levels.citySub')} accent="#22c55e" comingSoon />
+                <NewsCarousel title={t('gen.levels.social')} subtitle={t('gen.levels.socialSub')} accent="#a78bfa" comingSoon />
+              </>
+            ) : (
+            <>
+            {/* Inside a level: the way back to the overview, then the feed as it was. */}
+            <button
+              type="button"
+              onClick={() => { setLevel(null); setPage(1); }}
+              className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#1e3260]/70 bg-[#0d1531]/70 px-4 py-2 text-[14px] font-semibold text-[#c7d1eb] transition hover:border-[#3f9fff]/60 hover:text-white"
+            >
+              <ArrowLeft size={15} strokeWidth={2.2} />
+              {t('gen.levels.allLevels')}
+              <span className="text-[#6b7a9e]">·</span>
+              <span className="text-white">
+                {level === 'state'
+                  ? t('gen.levels.state', { region: regionLabel(selectedState) })
+                  : t('gen.levels.national')}
+              </span>
+            </button>
+            {level === 'state' && (
+              <label className="mb-4 flex items-center gap-3 text-sm font-semibold text-[#c7d1eb]">
+                <span>{t('gen.statePicker')}</span>
+                <select
+                  value={selectedState}
+                  onChange={(event) => { setSelectedState(event.target.value); setPage(1); }}
+                  className="rounded-xl border border-[#263654] bg-[#0d1531] px-3 py-2 text-white outline-none focus:border-[#3f9fff]"
+                >
+                  <option value="all">{t('gen.stateAll')}</option>
+                  <option value="Madhya Pradesh">Madhya Pradesh (MP)</option>
+                  <option value="Uttar Pradesh">Uttar Pradesh (UP)</option>
+                </select>
+              </label>
+            )}
             {/* Three news sections: chosen party, opposition (BJP, empty
                 until it is scraped), and general (neutral) news. Underlined
                 tabs rather than pills, and each section carries its own
@@ -1871,6 +1967,8 @@ export default function SocialMediaPostGenerator() {
               )}
               </>
             )}
+            </>
+            )}
           </div>
         )}
 
@@ -2077,10 +2175,9 @@ export default function SocialMediaPostGenerator() {
                 disabled={atDailyLimit}
                 className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[14px] font-semibold text-white transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50 lg:h-auto lg:py-3.5 ${atDailyLimit ? '' : 'btn-gradient shadow-[0_6px_24px_rgba(17,122,255,0.35)]'}`}
                 style={{ background: atDailyLimit ? 'rgba(30,50,100,0.4)' : undefined }}
-                title={atDailyLimit ? `Come back in ${quotaCountdown}` : undefined}
               >
                 {atDailyLimit ? (
-                  <>⏳ Come back in {quotaCountdown}</>
+                  <>{t('gen.quota.allUsed', { limit: quota?.daily_limit ?? 5 })}</>
                 ) : (
                   <><Sparkles size={15} strokeWidth={2} /> {t('gen.generatePost')}</>
                 )}
@@ -2349,19 +2446,55 @@ export default function SocialMediaPostGenerator() {
               </div>
             )}
 
-            {/* Refinement note */}
+            {/* Refinement: change the post in your own words. It was a faint
+                one-line input that nobody noticed; now a card with a title,
+                a large box, ready-made asks and a button that says what it does. */}
             {!generating && !translating && generatedPost && selectedPostId && !refinedAt && (
-              <div className="mt-3">
-                <input
-                  type="text"
+              <div
+                className="mt-4 rounded-2xl border p-4 sm:p-5"
+                style={{ borderColor: 'rgba(240,166,58,0.5)', background: 'linear-gradient(135deg, rgba(240,166,58,0.12) 0%, rgba(10,17,48,0.75) 60%)' }}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f0a63a] text-[#2a1600]">
+                    <PenLine size={19} strokeWidth={2.2} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[17px] font-bold leading-snug text-white sm:text-[18px]">{t('gen.refine.title')}</p>
+                    <p className="mt-0.5 text-[14px] leading-snug text-[#c9b48f]">{t('gen.refine.sub')}</p>
+                  </div>
+                </div>
+                <textarea
+                  rows={2}
                   value={refinementNote}
                   onChange={(e) => { setRefinementNote(e.target.value); if (refineHint) setRefineHint(''); }}
-                  onKeyDown={(e) => e.key === 'Enter' && refinementNote.trim() && handleRegenerate()}
-                  placeholder={t('gen.refinementPlaceholder')}
-                  className="w-full rounded-xl border border-[#1e3260]/50 bg-[#0a1130]/60 px-4 py-2.5 text-[12.5px] text-white placeholder-[#3a4e70] outline-none transition focus:border-[#3f9fff]/50 focus:shadow-[0_0_0_3px_rgba(63,159,255,0.1)]"
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && refinementNote.trim()) { e.preventDefault(); handleRegenerate(); } }}
+                  placeholder={t('gen.refine.placeholder')}
+                  className="mt-3.5 w-full resize-none rounded-xl border border-[#f0a63a]/40 bg-[#0a1130]/80 px-4 py-3 text-[16px] leading-relaxed text-white placeholder-[#7d89ad] outline-none transition focus:border-[#f0a63a] focus:shadow-[0_0_0_3px_rgba(240,166,58,0.18)]"
                 />
+                <div className="mt-2.5 flex flex-wrap gap-2">
+                  {['gen.refine.q.shorter', 'gen.refine.q.stronger', 'gen.refine.q.question', 'gen.refine.q.number', 'gen.refine.q.simpler'].map((k) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => { setRefinementNote(t(k)); if (refineHint) setRefineHint(''); }}
+                      className="rounded-full border border-[#f0a63a]/40 bg-[#f0a63a]/10 px-3.5 py-1.5 text-[14px] font-medium text-[#ffd59a] transition hover:border-[#f0a63a] hover:bg-[#f0a63a]/20"
+                    >
+                      {t(k)}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRegenerate}
+                  disabled={!refinementNote.trim()}
+                  className="mt-3.5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[#f0a63a] text-[16px] font-bold text-[#2a1600] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto sm:px-6"
+                >
+                  <RefreshCw size={17} strokeWidth={2.4} />
+                  {t('gen.refine.button')}
+                </button>
+                <p className="mt-2 text-[12.5px] text-[#9a8f7c]">{t('gen.refine.once')}</p>
                 {refineHint && (
-                  <p className="mt-1.5 text-[11.5px] text-[#fbbf24]">{refineHint}</p>
+                  <p className="mt-1.5 text-[13px] text-[#fbbf24]">{refineHint}</p>
                 )}
               </div>
             )}

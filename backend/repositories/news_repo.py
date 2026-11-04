@@ -30,6 +30,18 @@ FRESH_WINDOW_TENANTS = ("congress", "samajwadi", "bjp")
 LIST_PROJECTION = {"research": 0}
 
 
+def _scope_clause(scope: str) -> dict:
+    """
+    Stories at one level of politics. Everything published before scopes
+    existed came from the parties' central channels, so a story with no
+    scope counts as national.
+    """
+    scope = scope.strip().lower()
+    if scope == "national":
+        return {"$or": [{"scope": "national"}, {"scope": {"$exists": False}}, {"scope": None}]}
+    return {"scope": scope}
+
+
 class NewsRepository:
     def __init__(self) -> None:
         self.collection = db["news"]
@@ -63,8 +75,11 @@ class NewsRepository:
         skip: int = 0,
         language: str | None = None,
         tenant_ids: list[int] | None = None,
+        scope: str | None = None,
     ) -> list[dict]:
         clauses: list[dict] = []
+        if scope:
+            clauses.append(_scope_clause(scope))
         if language:
             # Untagged documents always match. The publish path deliberately
             # stores language=None (a real value would clash with Mongo's text

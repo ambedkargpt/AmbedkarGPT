@@ -104,6 +104,8 @@ def _normalize_item(
     tenant_slug: str = "general",
     source_name: str = "Ravish Kumar",
     tags: list[str] | None = None,
+    scope: str = "national",
+    region: str | None = None,
 ) -> dict[str, Any] | None:
     source_url = normalize_source_url(item.get("video_link"))
     headline = (item.get("headline") or "").strip()
@@ -136,6 +138,9 @@ def _normalize_item(
         # Tenant stamp drives party vs general news segmentation in the API.
         "tenant_id": tenant_id,
         "tenant_slug": tenant_slug,
+        # National, state or city politics, and where (see ChannelConfig.scope).
+        "scope": scope,
+        "region": region,
         # "press_conference" (livestreamed briefing) vs "news" (regular upload).
         "content_type": classify_content_type(item),
         # Keep null by default to avoid Mongo text index language override conflicts.
@@ -155,6 +160,8 @@ def load_and_dedupe_news(
     tenant: Any = None,
     tags: list[str] | None = None,
     source_name: str | None = None,
+    scope: str = "national",
+    region: str | None = None,
 ) -> tuple[list[dict[str, Any]], MigrationStats]:
     # A new channel has no legacy archive until items are first evicted, and a
     # channel can be published before either file exists. Treat both as empty
@@ -185,6 +192,8 @@ def load_and_dedupe_news(
         # its name alone would file every Dalit Dastak story under Ravish Kumar.
         "source_name": source_name or tenant.source_name,
         "tags": tags,
+        "scope": scope,
+        "region": region,
     }
 
     merged: list[dict[str, Any]] = []
@@ -225,9 +234,12 @@ def migrate_news(
     tenant: Any = None,
     tags: list[str] | None = None,
     source_name: str | None = None,
+    scope: str = "national",
+    region: str | None = None,
 ) -> MigrationStats:
     deduped, stats = load_and_dedupe_news(
-        current_file, legacy_file, tenant=tenant, tags=tags, source_name=source_name
+        current_file, legacy_file, tenant=tenant, tags=tags, source_name=source_name,
+        scope=scope, region=region,
     )
     existing_ids = {
         d.get("news_id")

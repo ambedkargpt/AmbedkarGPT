@@ -72,6 +72,8 @@ def load_channel_config(project_root: Path, channel: str) -> ChannelConfig:
         max_videos_per_run=_opt_positive_int("max_videos_per_run"),
         max_consecutive_transcript_failures=_opt_positive_int("max_consecutive_transcript_failures"),
         tenant_slug=str(payload.get("tenant_slug") or "general").strip().lower(),
+        scope=(str(payload.get("scope") or "national").strip().lower()),
+        region=(str(payload.get("region") or "").strip() or None),
         source_name=(str(payload.get("source_name") or "").strip() or None),
         news_mode=("multi" if str(payload.get("news_mode") or "single").strip().lower() == "multi" else "single"),
         stories_per_video=int(payload.get("stories_per_video") or 1),

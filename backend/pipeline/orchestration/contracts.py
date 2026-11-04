@@ -44,6 +44,12 @@ class ChannelConfig:
     max_consecutive_transcript_failures: int | None = None
     # Tenant this channel publishes into (see backend/tenants.py).
     tenant_slug: str = "general"
+    # Which level of politics the channel covers: "national" (the party's own
+    # central channel), "state" (a state unit, such as INC MP) or "city". The
+    # news page groups stories by it, and the post prompt writes for it.
+    scope: str = "national"
+    # For a state or city channel, where: "Madhya Pradesh", "Bhopal".
+    region: str | None = None
     # What a published story says it came from. The tenant's own name by
     # default, which is right while a tenant has one channel; the general
     # tenant now carries two, and every Dalit Dastak story would otherwise be

@@ -285,9 +285,15 @@ export function RadioProvider({ children }) {
 
   // ── Controls ────────────────────────────────────────────────────────────
   const play = useCallback(() => {
+    // Asked for before the station has loaded (a "Listen now" on the landing
+    // page, say): remember it and load the station. The effect that sets the
+    // source starts playback as soon as the file is there, so one press is
+    // enough - nobody has to find a Play button afterwards. The click has
+    // already given the page permission to play sound.
+    wantPlay.current = true;
+    setPrimed(true);
     const el = audioRef.current;
     if (!el || !el.src) return;
-    wantPlay.current = true;
     trackEvent('radio_play', { station: tenant });
     // Tuning in joins the broadcast where it is now, not where this listener
     // left it. Someone who tunes out for ten minutes and back in has missed

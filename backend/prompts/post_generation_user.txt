@@ -3,6 +3,10 @@ Use the system instructions. Everything you need for this generation is in the J
 Field guide:
 - user_profile: the author you are writing as. Highest authority on tone, length and format.
 - news: the story being responded to.
+    - news.level.scope is the level of politics the story belongs to: "national", "state" or "city", with news.level.region naming the state or city.
+    - For "state": the author is doing state-level politics in news.level.region. Keep their role and every preference, and write for that state's voters: name the state government, its leaders and its issues, connect national themes to their effect in the state, and close on a state-level ask. Do not turn it into a national post.
+    - For "city": the same, for that city: its local issues, its civic bodies and its own people.
+    - For "national": write as before.
 - video: the source video for this story. source_url is the link it came from.
 - source_video_chunks: passages from THIS story's own video. These are the speaker's words about this story, and they may be used for facts.
 - ideology_chunks: passages retrieved from OTHER videos. They are your ideological and philosophical grounding only. Take arguments, framing and Ambedkarite reasoning from them. NEVER take a fact, figure, date, place name or event from them: they describe a different story, and using their detail here attributes one event's facts to another.

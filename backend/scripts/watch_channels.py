@@ -61,11 +61,11 @@ LOCK_PATH = WATCH_DIR / "watch.lock"
 LOG_PATH = WATCH_DIR / "watch.log"
 CONFIG_DIR = ROOT / "backend" / "config" / "channels"
 
-# Smallest channel first. This order is inherited from overnight_scrape.py for
-# the reason given there: Congress alone can exhaust YouTube's transcript budget
-# for the whole IP, and running it ahead of Samajwadi left Samajwadi with no
-# stories at all on two consecutive rounds.
-CHANNEL_ORDER = ("samajwadi", "ravish", "dalitdastak", "congress", "bjp")
+# Only the party channels requested for the local watcher. Keep the national
+# and Madhya Pradesh feeds for BJP and Congress, plus Samajwadi.
+CHANNEL_ORDER = (
+    "bjp", "congress", "samajwadi", "congress_mp", "bjp_mp",
+)
 
 # A lock whose holder has not been heard from in this long is assumed dead. Long
 # enough to cover a full channel run, which is six to eight minutes.
@@ -202,8 +202,7 @@ def channel_names(requested: str | None) -> list[str]:
         if unknown:
             raise SystemExit(f"Unknown channel(s): {', '.join(unknown)}")
         return asked
-    ordered = [c for c in CHANNEL_ORDER if c in available]
-    return ordered + sorted(available - set(ordered))
+    return [c for c in CHANNEL_ORDER if c in available]
 
 
 def _processed_path(payload: dict) -> Path:

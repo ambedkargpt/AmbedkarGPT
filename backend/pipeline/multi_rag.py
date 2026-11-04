@@ -104,6 +104,10 @@ def _tenant_to_channel() -> dict[str, str]:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (ValueError, OSError):
             continue
+        # A state or city unit (INC MP) writes from its party's national
+        # knowledge base and has none of its own, so it never stands for it.
+        if str(payload.get("scope") or "national").strip().lower() != "national":
+            continue
         slug = str(payload.get("tenant_slug") or "general").strip().lower()
         # First config wins, so a tenant with several channels stays deterministic.
         mapping.setdefault(slug, str(payload.get("name") or path.stem))

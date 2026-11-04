@@ -77,6 +77,7 @@ export default function RadioBeacon() {
       navigate('/login');
       return;
     }
+    play();
     navigate('/bhimradio');
   }
 

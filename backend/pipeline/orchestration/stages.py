@@ -361,6 +361,8 @@ def run_news_publish(context: PipelineContext) -> StageResult:
         legacy_file=context.channel.generated_news_legacy_path,
         tenant=tenant,
         source_name=context.channel.source_name,
+        scope=context.channel.scope,
+        region=context.channel.region,
     )
     return StageResult(
         "news_publish",
