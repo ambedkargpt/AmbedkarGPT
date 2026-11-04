@@ -21,7 +21,7 @@ import { useI18n } from '../../i18n/index.jsx';
  */
 export default function NewsCarousel({
   title, subtitle, accent = '#3f9fff', items = [], onOpen, onViewAll,
-  loading = false, comingSoon = false, accentFor, dateLabel, emptyText,
+  loading = false, comingSoon = false, accentFor, dateLabel, emptyText, headingControl,
 }) {
   const { t } = useI18n();
   const rowRef = useRef(null);
@@ -59,10 +59,13 @@ export default function NewsCarousel({
 
   return (
     <section className="mb-8 last:mb-2" aria-label={title}>
-      <div className="mb-3.5 flex items-end gap-3">
+      <div className="mb-3.5 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
         <div className="min-w-0 flex-1">
-          <span className="mb-2 block h-[3px] w-10 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 10px ${accent}88` }} />
-          <h2 className="font-display text-[22px] font-bold leading-tight text-white sm:text-[26px]">{title}</h2>
+          <div className="mb-2 flex min-w-0 items-center gap-3">
+            <span className="block h-[3px] w-10 shrink-0 rounded-full" style={{ backgroundColor: accent, boxShadow: `0 0 10px ${accent}88` }} />
+            {headingControl}
+          </div>
+          <h2 className="break-words font-display text-[22px] font-bold leading-tight text-white [overflow-wrap:anywhere] sm:text-[26px]">{title}</h2>
           {subtitle && <p className="mt-1 text-[14px] text-[#8a97b8] sm:text-[15px]">{subtitle}</p>}
         </div>
         {!comingSoon && shown.length > 0 && (

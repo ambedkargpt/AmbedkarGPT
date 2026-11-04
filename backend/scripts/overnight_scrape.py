@@ -43,7 +43,11 @@ LOG = ROOT / "backend" / "outputs" / "overnight_scrape.log"
 # dalitdastak sits after ravish: it is small, and the two of them together use
 # little of the transcript budget before congress and bjp take the rest. It was
 # missing from this list entirely, so every catch-up run skipped it.
-CHANNELS = ("samajwadi", "ravish", "dalitdastak", "congress", "bjp")
+CHANNELS = (
+    "samajwadi", "ravish", "dalitdastak",
+    "congress_mp", "bjp_mp",
+    "congress", "bjp",
+)
 
 # A video that is known to exist and to have captions. Probing one known id is
 # cheaper and more honest than trying a whole run to find out.
@@ -177,10 +181,17 @@ def main() -> None:
         from backend.db.mongo import db
 
         for slug in CHANNELS:
-            total = db["news"].count_documents({"tenant_slug": slug})
-            fresh = db["news"].count_documents(
-                {"tenant_slug": slug, "published_at": {"$gte": datetime(2026, 8, 28, tzinfo=timezone.utc)}}
-            )
+            channel_cfg = json.loads((ROOT / "backend" / "config" / "channels" / f"{slug}.json").read_text(encoding="utf-8"))
+            selector = {"tenant_slug": channel_cfg.get("tenant_slug", slug)}
+            if channel_cfg.get("scope"):
+                selector["scope"] = channel_cfg["scope"]
+            if channel_cfg.get("region"):
+                selector["region"] = channel_cfg["region"]
+            total = db["news"].count_documents(selector)
+            fresh = db["news"].count_documents({
+                **selector,
+                "published_at": {"$gte": datetime(2026, 8, 28, tzinfo=timezone.utc)},
+            })
             log(f"final: {slug} total={total} published_since_28_Aug={fresh}")
     except Exception as exc:
         log(f"final count failed: {exc}")

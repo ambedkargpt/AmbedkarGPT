@@ -9,7 +9,7 @@
   "region": "Madhya Pradesh",
   "tenant_slug": "bjp",
   "source_name": "BJP Madhya Pradesh",
-  "lookback_days": 5,
+  "lookback_days": 3,
   "max_videos_per_run": 6,
   "max_consecutive_transcript_failures": 4,
   "channel_slug": "BJP4MP",

@@ -126,6 +126,8 @@ export default {
   'gen.levels.national': 'National news',
   'gen.levels.nationalSub': 'Your party\'s and the opposition\'s news from across the country',
   'gen.levels.state': 'State news · {region}',
+  'gen.statePicker': 'State',
+  'gen.stateAll': 'All states · MP + UP',
   'gen.levels.stateSub': 'From the state units of the parties, as they post',
   'gen.levels.stateEmpty': 'No state news yet. It appears here as the state units post.',
   'gen.levels.city': 'City news',

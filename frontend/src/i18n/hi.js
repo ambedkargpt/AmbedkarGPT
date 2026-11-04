@@ -132,6 +132,8 @@ export default {
   'gen.levels.national': 'राष्ट्रीय ख़बरें',
   'gen.levels.nationalSub': 'देश भर से आपकी पार्टी और विपक्ष की ख़बरें',
   'gen.levels.state': 'राज्य की ख़बरें · {region}',
+  'gen.statePicker': 'राज्य',
+  'gen.stateAll': 'सभी राज्य · MP + UP',
   'gen.levels.stateSub': 'पार्टियों की राज्य इकाइयों से, जैसे ही वे पोस्ट करें',
   'gen.levels.stateEmpty': 'अभी राज्य की कोई ख़बर नहीं। राज्य इकाइयों के पोस्ट करते ही यहाँ दिखेगी।',
   'gen.levels.city': 'शहर की ख़बरें',

@@ -319,10 +319,14 @@ export default function SocialMediaPostGenerator() {
   // (INC MP, BJP MP for now); city and social come later.
   const [stateArticles,   setStateArticles]   = useState([]);
   const [stateLoading,    setStateLoading]    = useState(true);
+  const [selectedState,   setSelectedState]   = useState('all');
   // null: the overview, a row per level. 'national' / 'state': that level's
   // full grid, which is the feed as it was.
   const [level,           setLevel]           = useState(null);
-  const articles = level === 'state' ? stateArticles : nationalArticles;
+  const visibleStateArticles = stateArticles.filter((a) => selectedState === 'all'
+    ? ['madhya pradesh', 'uttar pradesh'].includes(String(a.region || '').toLowerCase())
+    : String(a.region || '').toLowerCase() === selectedState.toLowerCase());
+  const articles = level === 'state' ? visibleStateArticles : nationalArticles;
   const [newsLoading,     setNewsLoading]     = useState(true);
   const [newsError,       setNewsError]       = useState(false);
   const [search,          setSearch]          = useState('');
@@ -429,8 +433,9 @@ export default function SocialMediaPostGenerator() {
       .catch(() => { setNewsLoading(false); setNewsError(true); });
 
     setStateLoading(true);
+    // State selection is independent of the reader's party: show both state
+    // units' coverage so the MP feed can include BJP and Congress stories.
     const stateQuery = { limit: 100, scope: 'state' };
-    if (selectedParty) { stateQuery.tenant = selectedParty; stateQuery.includeGeneral = false; stateQuery.includeOpposition = true; }
     getNews(stateQuery)
       .then((data) => setStateArticles((data || []).map(adaptNews).filter((a) => a.scope === 'state')))
       .catch(() => setStateArticles([]))
@@ -1016,6 +1021,7 @@ export default function SocialMediaPostGenerator() {
   // story has arrived.
   function regionLabel(region) {
     const r = region || 'Madhya Pradesh';
+    if (r === 'all') return t('gen.stateAll');
     return lang === 'hi' ? ({ 'Madhya Pradesh': 'मध्य प्रदेश' }[r] ?? r) : r;
   }
   const welcomeLogo = partyLogo(currentUser?.political_party);
@@ -1357,16 +1363,30 @@ export default function SocialMediaPostGenerator() {
                   dateLabel={formatNewsDate}
                 />
                 <NewsCarousel
-                  title={t('gen.levels.state', { region: regionLabel(stateArticles[0]?.region) })}
+                  title={t('gen.levels.state', { region: regionLabel(selectedState) })}
                   subtitle={t('gen.levels.stateSub')}
                   accent="#f0a63a"
-                  items={byNewest(stateArticles)}
+                  items={byNewest(visibleStateArticles)}
                   loading={stateLoading}
                   onOpen={handlePreview}
                   onViewAll={() => openLevel('state')}
                   accentFor={levelCardAccent}
                   dateLabel={formatNewsDate}
                   emptyText={t('gen.levels.stateEmpty')}
+                  headingControl={(
+                    <label className="flex items-center gap-2 text-sm font-semibold text-[#c7d1eb]">
+                      <span className="sr-only">{t('gen.statePicker')}</span>
+                      <select
+                        value={selectedState}
+                        onChange={(event) => setSelectedState(event.target.value)}
+                        className="max-w-full rounded-xl border border-[#344766] bg-[#0d1531] px-3 py-2 text-sm text-white outline-none transition focus:border-[#3f9fff] focus:ring-2 focus:ring-[#3f9fff]/25"
+                      >
+                        <option value="all">{t('gen.stateAll')}</option>
+                        <option value="Madhya Pradesh">Madhya Pradesh (MP)</option>
+                        <option value="Uttar Pradesh">Uttar Pradesh (UP)</option>
+                      </select>
+                    </label>
+                  )}
                 />
                 <NewsCarousel title={t('gen.levels.city')} subtitle={t('gen.levels.citySub')} accent="#22c55e" comingSoon />
                 <NewsCarousel title={t('gen.levels.social')} subtitle={t('gen.levels.socialSub')} accent="#a78bfa" comingSoon />
@@ -1384,10 +1404,24 @@ export default function SocialMediaPostGenerator() {
               <span className="text-[#6b7a9e]">·</span>
               <span className="text-white">
                 {level === 'state'
-                  ? t('gen.levels.state', { region: regionLabel(stateArticles[0]?.region) })
+                  ? t('gen.levels.state', { region: regionLabel(selectedState) })
                   : t('gen.levels.national')}
               </span>
             </button>
+            {level === 'state' && (
+              <label className="mb-4 flex items-center gap-3 text-sm font-semibold text-[#c7d1eb]">
+                <span>{t('gen.statePicker')}</span>
+                <select
+                  value={selectedState}
+                  onChange={(event) => { setSelectedState(event.target.value); setPage(1); }}
+                  className="rounded-xl border border-[#263654] bg-[#0d1531] px-3 py-2 text-white outline-none focus:border-[#3f9fff]"
+                >
+                  <option value="all">{t('gen.stateAll')}</option>
+                  <option value="Madhya Pradesh">Madhya Pradesh (MP)</option>
+                  <option value="Uttar Pradesh">Uttar Pradesh (UP)</option>
+                </select>
+              </label>
+            )}
             {/* Three news sections: chosen party, opposition (BJP, empty
                 until it is scraped), and general (neutral) news. Underlined
                 tabs rather than pills, and each section carries its own
