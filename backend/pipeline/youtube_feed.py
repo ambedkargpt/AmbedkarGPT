@@ -18,6 +18,7 @@ description. It is a doorbell, not a source.
 from __future__ import annotations
 
 import re
+import time
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -129,20 +130,37 @@ def recent_uploads(channel_id: str, *, client: httpx.Client | None = None) -> li
     """
     owns_client = client is None
     client = client or httpx.Client(timeout=_TIMEOUT)
+    response = None
+    last_error = None
     try:
-        response = client.get(
-            _FEED_URL,
-            params={"channel_id": channel_id},
-            headers={"User-Agent": _BROWSER_UA},
-        )
-    except httpx.HTTPError as exc:
-        raise FeedUnavailable(f"feed for {channel_id}: {exc}") from exc
+        # YouTube's public Atom endpoint has been returning intermittent 404,
+        # 500, and transport errors for valid channel ids. Retry once after a
+        # short pause so one transient edge/cache error does not skip the
+        # whole channel for this polling round.
+        for attempt in range(2):
+            try:
+                response = client.get(
+                    _FEED_URL,
+                    params={"channel_id": channel_id},
+                    headers={"User-Agent": _BROWSER_UA},
+                )
+                last_error = None
+            except httpx.HTTPError as exc:
+                last_error = exc
+                if attempt == 1:
+                    raise FeedUnavailable(f"feed for {channel_id}: {exc}") from exc
+                time.sleep(1.0)
+                continue
+            if response.status_code < 400 or attempt == 1:
+                break
+            time.sleep(1.0)
     finally:
         if owns_client:
             client.close()
 
-    if response.status_code >= 400:
-        raise FeedUnavailable(f"feed for {channel_id} returned {response.status_code}")
+    if response is None or response.status_code >= 400:
+        status = response.status_code if response is not None else (last_error or "no response")
+        raise FeedUnavailable(f"feed for {channel_id} returned {status}")
 
     try:
         root = ET.fromstring(response.content)

@@ -15,6 +15,8 @@ class NewsCreateRequest(BaseModel):
     language: Optional[str] = None
     tags: list[str] = Field(default_factory=list)
     embedding_ref: Optional[str] = None
+    scope: str = "national"
+    region: Optional[str] = None
 
 
 class NewsUpdateRequest(BaseModel):
@@ -27,6 +29,8 @@ class NewsUpdateRequest(BaseModel):
     language: Optional[str] = None
     tags: Optional[list[str]] = None
     embedding_ref: Optional[str] = None
+    scope: Optional[str] = None
+    region: Optional[str] = None
 
 
 class NewsResponse(BaseModel):
