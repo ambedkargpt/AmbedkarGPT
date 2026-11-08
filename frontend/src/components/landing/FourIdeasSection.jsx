@@ -12,31 +12,59 @@ import { useI18n } from '../../i18n/index.jsx';
 // Apple glyph on another, at a weight and palette this page never chose. These
 // are stroked at the same width as every other icon in the product and take
 // the accent colour, so the row reads as part of the design.
+// Each idea takes a colour of the tricolour (saffron, the chakra's blue,
+// green), so the three read as three ideas of one flag rather than one card
+// printed three times.
 const IDEAS = [
-  { Icon: Handshake, id: 'unite' },
-  { Icon: ScrollText, id: 'const' },
-  { Icon: Landmark, id: 'country' },
+  { Icon: Handshake, id: 'unite', color: '#ff9933' },
+  { Icon: ScrollText, id: 'const', color: '#5b8cff' },
+  { Icon: Landmark, id: 'country', color: '#22c55e' },
 ];
 
 function IdeaCard({ idea, className = '' }) {
   const { t } = useI18n();
+  const c = idea.color;
+  const n = IDEAS.indexOf(idea) + 1;
+  const Icon = idea.Icon;
   return (
-    <div className={`liquid-glass hover-lift flex flex-col rounded-2xl p-7 md:p-8 ${className}`}>
-      {/* The icon sits on its own tile rather than loose on the card,
-          which gives the three cards a shared anchor at the same size
-          whatever the glyph inside happens to be. */}
-      <span
-        className="flex h-14 w-14 items-center justify-center rounded-2xl border border-[#3f9fff]/25"
-        style={{ background: 'linear-gradient(145deg, rgba(63,159,255,0.18), rgba(123,92,255,0.10))' }}
-      >
-        <idea.Icon size={26} strokeWidth={1.6} className="text-[#7fc0ff]" aria-hidden="true" />
-      </span>
+    <div
+      data-card
+      className={`group relative flex flex-col overflow-hidden rounded-[20px] border p-7 md:p-8 ${className}`}
+      style={{
+        borderColor: `${c}45`,
+        background: `radial-gradient(110% 80% at 100% 0%, ${c}2b 0%, transparent 55%), linear-gradient(165deg, #121b40 0%, #0b1130 60%, #090d24 100%)`,
+        boxShadow: `0 30px 60px -34px ${c}99`,
+      }}
+    >
+      {/* The idea's colour along the top edge. */}
+      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${c} 0%, ${c}00 85%)` }} />
+      {/* Its icon again, large and faint, in the corner. */}
+      <Icon
+        aria-hidden="true"
+        size={170}
+        strokeWidth={1}
+        className="pointer-events-none absolute -bottom-8 -right-8 opacity-[0.07] transition-transform duration-700 group-hover:-rotate-6 group-hover:scale-105"
+        style={{ color: c }}
+      />
 
-      <p className="mt-6 whitespace-pre-line font-display text-[20px] font-bold leading-tight text-white md:text-[22px]">
+      <div className="relative flex items-center justify-between">
+        <span
+          className="flex h-14 w-14 items-center justify-center rounded-[16px] text-white"
+          style={{ background: `linear-gradient(145deg, ${c} 0%, ${c}a6 100%)`, boxShadow: `0 10px 26px ${c}55` }}
+        >
+          <Icon size={26} strokeWidth={1.8} aria-hidden="true" />
+        </span>
+        <span className="font-count text-[15px] font-semibold tabular-nums" style={{ color: `${c}cc` }}>
+          {String(n).padStart(2, '0')}
+        </span>
+      </div>
+
+      <p className="relative mt-6 whitespace-pre-line font-display text-[21px] font-bold leading-tight text-white md:text-[23px]">
         {t(`ideas.${idea.id}.title`)}
       </p>
+      <span aria-hidden="true" className="relative mt-4 block h-[3px] w-10 rounded-full" style={{ background: c }} />
 
-      <p className="mt-3 text-[clamp(15px,4vw,19px)] leading-relaxed text-[#9ab8d8] md:text-[21px]">
+      <p className="relative mt-4 text-[clamp(15px,4vw,19px)] leading-relaxed text-[#b4c6e4] md:text-[20px]">
         {t(`ideas.${idea.id}.body`)}
       </p>
     </div>
@@ -63,7 +91,7 @@ export default function FourIdeasSection() {
         <div className="hidden md:block absolute left-1/2 top-1/2 h-[400px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2d3fa0]/10 blur-[140px]" />
       </div>
 
-      <div className="relative mx-auto max-w-[1440px] px-6">
+      <div className="relative mx-auto max-w-7xl px-6">
         <div className="flex flex-col items-center text-center">
           <SectionLabel>{t('ideas.label')}</SectionLabel>
 

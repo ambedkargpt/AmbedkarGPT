@@ -3,6 +3,7 @@ import { getSiteLanguage, setSiteLanguage } from '../utils/siteLanguage';
 import { trackEvent } from '../analytics/metrics';
 import en from './en';
 import hi from './hi';
+import { pagesEn, pagesHi } from './pages';
 
 /**
  * Interface translation.
@@ -19,7 +20,7 @@ import hi from './hi';
  * breaking.
  */
 
-const DICTIONARIES = { en, hi };
+const DICTIONARIES = { en: { ...en, ...pagesEn }, hi: { ...hi, ...pagesHi } };
 export const DEFAULT_LANGUAGE = 'hi';
 
 const I18nContext = createContext(null);

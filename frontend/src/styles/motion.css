@@ -14,12 +14,12 @@
 
 /* A screen arriving: in the dashboard frame on every route, and on each step
    of the post generator (news → story → post). */
-.ag-page-in { animation: ag-page-in .5s var(--ag-ease) backwards; }
-@keyframes ag-page-in { from { opacity: 0; transform: translateY(10px); } }
+.ag-page-in { animation: ag-page-in .2s cubic-bezier(.2, .8, .2, 1) backwards; }
+@keyframes ag-page-in { from { opacity: 0; transform: translateY(8px); } }
 
 /* Cards rise in on every section, filter, page or view change (8 staggered
    at most, so a long list is not still arriving seconds later). */
-.ag-rise { animation: ag-rise .5s cubic-bezier(.2, .8, .2, 1) backwards; animation-delay: calc(min(var(--i, 0), 8) * 50ms); }
+.ag-rise { animation: ag-rise .35s cubic-bezier(.2, .8, .2, 1) backwards; animation-delay: calc(min(var(--i, 0), 10) * 40ms); }
 @keyframes ag-rise { from { opacity: 0; transform: translateY(12px); } }
 
 /* Card hover: it rises on a soft shadow tinted with its section's colour and
@@ -70,8 +70,31 @@
 }
 .ag-sheen { animation: ag-sheen 3.6s ease-in-out infinite; }
 
+/* A refined post, or the other version, comes in from a soft blur. */
+.ag-swap { animation: ag-swap .35s cubic-bezier(.2, .8, .2, 1) backwards; }
+@keyframes ag-swap { from { opacity: .35; filter: blur(6px); } }
+/* The version label slides as it changes. */
+.ag-slide { display: inline-block; animation: ag-slide .3s cubic-bezier(.2, .8, .2, 1) backwards; }
+@keyframes ag-slide { from { opacity: 0; transform: translateX(10px); } }
+/* The tick on "Published" draws itself. */
+.ag-draw path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: ag-draw .35s .05s cubic-bezier(.2, .8, .2, 1) forwards; }
+@keyframes ag-draw { to { stroke-dashoffset: 0; } }
+/* A toast rises into place. */
+.ag-toast { animation: ag-toast .25s cubic-bezier(.2, .8, .2, 1) backwards; }
+@keyframes ag-toast { from { opacity: 0; transform: translateY(12px); } }
+
+/* Card to story: the tapped headline moves to the story's heading. */
+::view-transition-group(story-title) { animation-duration: .35s; animation-timing-function: cubic-bezier(.2, .8, .2, 1); }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .25s; }
+
+/* A picked platform's logo gives one small bounce. */
+.ag-bounce { animation: ag-bounce .3s cubic-bezier(.2, .8, .2, 1); }
+@keyframes ag-bounce { 50% { transform: scale(1.05); } }
+
 @media (prefers-reduced-motion: reduce) {
-  .ag-page-in, .ag-rise, .ag-type, .ag-fade, .ag-pop, .ag-shimmer, .ag-progress::after, .ag-sheen { animation: none !important; }
+  .ag-page-in, .ag-rise, .ag-type, .ag-fade, .ag-pop, .ag-shimmer, .ag-progress::after, .ag-sheen, .ag-swap, .ag-slide, .ag-toast, .ag-bounce { animation: none !important; }
+  .ag-draw path { animation: none !important; stroke-dashoffset: 0; }
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
   .ag-card, .ag-card .ag-arrow { transition: none !important; }
   .ag-card:hover, .ag-card:focus-visible { transform: none; }
 }

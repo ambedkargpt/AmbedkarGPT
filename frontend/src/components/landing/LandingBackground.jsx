@@ -131,22 +131,8 @@ export default function LandingBackground() {
   const particles  = narrow ? PARTICLES.slice(0, MOBILE.particles)    : PARTICLES;
   const sparkles   = narrow ? SPARKLES.slice(0, MOBILE.sparkles)      : SPARKLES;
 
-  // Parallax — background layers drift at different speeds as the page scrolls
-  useEffect(() => {
-    let raf = null;
-    const onScroll = () => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        const y = window.scrollY;
-        if (bgLayerRef.current)      bgLayerRef.current.style.transform      = `translateY(${y * -0.02}px)`;
-        if (accentLayerRef.current)  accentLayerRef.current.style.transform  = `translateY(${y * -0.05}px)`;
-        if (particleLayerRef.current) particleLayerRef.current.style.transform = `translateY(${y * -0.035}px)`;
-        raf = null;
-      });
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  // Parallax is driven by useScrollAnimations (data-parallax): each layer
+  // moves 10-15% slower than the page, on the same clock as the smooth scroll.
 
   return (
     <div className="lbg-grad-layer pointer-events-none absolute inset-0 z-0 overflow-hidden">
@@ -155,7 +141,7 @@ export default function LandingBackground() {
       <div className="lbg-aurora absolute inset-0" />
 
       {/* ── 2a. Drifting orbs — background layer (slow parallax) ── */}
-      <div ref={bgLayerRef} className="absolute inset-0 will-change-transform">
+      <div ref={bgLayerRef} data-parallax="0.10" className="absolute inset-0 will-change-transform">
         {bgOrbs.map((orb, i) => (
           <div
             key={i}
@@ -174,7 +160,7 @@ export default function LandingBackground() {
       </div>
 
       {/* ── 2b. Accent orbs — foreground layer (faster parallax) ── */}
-      <div ref={accentLayerRef} className="absolute inset-0 will-change-transform">
+      <div ref={accentLayerRef} data-parallax="0.15" className="absolute inset-0 will-change-transform">
         {accentOrbs.map((orb, i) => (
           <div
             key={i}
@@ -193,7 +179,7 @@ export default function LandingBackground() {
       </div>
 
       {/* ── 3. Floating particles (medium parallax) ── */}
-      <div ref={particleLayerRef} className="absolute inset-0 will-change-transform">
+      <div ref={particleLayerRef} data-parallax="0.12" className="absolute inset-0 will-change-transform">
         {particles.map((p, i) => (
           <div
             key={i}

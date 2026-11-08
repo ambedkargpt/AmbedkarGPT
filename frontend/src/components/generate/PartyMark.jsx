@@ -1,4 +1,5 @@
-import { partyMeta } from './partyMeta';
+import { partyMeta, partyShort } from './partyMeta';
+import { useI18n } from '../../i18n/index.jsx';
 
 /** The party's symbol, painted in its colour. */
 export function PartySymbol({ slug, size = 20, className = '', color }) {
@@ -27,8 +28,9 @@ export function PartySymbol({ slug, size = 20, className = '', color }) {
 
 /** A small glass chip: the symbol and the party's short name. */
 export function PartyChip({ slug, label, className = '' }) {
+  const { lang } = useI18n();
   const meta = partyMeta(slug);
-  const text = label ?? meta.short;
+  const text = label ?? partyShort(slug, lang);
   if (!text && !meta.symbol) return null;
   return (
     <span

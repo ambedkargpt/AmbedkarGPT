@@ -103,7 +103,9 @@ test.describe('the rail', () => {
     await page.goto('/dashboard');
 
     await expect(page.locator('aside').first()).toBeVisible();
-    await expect(page.locator('aside').getByText(/bhim radio|भीम रेडियो/i)).toHaveCount(0);
+    // No navigation row. The rail's small player (a play button, not a
+    // destination) sits outside the nav and is allowed.
+    await expect(page.locator('aside nav').getByText(/bhim radio|भीम रेडियो/i)).toHaveCount(0);
   });
 });
 

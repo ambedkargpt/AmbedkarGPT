@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { ArrowRight, ChevronLeft, ChevronRight, Clock, Sparkles } from 'lucide-react';
 import { useI18n } from '../../i18n/index.jsx';
-import { partyMeta } from './partyMeta';
+import { newsDate, partyMeta } from './partyMeta';
 import { PartyChip, PartySymbol } from './PartyMark';
 
 /**
@@ -22,19 +22,17 @@ import { PartyChip, PartySymbol } from './PartyMark';
  * @param {Function}  p.onViewAll  – opens the full page for this level
  * @param {boolean}   p.loading
  * @param {boolean}   p.comingSoon – a level with no source yet
- * @param {Function}  p.dateLabel  – (iso) => short date
+ * Dates read as "3 घंटे पहले" / "8 नवंबर" in the reader's language.
  */
 const GAP = 18;
 
 export default function NewsCarousel({
   title, subtitle, accent = '#3f9fff', Icon, items = [], onOpen, onViewAll,
-  loading = false, comingSoon = false, dateLabel, emptyText, headingControl, total,
+  loading = false, comingSoon = false, emptyText, emptyAction, headingControl, total,
 }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const rowRef = useRef(null);
   const shown = items.slice(0, 14);
-  // Paused while the reader's pointer, finger or keyboard focus is on the row.
-  const [held, setHeld] = useState(false);
 
   function slide(dir) {
     const row = rowRef.current;
@@ -44,66 +42,44 @@ export default function NewsCarousel({
     row.scrollBy({ left: dir * (row.clientWidth + GAP), behavior: 'smooth' });
   }
 
-  // Moves on by one card every few seconds, as the landing page's carousels
-  // do, and starts over at the end. Only while the row is on screen, never
-  // while held, and not at all under reduced motion.
-  useEffect(() => {
-    const row = rowRef.current;
-    if (!row || held || shown.length < 2) return undefined;
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return undefined;
-    let visible = true;
-    const io = typeof IntersectionObserver !== 'undefined'
-      ? new IntersectionObserver(([e]) => { visible = e.isIntersecting; }, { threshold: 0.3 })
-      : null;
-    io?.observe(row);
-    const id = setInterval(() => {
-      if (!visible) return;
-      const card = row.querySelector('[data-story-card]');
-      const step = card ? card.getBoundingClientRect().width + GAP : 300;
-      const atEnd = row.scrollLeft + row.clientWidth >= row.scrollWidth - 8;
-      row.scrollTo({ left: atEnd ? 0 : row.scrollLeft + step, behavior: 'smooth' });
-    }, 4500);
-    return () => { clearInterval(id); io?.disconnect(); };
-  }, [held, shown.length]);
+  // No auto-advance: rows that move by themselves are hard to read for older
+  // users, and the arrows, a swipe and scroll-snap are enough.
 
   const count = total ?? items.length;
 
   return (
     <section className="relative mb-10 last:mb-2" aria-label={title}>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-        <div className="flex min-w-0 flex-1 items-center gap-3.5">
-          {Icon && (
+      {/* One line on a phone too: a small icon, the name, the count, and
+          "View all" as a link at the end. The line under the name and any
+          picker (the state) drop below it. */}
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 sm:gap-x-4">
+        {Icon && (
+          <span
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[14px] text-white sm:h-12 sm:w-12 sm:rounded-[14px]"
+            style={{
+              background: `linear-gradient(140deg, ${accent} 0%, ${accent}99 100%)`,
+              boxShadow: `0 10px 28px ${accent}55, inset 0 1px 0 rgba(255,255,255,0.25)`,
+            }}
+          >
+            <Icon className="h-[18px] w-[18px] sm:h-[22px] sm:w-[22px]" strokeWidth={2.1} />
+          </span>
+        )}
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
+          <h2 className="truncate font-display text-[21px] font-bold leading-tight text-white sm:text-[28px]">{title}</h2>
+          {!comingSoon && count > 0 && (
             <span
-              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-white"
-              style={{
-                background: `linear-gradient(140deg, ${accent} 0%, ${accent}99 100%)`,
-                boxShadow: `0 10px 28px ${accent}55, inset 0 1px 0 rgba(255,255,255,0.25)`,
-              }}
+              className="shrink-0 rounded-full px-2.5 py-0.5 font-count text-[13px] font-bold"
+              style={{ color: accent, background: `${accent}1f`, border: `1px solid ${accent}44` }}
             >
-              <Icon size={22} strokeWidth={2.1} />
+              {count}
             </span>
           )}
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-              <h2 className="break-words font-display text-[23px] font-bold leading-tight text-white [overflow-wrap:anywhere] sm:text-[27px]">{title}</h2>
-              {!comingSoon && count > 0 && (
-                <span
-                  className="rounded-full px-2.5 py-0.5 font-count text-[13px] font-bold"
-                  style={{ color: accent, background: `${accent}1f`, border: `1px solid ${accent}44` }}
-                >
-                  {count}
-                </span>
-              )}
-              {headingControl}
-            </div>
-            {subtitle && <p className="mt-0.5 text-[15px] text-[#8f9cc2] sm:text-[16px]">{subtitle}</p>}
-          </div>
         </div>
         {!comingSoon && shown.length > 0 && (
           <button
             type="button"
             onClick={onViewAll}
-            className="group inline-flex h-11 shrink-0 items-center gap-2 rounded-full px-5 text-[15px] font-semibold text-white transition hover:brightness-110"
+            className="group inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[15px] font-semibold text-white transition hover:brightness-110 sm:gap-2 sm:px-5"
             style={{
               background: `linear-gradient(135deg, ${accent}40 0%, ${accent}14 100%)`,
               border: `1px solid ${accent}77`,
@@ -114,11 +90,17 @@ export default function NewsCarousel({
             <ArrowRight size={16} strokeWidth={2.2} className="transition-transform group-hover:translate-x-0.5" />
           </button>
         )}
+        {(subtitle || headingControl) && (
+          <div className="flex basis-full flex-wrap items-center gap-x-3 gap-y-2 sm:pl-16">
+            {subtitle && <p className="hidden text-[15px] text-[#9aa8cc] sm:block">{subtitle}</p>}
+            {headingControl}
+          </div>
+        )}
       </div>
 
       {comingSoon ? (
         <div
-          className="relative flex items-center gap-4 overflow-hidden rounded-3xl border px-6 py-7"
+          className="relative flex items-center gap-4 overflow-hidden rounded-[20px] border px-6 py-7"
           style={{ borderColor: `${accent}40`, background: `linear-gradient(110deg, ${accent}1f 0%, rgba(12,18,40,0.7) 55%, rgba(12,18,40,0.4) 100%)` }}
         >
           <span className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full blur-3xl" style={{ background: `${accent}33` }} />
@@ -127,21 +109,38 @@ export default function NewsCarousel({
           </span>
           <div className="relative min-w-0">
             <p className="text-[17px] font-semibold text-white">{t('gen.levels.comingSoon')}</p>
-            <p className="text-[14.5px] text-[#93a0c4]">{t('gen.feed.soonSub')}</p>
+            <p className="text-[15px] text-[#93a0c4]">{t('gen.feed.soonSub')}</p>
           </div>
         </div>
       ) : loading && shown.length === 0 ? (
         <div className="flex gap-[18px] overflow-hidden">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="ag-shimmer h-[300px] w-[290px] shrink-0 rounded-[24px] border border-white/[0.06] bg-[#0e1430]" />
+            <div key={i} className="ag-shimmer h-[300px] w-[290px] shrink-0 rounded-[20px] border border-white/[0.06] bg-[#0e1430]" />
           ))}
         </div>
       ) : shown.length === 0 ? (
-        <div className="rounded-3xl border border-white/[0.07] bg-[#0b1126]/60 px-6 py-7 text-[15.5px] text-[#8f9cc2]">
-          {emptyText || t('gen.levels.empty')}
+        // Nothing here yet: a small line drawing, the reason, and the one
+        // thing to do about it (the state row offers another state).
+        <div className="flex flex-wrap items-center gap-4 rounded-[20px] border border-white/[0.07] bg-[#0b1126]/60 px-5 py-4">
+          <svg width="56" height="44" viewBox="0 0 56 44" fill="none" aria-hidden="true" className="shrink-0 text-[#5b7cff]">
+            <rect x="3" y="6" width="38" height="32" rx="5" stroke="currentColor" strokeWidth="2" />
+            <path d="M10 15h20M10 21h24M10 27h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity=".7" />
+            <circle cx="44" cy="30" r="8" stroke="currentColor" strokeWidth="2" />
+            <path d="M50 36l4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <p className="min-w-0 flex-1 text-[15px] text-[#b8c6ea]">{emptyText || t('gen.levels.empty')}</p>
+          {emptyAction && (
+            <button
+              type="button"
+              onClick={emptyAction.onClick}
+              className="inline-flex h-11 shrink-0 items-center gap-2 rounded-[14px] border border-[#3f9fff]/50 bg-[#3f9fff]/15 px-4 text-[15px] font-semibold text-white transition hover:bg-[#3f9fff]/25"
+            >
+              {emptyAction.label}
+            </button>
+          )}
         </div>
       ) : (
-        <div className="relative sm:px-14">
+        <div className="relative sm:px-[60px]">
           {/* The arrows sit beside the shelf, halfway down the cards, where
               the eye already is. From sm the row is inset 64px each side, so
               they stand in that gutter rather than over a headline. */}
@@ -149,7 +148,7 @@ export default function NewsCarousel({
             type="button"
             onClick={() => slide(-1)}
             aria-label={t('gen.levels.prev')}
-            className="absolute left-0 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-[#121b42]/90 text-white shadow-[0_10px_30px_rgba(0,0,0,0.55)] backdrop-blur transition hover:scale-105 hover:border-white/40 sm:flex"
+            className="absolute left-0 top-[calc(50%-14px)] z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-[#121b42]/90 text-white shadow-[0_10px_30px_rgba(0,0,0,0.55)] backdrop-blur transition hover:scale-105 hover:border-white/40 sm:flex"
           >
             <ChevronLeft size={22} strokeWidth={2.4} />
           </button>
@@ -157,26 +156,20 @@ export default function NewsCarousel({
             type="button"
             onClick={() => slide(1)}
             aria-label={t('gen.levels.next')}
-            className="absolute right-0 top-1/2 z-10 hidden h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-[#121b42]/90 text-white shadow-[0_10px_30px_rgba(0,0,0,0.55)] backdrop-blur transition hover:scale-105 hover:border-white/40 sm:flex"
+            className="absolute right-0 top-[calc(50%-14px)] z-10 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-[#121b42]/90 text-white shadow-[0_10px_30px_rgba(0,0,0,0.55)] backdrop-blur transition hover:scale-105 hover:border-white/40 sm:flex"
           >
             <ChevronRight size={22} strokeWidth={2.4} />
           </button>
           <div
             ref={rowRef}
-            onMouseEnter={() => setHeld(true)}
-            onMouseLeave={() => setHeld(false)}
-            onTouchStart={() => setHeld(true)}
-            onTouchEnd={() => setHeld(false)}
-            onFocus={() => setHeld(true)}
-            onBlur={() => setHeld(false)}
-            // No scrollbar: the arrows, a swipe and the auto-advance move it.
+                        // No scrollbar: the arrows, a swipe and the auto-advance move it.
             // Room above and below, pulled back with -mt: a scrolling row clips
             // both ways, and a hovered card rises with a shadow. No side
             // padding from sm: the row ends where its last whole card ends.
-            className="-mx-4 -mt-3 flex snap-x snap-mandatory scroll-px-4 gap-[18px] overflow-x-auto scroll-smooth px-4 pb-7 pt-3 [scrollbar-width:none] sm:mx-0 sm:scroll-px-0 sm:px-0 [&::-webkit-scrollbar]:hidden"
+            className="-mx-4 -mt-3 flex snap-x snap-mandatory gap-[14px] overflow-x-auto scroll-smooth px-[7%] pb-7 pt-3 [mask-image:linear-gradient(90deg,transparent_0,#000_7%,#000_93%,transparent_100%)] [scrollbar-width:none] sm:mx-0 sm:gap-[18px] sm:px-0 sm:[mask-image:none] [&::-webkit-scrollbar]:hidden"
           >
             {shown.map((a, i) => (
-              <StoryCard key={a.id} article={a} index={i} onOpen={onOpen} dateLabel={dateLabel} t={t} />
+              <StoryCard key={a.id} article={a} index={i} onOpen={onOpen} dateLabel={(d) => newsDate(d, lang)} t={t} />
             ))}
           </div>
         </div>
@@ -193,8 +186,8 @@ function StoryCard({ article: a, index, onOpen, dateLabel, t }) {
     <button
       type="button"
       data-story-card
-      onClick={() => onOpen(a)}
-      className="ag-rise group relative flex h-[312px] w-[80vw] max-w-[318px] shrink-0 snap-start flex-col overflow-hidden rounded-[24px] border text-left transition duration-300 hover:-translate-y-1.5 sm:w-[calc((100%-18px)/2)] sm:max-w-none lg:w-[calc((100%-36px)/3)] 2xl:w-[calc((100%-54px)/4)]"
+      onClick={(e) => onOpen(a, e.currentTarget)}
+      className="ag-rise group relative flex h-[300px] w-[86%] shrink-0 snap-center sm:snap-start flex-col overflow-hidden rounded-[20px] border text-left transition duration-300 hover:-translate-y-1 sm:w-[calc((100%-18px)/2)] lg:w-[calc((100%-36px)/3)] 2xl:w-[calc((100%-54px)/4)]"
       style={{
         '--i': index,
         borderColor: 'rgba(255,255,255,0.07)',
@@ -221,7 +214,7 @@ function StoryCard({ article: a, index, onOpen, dateLabel, t }) {
         <PartySymbol
           slug={a.tenantSlug}
           size={78}
-          className="absolute -bottom-2 right-3 transition-transform duration-500 group-hover:-rotate-6 group-hover:scale-110"
+          className="absolute -bottom-2 right-3 transition-transform duration-300 ease-[cubic-bezier(.2,.8,.2,1)] group-hover:-translate-x-1.5 group-hover:-rotate-6"
           color="rgba(255,255,255,0.92)"
         />
         <div className="absolute left-4 top-4 flex items-center gap-2">
@@ -233,11 +226,11 @@ function StoryCard({ article: a, index, onOpen, dateLabel, t }) {
       </div>
 
       <div className="flex flex-1 flex-col px-5 pb-4 pt-4">
-        <span className="font-hindi line-clamp-3 text-[clamp(19px,0.5vw+14px,21px)] font-semibold leading-[1.5] text-white">
+        <span data-vt-title className="font-hindi line-clamp-3 text-[clamp(19px,0.5vw+14px,21px)] font-semibold leading-[1.5] text-white">
           {a.title}
         </span>
         <span
-          className="mt-auto inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold text-white transition duration-300"
+          className="mt-auto inline-flex h-10 w-full items-center justify-center gap-2 rounded-[14px] text-[15px] font-semibold text-white transition duration-300"
           style={{ background: `linear-gradient(135deg, ${c}38 0%, ${c}18 100%)`, border: `1px solid ${c}55` }}
         >
           <Sparkles size={15} />

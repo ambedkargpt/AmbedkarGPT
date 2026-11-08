@@ -38,13 +38,13 @@ export default function Topbar({ title, icon = null, right = null }) {
         <div className="flex min-w-0 items-center gap-3">
           {icon && (
             <span
-              className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white lg:flex [&>svg]:block [&>svg]:!text-white"
-              style={{ background: 'linear-gradient(140deg, #3f9fff 0%, #7b5cff 100%)', boxShadow: '0 10px 26px rgba(63,110,255,0.4)' }}
+              className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-[14px] text-white lg:flex [&>svg]:block [&>svg]:!text-white"
+              style={{ background: 'linear-gradient(140deg, #3f9fff 0%, #5b7cff 100%)', boxShadow: '0 10px 26px rgba(63,110,255,0.4)' }}
             >
               {icon}
             </span>
           )}
-          <span className="truncate font-display text-[22px] font-bold tracking-tight text-white md:text-[26px]">
+          <span className="truncate font-display text-[21px] font-bold tracking-tight text-white md:text-[28px]">
             {title ?? t('nav.dashboard')}
           </span>
         </div>

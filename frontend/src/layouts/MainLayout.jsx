@@ -60,7 +60,7 @@ export default function MainLayout({ children, bare = false, noNav = false }) {
           from md. The strip can be dismissed, so the offset follows it rather
           than being hard-coded: a fixed one left a 48px gap under the navbar. */}
       <main
-        className={`relative min-h-screen overflow-x-hidden bg-[#05081a] text-white transition-all duration-300 ${noNav ? '' : `pt-[72px] ${PINNED_PAD[Number(showStrips && radioStripVisible)]}`} ${showTicker ? 'pb-[var(--ticker-h,0px)]' : ''}`}
+        className={`relative min-h-screen overflow-x-clip bg-[#05081a] text-white transition-all duration-300 ${noNav ? '' : `pt-[72px] ${PINNED_PAD[Number(showStrips && radioStripVisible)]}`} ${showTicker ? 'pb-[var(--ticker-h,0px)]' : ''}`}
       >
         {/* In the flow on a phone, pinned from md.
             A strip's sentence needs three lines at 360px, and pinned under

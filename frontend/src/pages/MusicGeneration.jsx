@@ -163,7 +163,7 @@ export default function MusicGeneration() {
         </div>
 
         {/* Bottom hint */}
-        <p className="mt-10 text-[12px] text-[#3a4e70]">
+        <p className="mt-10 text-[12px] text-[#7f8db3]">
           All generations are powered by AI · Results may vary
         </p>
       </main>

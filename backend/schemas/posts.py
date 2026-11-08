@@ -28,6 +28,9 @@ class PostUpdateRequest(BaseModel):
     hashtags: Optional[list[str]] = None
     status: Optional[PostStatus] = None
     generation_meta: Optional[dict[str, Any]] = None
+    # The writer's thumbs up or down on the generated post: a signal of how
+    # good the model's posts are, stored on the post for later analysis.
+    feedback: Optional[Literal["up", "down"]] = None
 
 
 class PostResponse(BaseModel):
@@ -47,6 +50,7 @@ class PostResponse(BaseModel):
     # not published is dropped.
     previous_content: Optional[str] = None
     refined_at: Optional[datetime] = None
+    feedback: Optional[Literal["up", "down"]] = None
     # True when `content` is the refinement, False when it is the text the
     # refinement replaced. Only meaningful while previous_content is set.
     refined_is_live: Optional[bool] = None

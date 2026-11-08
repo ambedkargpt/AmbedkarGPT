@@ -1,5 +1,14 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+// Self-hosted fonts. Anek Latin (headings, with its width axis) and Anek
+// Devanagari (Hindi headings, the wordmark) are one family; Inter sets body
+// text, buttons and numbers; Noto Sans Devanagari Hindi body text. Tiro
+// carries only the brand mark's tagline.
+import '@fontsource-variable/inter/index.css'
+import '@fontsource-variable/anek-latin/wdth.css'
+import '@fontsource-variable/noto-sans-devanagari/index.css'
+import '@fontsource-variable/anek-devanagari/wdth.css'
+import '@fontsource/tiro-devanagari-hindi/400.css'
 import './index.css'
 import './styles/motion.css'
 import App from './App.jsx'

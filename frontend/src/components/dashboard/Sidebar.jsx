@@ -6,13 +6,14 @@ import {
   SlidersHorizontal,
   Bookmark,
   BarChart3,
-  User,
   Settings,
   Bot,
   Radio,
   X,
   LogOut,
   Sparkles,
+  Play,
+  Pause,
   ChevronRight,
   ChevronLeft,
 } from 'lucide-react';
@@ -22,6 +23,7 @@ import { SITE_LANGUAGES } from '../../utils/siteLanguage';
 import { useRadio } from '../../context/RadioContext';
 import { RADIO_REQUIRES_LOGIN } from '../../data/radioAccess';
 import AdminNavLink from './AdminNavLink';
+import useSlidingPill, { pillStyle } from '../generate/useSlidingPill';
 import { DASHBOARD_ENABLED, HOME_ROUTE, PREFERENCES_ENABLED } from '../../data/features';
 
 // Generating a post is the product's primary action, so it leads the nav and is
@@ -38,7 +40,7 @@ const ALL_NAV = [
   { id: 'prefs',      labelKey: 'nav.preferences',      Icon: SlidersHorizontal, route: '/preferences' },
   { id: 'saved',      labelKey: 'nav.savedPrompts',    Icon: Bookmark, soon: true },
   { id: 'analytics',  labelKey: 'nav.analytics',        Icon: BarChart3, soon: true },
-  { id: 'profile',    labelKey: 'nav.profile',          Icon: User, route: '/profile-setup' },
+  { id: 'profile',    labelKey: 'set.title',            Icon: Settings, route: '/settings' },
   { id: 'settings',   labelKey: 'nav.settings',         Icon: Settings, soon: true },
 ];
 
@@ -84,7 +86,7 @@ function LanguageToggle({ compact = false }) {
         onClick={() => changeLanguage(next.code)}
         title={`${t('lang.change')}: ${next.label}`}
         aria-label={`${t('lang.change')}: ${next.label}`}
-        className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.05] text-[14px] font-bold text-white transition hover:border-white/30"
+        className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.05] text-[15px] font-bold text-white transition hover:border-white/30"
       >
         {lang === 'hi' ? 'हिं' : 'EN'}
       </button>
@@ -100,7 +102,7 @@ function LanguageToggle({ compact = false }) {
             type="button"
             onClick={() => changeLanguage(l.code)}
             aria-pressed={on}
-            className={`h-10 rounded-full text-[15.5px] font-semibold transition ${on ? 'bg-white text-[#0b1029] shadow-[0_4px_14px_rgba(255,255,255,0.15)]' : 'text-[#9fb0d4] hover:text-white'}`}
+            className={`h-10 rounded-full text-[15px] font-semibold transition ${on ? 'bg-white text-[#0b1029] shadow-[0_4px_14px_rgba(255,255,255,0.15)]' : 'text-[#9fb0d4] hover:text-white'}`}
           >
             {l.label}
           </button>
@@ -114,7 +116,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
   // Read, never controlled: the rail reports the broadcast, it does not drive
   // it. Both copies of the rail - the desktop column and the mobile drawer -
   // render through here, so the note cannot appear on one and not the other.
-  const { station, playing } = useRadio();
+  const { station, playing, toggle, configured: radioOn } = useRadio();
   const radioState = playing ? 'tuned' : station ? 'onair' : null;
 
   const { t } = useI18n();
@@ -144,9 +146,13 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
 
   const navigate = useNavigate();
   const fade = fadeCls(collapsed);
+  // The current page's highlight slides between rows as you move (the rail
+  // stays mounted across the signed-in screens, so it can).
+  const navRef = useRef(null);
+  const navPill = useSlidingPill(navRef, `${active}|${collapsed}`);
   // The wide rail (the news page) has room to spare, so its type is set
   // larger: a narrow list of four rows in small type looked unfinished.
-  const rowText = large ? 'text-[16.5px] py-3.5 gap-3.5' : 'text-[13.5px] py-2.5 gap-3';
+  const rowText = large ? 'text-[17px] py-3.5 gap-3.5' : 'text-[13px] py-2.5 gap-3';
   const iconSize = large ? 20 : 17;
   return (
     <>
@@ -163,17 +169,17 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
             if (collapsed && onToggleCollapse) { onToggleCollapse(); return; }
             navigate(HOME_ROUTE); onClose?.();
           }}
-          className={`group/mark flex min-w-0 flex-1 items-center text-left transition-opacity hover:opacity-85 ${large ? 'gap-3.5' : 'gap-2.5'}`}
+          className={`group/mark flex min-w-0 flex-1 items-center text-left transition-opacity hover:opacity-85 ${large ? 'gap-3' : 'gap-2.5'}`}
           aria-label={collapsed && onToggleCollapse ? t('side.expand') : (DASHBOARD_ENABLED ? t('nav.dashboard') : t('brand.wordmark'))}
           title={collapsed && onToggleCollapse ? t('side.expand') : undefined}
         >
           {/* On the wide rail the mark sits on a lit disc and is half as big
               again, so it reads as the product's logo, not one more icon. */}
           <span
-            className={`relative flex shrink-0 items-center justify-center ${large ? (collapsed ? 'h-12 w-12 rounded-2xl' : 'h-[62px] w-[62px] rounded-2xl') : 'h-9 w-9'}`}
+            className={`relative flex shrink-0 items-center justify-center ${large ? (collapsed ? 'h-12 w-12 rounded-[14px]' : 'h-[52px] w-[52px] rounded-[14px]') : 'h-9 w-9'}`}
             style={large ? { background: 'radial-gradient(circle at 50% 35%, rgba(143,168,255,0.32) 0%, rgba(63,110,255,0.12) 60%, transparent 100%)', boxShadow: 'inset 0 0 0 1px rgba(143,168,255,0.28), 0 10px 30px rgba(63,110,255,0.3)' } : undefined}
           >
-            <AgMark size={large ? (collapsed ? 38 : 50) : 32} color="#8FA8FF" decorative />
+            <AgMark size={large ? (collapsed ? 38 : 42) : 32} color="#8FA8FF" decorative />
             {collapsed && onToggleCollapse && (
               <span className="absolute inset-0 flex items-center justify-center rounded-full bg-[#0c1330]/90 text-white opacity-0 transition-opacity duration-150 group-hover/mark:opacity-100">
                 <ChevronRight size={16} strokeWidth={2.2} />
@@ -184,11 +190,11 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
               {/* 14px rather than 16. With the line underneath it the two read
                   as one mark; at 16 the name was a few pixels from losing its
                   GPT to the truncation whenever the toggle sat beside it. */}
-              <span className={`block truncate font-brand leading-none ${large ? 'text-[23px]' : 'text-[15px]'}`} style={{ fontWeight: 750 }}>
+              <span className={`block truncate font-brand leading-none ${large ? 'text-[21px]' : 'text-[15px]'}`} style={{ fontWeight: 750 }}>
                 <span className="text-[#EDEEF2]">Ambedkar</span>
                 <span className="text-[#8FA8FF]">GPT</span>
               </span>
-              <span className={`block truncate font-medium leading-none ${large ? 'mt-1.5 text-[14px] text-[#8ea0cc]' : 'mt-[3px] text-[10.5px] text-[#5f7099]'}`}>
+              <span className={`block truncate font-medium leading-none ${large ? 'mt-1.5 text-[15px] text-[#8ea0cc]' : 'mt-[3px] text-[13px] text-[#5f7099]'}`}>
                 {t('splash.tagline')}
               </span>
           </span>
@@ -196,11 +202,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
 
         {/* What the product is for, in one line under the mark. */}
         {large && !collapsed && (
-          <p
-            className="mt-4 basis-full rounded-2xl border border-[#8FA8FF]/25 px-3.5 py-2.5 text-center text-[14.5px] font-semibold leading-snug text-[#dbe4ff]"
-            style={{ background: 'linear-gradient(120deg, rgba(63,110,255,0.22) 0%, rgba(139,92,255,0.16) 100%)' }}
-          >
-            <Sparkles size={14} className="mr-1.5 inline-block -translate-y-px text-[#8FA8FF]" />
+          <p className="mt-3 basis-full pl-1 text-[15px] font-medium leading-snug text-[#a9b8e0]">
             {t('landing.badge')}
           </p>
         )}
@@ -241,14 +243,26 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
       </div>
 
       {/* nav */}
-      <nav className={`flex-1 px-4 ${large ? 'space-y-2' : 'space-y-1.5'}`}>
+      <nav ref={navRef} className={`relative px-4 ${large ? 'space-y-2' : 'flex-1 space-y-1.5'}`}>
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute left-0 top-0 rounded-[14px] transition-[transform,width,height,opacity] duration-300 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none"
+          style={{
+            ...pillStyle(navPill),
+            background: 'linear-gradient(90deg, rgba(63,110,255,0.32) 0%, rgba(79,107,255,0.12) 100%)',
+            border: '1px solid rgba(79,135,255,0.28)',
+            boxShadow: '0 4px 18px rgba(15,40,100,0.35)',
+          }}
+        >
+          <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#3f9fff] to-[#5b7cff]" />
+        </span>
         {/* Primary action */}
         <button
           type="button"
           onClick={() => { navigate(PRIMARY.route); onClose?.(); }}
-          className={`group mb-3 flex w-full items-center gap-2.5 overflow-hidden rounded-xl px-3.5 font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 ${large ? 'py-4 text-[17px]' : 'py-3 text-[14px]'}`}
+          className={`group mb-3 flex w-full items-center gap-2.5 overflow-hidden rounded-[14px] px-3.5 font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 ${large ? 'py-4 text-[17px]' : 'py-3 text-[15px]'}`}
           style={{
-            background: large ? 'linear-gradient(120deg, #1a5fff 0%, #4f7dff 50%, #8b5cff 100%)' : 'linear-gradient(135deg, #1a5fff 0%, #3f9fff 100%)',
+            background: large ? 'linear-gradient(120deg, #1a5fff 0%, #4f7dff 50%, #5b7cff 100%)' : 'linear-gradient(135deg, #1a5fff 0%, #3f9fff 100%)',
             // On the services page this button is where you already are, so it
             // wears the active ring instead of a second nav row saying so.
             boxShadow: active === PRIMARY.id
@@ -277,11 +291,11 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
                 key={item.id}
                 title={`${t(item.labelKey)} — ${t('nav.comingSoonSuffix')}`}
                 aria-disabled="true"
-                className="flex w-full cursor-not-allowed items-center gap-3 overflow-hidden rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium text-[#4d587a]"
+                className="flex w-full cursor-not-allowed items-center gap-3 overflow-hidden rounded-[14px] px-3.5 py-2.5 text-[13px] font-medium text-[#4d587a]"
               >
                 <IconComp size={17} strokeWidth={1.8} className="shrink-0" />
                 <span className={fade}>{t(item.labelKey)}</span>
-                <span className={`ml-auto rounded-full bg-[#141d3a] px-1.5 py-0.5 font-count text-[11px] uppercase tracking-wider text-[#5a6e9a] ${fade}`}>
+                <span className={`ml-auto rounded-full bg-[#141d3a] px-1.5 py-0.5 font-count text-[13px] uppercase tracking-wider text-[#5a6e9a] ${fade}`}>
                   {t('nav.soonBadge')}
                 </span>
               </div>
@@ -298,25 +312,14 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
               }}
               title={tip(t(item.labelKey))}
               className={[
-                `group relative flex w-full items-center overflow-hidden rounded-xl px-3.5 font-medium transition-all duration-200 ${rowText}`,
+                `group relative flex w-full items-center overflow-hidden rounded-[14px] px-3.5 font-medium transition-all duration-200 ${rowText}`,
                 isActive
                   ? 'text-white'
-                  : 'text-[#7b88ad] hover:text-[#c7d1eb] hover:bg-[#0f173a]/70',
+                  : 'text-[#9aa8cc] hover:text-white hover:bg-[#0f173a]/70',
               ].join(' ')}
-              style={
-                isActive
-                  ? {
-                      background:
-                        'linear-gradient(90deg, rgba(63,110,255,0.32) 0%, rgba(79,107,255,0.12) 100%)',
-                      border: '1px solid rgba(79,135,255,0.28)',
-                      boxShadow: '0 4px 18px rgba(15,40,100,0.35)',
-                    }
-                  : { border: '1px solid transparent' }
-              }
+              data-pill-active={isActive ? 'true' : undefined}
+              style={{ border: '1px solid transparent' }}
             >
-              {isActive && (
-                <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#3f9fff] to-[#7b5cff]" />
-              )}
               <IconComp size={iconSize} strokeWidth={1.8} className="shrink-0" />
               <span className={fade}>{t(item.labelKey)}</span>
               {/* The station runs whether or not anyone has it open, so the
@@ -324,7 +327,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
                   this listener is the one hearing it. */}
               {item.id === 'radio' && radioState && (
                 <span
-                  className={`ml-auto flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-[0.12em] ${fade}`}
+                  className={`ml-auto flex items-center gap-1.5 text-[13px] font-bold uppercase tracking-[0.12em] ${fade}`}
                   style={{ color: radioState === 'tuned' ? '#3f9fff' : '#ff6b5a' }}
                 >
                   <span
@@ -341,6 +344,46 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
         <AdminNavLink isActive={active === 'errors'} fade={fade} collapsed={collapsed} onClose={onClose} />
       </nav>
 
+      {/* Bhim Radio, in reach on every screen: the wide rail had an empty
+          stretch here. Amber is the radio's colour, the dot pulses while it
+          is on air, and one press plays it in place. */}
+      {large && radioOn !== false && (
+        // The same 12px above as below, so it sits evenly between the last
+        // nav row and the language toggle.
+        <div className="px-4 pt-3">
+          <button
+            type="button"
+            onClick={toggle}
+            aria-pressed={playing}
+            aria-label={`${t('radio.title')}: ${playing ? t('radio.pause') : t('radio.play')}`}
+            title={collapsed ? t('radio.title') : undefined}
+            className={`flex w-full items-center overflow-hidden rounded-[20px] border border-[#f5b13d]/35 text-left transition hover:border-[#f5b13d]/70 ${collapsed ? 'justify-center px-0 py-2' : 'gap-3 px-3 py-3'}`}
+            style={{ background: 'linear-gradient(135deg, rgba(245,177,61,0.16) 0%, rgba(245,177,61,0.04) 100%)' }}
+          >
+            <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f5b13d] text-[#1a1200]">
+              {playing ? <Pause size={18} fill="currentColor" /> : <Play size={18} fill="currentColor" className="translate-x-px" />}
+              {station && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-3 w-3">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-[#ff5a4f] opacity-70 motion-safe:animate-ping" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full border-2 border-[#0b1128] bg-[#ff5a4f]" />
+                </span>
+              )}
+            </span>
+            {!collapsed && (
+              <span className="min-w-0">
+                <span className="block truncate text-[15px] font-semibold text-white">{t('radio.title')}</span>
+                <span className="block truncate text-[13px] font-medium text-[#f5c46b]">
+                  {playing ? t('radio.tunedIn') : t('ticker.label')}
+                </span>
+              </span>
+            )}
+          </button>
+        </div>
+      )}
+      {/* The rail's spare height sits here, under the radio, not between it
+          and the nav. */}
+      {large && <div className="flex-1" aria-hidden="true" />}
+
       <div className="px-4 pb-4 pt-2">
         {/* Who is signed in, on the wide rail: the page beside it no longer
             has its own profile card. */}
@@ -348,17 +391,17 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
         {large && user && (
           <button
             type="button"
-            onClick={() => { navigate('/profile-setup'); onClose?.(); }}
+            onClick={() => { navigate('/settings'); onClose?.(); }}
             title={tip(user.name)}
-            className={`mb-3 flex w-full items-center gap-3 overflow-hidden rounded-2xl border text-left transition hover:border-white/20 ${collapsed ? 'justify-center border-transparent px-0 py-1' : 'border-white/[0.08] px-3 py-3'}`}
+            className={`mb-3 flex w-full items-center gap-3 overflow-hidden rounded-[14px] border text-left transition hover:border-white/20 ${collapsed ? 'justify-center border-transparent px-0 py-1' : 'border-white/[0.08] px-3 py-3'}`}
             style={collapsed ? undefined : { background: 'linear-gradient(135deg, rgba(63,110,255,0.18) 0%, rgba(123,92,255,0.08) 100%)' }}
           >
-            <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#3f9fff] to-[#7b5cff] font-display text-[18px] font-bold text-white">
+            <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#3f9fff] to-[#5b7cff] font-display text-[17px] font-bold text-white">
               {user.initial}
               <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#0a1024] bg-[#22c55e]" />
             </span>
             <span className={`min-w-0 ${collapsed ? 'hidden' : ''}`}>
-              <span className="block truncate text-[16px] font-semibold text-white">{user.name}</span>
+              <span className="block truncate text-[17px] font-semibold text-white">{user.name}</span>
               {user.sub && <span className="block truncate text-[13px] text-[#8f9cc2]">{user.sub}</span>}
             </span>
           </button>
@@ -369,7 +412,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
             onClick={handleLogout}
             disabled={loggingOut}
             title={tip(t('auth.logout'))}
-            className={`flex w-full items-center gap-3 overflow-hidden rounded-xl border-t border-[#141d3a]/70 px-3.5 py-3 font-medium ${large ? 'text-[16px]' : 'text-[13.5px]'} text-[#7b88ad] transition hover:bg-[#0f173a]/70 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-transparent disabled:hover:text-[#7b88ad]`}
+            className={`flex w-full items-center gap-3 overflow-hidden rounded-[14px] border-t border-[#141d3a]/70 px-3.5 py-3 font-medium ${large ? 'text-[17px]' : 'text-[13px]'} text-[#7b88ad] transition hover:bg-[#0f173a]/70 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-transparent disabled:hover:text-[#7b88ad]`}
           >
             {loggingOut ? (
               <>
@@ -385,7 +428,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
           </button>
         )}
         {/* The version line has no short form, so collapsed it fades out. */}
-        <div className={`px-2 pt-2 text-[11px] font-count text-[#4e5a80] tracking-wide ${fade}`}>
+        <div className={`px-2 pt-2 text-[13px] font-count text-[#4e5a80] tracking-wide ${fade}`}>
           v1.0 · AmbedkarGPT
         </div>
       </div>
