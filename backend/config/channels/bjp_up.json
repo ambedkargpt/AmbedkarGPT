@@ -1,0 +1,31 @@
+{
+  "name": "bjp_up",
+  "channel_url": "https://www.youtube.com/@BJPUttarPradesh/videos",
+  "channel_urls": [
+    "https://www.youtube.com/@BJPUttarPradesh/videos",
+    "https://www.youtube.com/@BJPUttarPradesh/streams"
+  ],
+  "scope": "state",
+  "region": "Uttar Pradesh",
+  "tenant_slug": "bjp",
+  "source_name": "BJP Uttar Pradesh",
+  "lookback_days": 3,
+  "max_videos_per_run": 6,
+  "max_consecutive_transcript_failures": 4,
+  "channel_slug": "BJPUttarPradesh",
+  "transcripts_dir": "outputs/transcripts/BJPUttarPradesh",
+  "consolidated_txt_path": "outputs/transcripts/BJPUttarPradesh/bjp_up_all_transcripts.txt",
+  "processed_json_path": "outputs/transcripts/BJPUttarPradesh/processed.json",
+  "master_transcript_path": "data/bjp_up_all_transcripts.txt",
+  "video_summaries_path": "data/video_summaries_bjp_up.json",
+  "generated_news_path": "outputs/generated_news_bjp_up.json",
+  "generated_news_legacy_path": "outputs/generated_news_legacy_bjp_up.json",
+  "news_mode": "multi",
+  "stories_per_video": 1,
+  "stories_per_stream": 4,
+  "rebuild_rag": false,
+  "rebuild_semrag": false,
+  "run_summarizer": false,
+  "run_news_generator": true,
+  "run_news_publish": true
+}

@@ -1,0 +1,31 @@
+{
+  "name": "congress_up",
+  "channel_url": "https://www.youtube.com/@INCUttarPradesh/videos",
+  "channel_urls": [
+    "https://www.youtube.com/@INCUttarPradesh/videos",
+    "https://www.youtube.com/@INCUttarPradesh/streams"
+  ],
+  "scope": "state",
+  "region": "Uttar Pradesh",
+  "tenant_slug": "congress",
+  "source_name": "INC Uttar Pradesh",
+  "lookback_days": 3,
+  "max_videos_per_run": 6,
+  "max_consecutive_transcript_failures": 4,
+  "channel_slug": "INCUttarPradesh",
+  "transcripts_dir": "outputs/transcripts/INCUttarPradesh",
+  "consolidated_txt_path": "outputs/transcripts/INCUttarPradesh/congress_up_all_transcripts.txt",
+  "processed_json_path": "outputs/transcripts/INCUttarPradesh/processed.json",
+  "master_transcript_path": "data/congress_up_all_transcripts.txt",
+  "video_summaries_path": "data/video_summaries_congress_up.json",
+  "generated_news_path": "outputs/generated_news_congress_up.json",
+  "generated_news_legacy_path": "outputs/generated_news_legacy_congress_up.json",
+  "news_mode": "multi",
+  "stories_per_video": 1,
+  "stories_per_stream": 4,
+  "rebuild_rag": false,
+  "rebuild_semrag": false,
+  "run_summarizer": false,
+  "run_news_generator": true,
+  "run_news_publish": true
+}
