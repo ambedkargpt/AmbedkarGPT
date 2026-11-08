@@ -16,6 +16,28 @@ export function FacebookIcon(props) {
     </svg>
   );
 }
+export function WhatsAppIcon(props) {
+  return (
+    <svg {...BASE} {...props} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path fill="currentColor" d="M12 1.5a10.4 10.4 0 0 0-8.94 15.72L1.5 22.5l5.45-1.43A10.5 10.5 0 1 0 12 1.5Z" />
+      <path fill="white" d="M17.55 14.68c-.3-.15-1.78-.88-2.06-.98-.28-.1-.48-.15-.68.15-.2.3-.78.98-.96 1.18-.18.2-.35.23-.65.08-.3-.15-1.27-.47-2.42-1.5-.9-.8-1.51-1.78-1.69-2.08-.18-.3-.02-.46.13-.61.14-.13.3-.35.45-.52.15-.18.2-.3.3-.5.1-.2.05-.38-.03-.53-.08-.15-.68-1.63-.94-2.23-.25-.59-.5-.5-.68-.51h-.58c-.2 0-.53.08-.8.38-.28.3-1.05 1.03-1.05 2.5 0 1.48 1.07 2.9 1.22 3.1.15.2 2.1 3.2 5.07 4.49.7.3 1.24.49 1.67.62.7.22 1.33.19 1.83.11.56-.08 1.78-.73 2.03-1.43.25-.7.25-1.3.18-1.43-.08-.13-.28-.2-.58-.35Z" />
+    </svg>
+  );
+}
+export function RedditIcon(props) {
+  return (
+    <svg {...BASE} {...props} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="11" fill="currentColor" />
+      <path d="M8 13.25c.7-1.45 2.1-2.3 4-2.3s3.3.85 4 2.3c.75 1.55-.55 3.2-4 3.2s-4.75-1.65-4-3.2Z" fill="white" />
+      <circle cx="10.25" cy="13.15" r=".65" fill="currentColor" />
+      <circle cx="13.75" cy="13.15" r=".65" fill="currentColor" />
+      <path d="M12 10.7 13.1 6.9l2.55.55M7.5 12.2l-.75-.65m9.75.65.75-.65" stroke="white" strokeWidth="1.25" strokeLinecap="round" />
+      <circle cx="15.9" cy="7.2" r="1" fill="white" />
+      <circle cx="6.45" cy="11.55" r="1" fill="white" />
+      <circle cx="17.55" cy="11.55" r="1" fill="white" />
+    </svg>
+  );
+}
 export function LinkedinIcon(props) {
   return (
     <svg {...BASE} {...props} aria-hidden="true">

@@ -506,15 +506,10 @@ export default function PostHistory() {
         />
 
         <main className="relative z-10 mx-auto max-w-[960px] pb-8">
-        {/* Title */}
-        <div className="mb-7">
-          <h1 className="font-display text-[28px] font-bold text-white">
-            {t("history.title")}
-          </h1>
-          <p className="mt-1 text-[13.5px] text-[#6b78a0]">
-            {t("history.sub")}
-          </p>
-        </div>
+        {/* The page's name is in the bar above; this keeps only what it is for. */}
+        <p className="mb-6 text-[16px] text-[#9fb0d4]">
+          {t("history.sub")}
+        </p>
 
         {/* Search + filter bar */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">

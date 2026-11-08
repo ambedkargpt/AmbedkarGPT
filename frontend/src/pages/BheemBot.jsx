@@ -531,7 +531,8 @@ export default function BheemBot() {
             </div>
             </div>
             <div className="flex items-center gap-2">
-              <LanguageSwitcher />
+              {/* Signed in, the language is in the rail. */}
+              {!currentUser && <LanguageSwitcher />}
               <button
                 type="button"
                 onClick={() => setCatsOpen(true)}
