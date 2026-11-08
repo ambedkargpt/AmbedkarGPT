@@ -24,17 +24,19 @@ export function WhatsAppIcon(props) {
     </svg>
   );
 }
+// The alien is white on the orange disc; where the disc itself is drawn white
+// (on an orange button), set --alien to the orange so the face still shows.
 export function RedditIcon(props) {
   return (
     <svg {...BASE} {...props} viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <circle cx="12" cy="12" r="11" fill="currentColor" />
-      <path d="M8 13.25c.7-1.45 2.1-2.3 4-2.3s3.3.85 4 2.3c.75 1.55-.55 3.2-4 3.2s-4.75-1.65-4-3.2Z" fill="white" />
+      <path d="M8 13.25c.7-1.45 2.1-2.3 4-2.3s3.3.85 4 2.3c.75 1.55-.55 3.2-4 3.2s-4.75-1.65-4-3.2Z" fill="var(--alien, white)" />
       <circle cx="10.25" cy="13.15" r=".65" fill="currentColor" />
       <circle cx="13.75" cy="13.15" r=".65" fill="currentColor" />
-      <path d="M12 10.7 13.1 6.9l2.55.55M7.5 12.2l-.75-.65m9.75.65.75-.65" stroke="white" strokeWidth="1.25" strokeLinecap="round" />
-      <circle cx="15.9" cy="7.2" r="1" fill="white" />
-      <circle cx="6.45" cy="11.55" r="1" fill="white" />
-      <circle cx="17.55" cy="11.55" r="1" fill="white" />
+      <path d="M12 10.7 13.1 6.9l2.55.55M7.5 12.2l-.75-.65m9.75.65.75-.65" stroke="var(--alien, white)" strokeWidth="1.25" strokeLinecap="round" />
+      <circle cx="15.9" cy="7.2" r="1" fill="var(--alien, white)" />
+      <circle cx="6.45" cy="11.55" r="1" fill="var(--alien, white)" />
+      <circle cx="17.55" cy="11.55" r="1" fill="var(--alien, white)" />
     </svg>
   );
 }

@@ -280,7 +280,7 @@ export default function TeamSection() {
         <div className="hidden md:block absolute right-1/4 bottom-0 h-[360px] w-[500px] rounded-full bg-[#2d6fff]/8 blur-[140px]" />
       </div>
 
-      <div className="mx-auto max-w-[1440px] px-6">
+      <div className="mx-auto max-w-7xl px-6">
         <SectionLabel>{t('team.label')}</SectionLabel>
 
         <h2 className="mx-auto mt-8 max-w-[820px] text-center font-display text-[clamp(30px,8vw,46px)] font-bold leading-[1.05] text-white md:text-[62px]">

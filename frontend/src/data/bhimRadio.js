@@ -38,7 +38,7 @@ export const STATIONS = [
   { slug: 'congress',  labelKey: 'radio.stationCongress' },
   { slug: 'samajwadi', labelKey: 'radio.stationSamajwadi' },
   { slug: 'bjp',       labelKey: 'radio.stationBjp' },
-  { slug: 'general',   labelKey: 'radio.stationGeneral' },
+  // General news is no longer collected, so its station is not offered.
 ];
 
 /**

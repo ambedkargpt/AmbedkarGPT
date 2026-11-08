@@ -5,17 +5,31 @@
  * shipping a coloured logo per party.
  */
 export const PARTY_META = {
-  congress:  { short: 'INC', color: '#3f9fff', glow: '#1a5fff', symbol: '/party-symbols/congress.png' },
-  samajwadi: { short: 'SP',  color: '#f2545b', glow: '#d1213a', symbol: '/party-symbols/samajwadi.png' },
-  bjp:       { short: 'BJP', color: '#ff8a2a', glow: '#f06a00', symbol: '/party-symbols/bjp.png' },
+  congress:  { hi: 'कांग्रेस', short: 'INC', color: '#3f9fff', glow: '#1a5fff', symbol: '/party-symbols/congress.png' },
+  samajwadi: { hi: 'सपा', short: 'SP',  color: '#e5484d', glow: '#c2262e', symbol: '/party-symbols/samajwadi.png' },
+  bjp:       { hi: 'भाजपा', short: 'BJP', color: '#e5484d', glow: '#c2262e', symbol: '/party-symbols/bjp.png' },
 };
 
 const FALLBACK = { short: '', color: '#8FA8FF', glow: '#4f6bff', symbol: null };
 
 export const PARTY_ORDER = ['congress', 'samajwadi', 'bjp'];
 
+// Colour says whose news it is to the reader: their own party in the action
+// blue, the opposition in red. Three accents in the whole app (blue, amber for
+// radio and live, red for the opposition), and the symbol already says which
+// party it is. The page sets the reader's party once it knows it.
+const OWN = { color: '#3f9fff', glow: '#1a5fff' };
+const OPPOSITION = { color: '#e5484d', glow: '#c2262e' };
+let ownParty = 'congress';
+
+export function setOwnParty(slug) {
+  if (slug && PARTY_META[slug]) ownParty = slug;
+}
+
 export function partyMeta(slug) {
-  return PARTY_META[slug] ?? FALLBACK;
+  const meta = PARTY_META[slug];
+  if (!meta) return FALLBACK;
+  return { ...meta, ...(slug === ownParty ? OWN : OPPOSITION) };
 }
 
 /**
@@ -40,4 +54,27 @@ export function byParty(list, ownSlug) {
     for (const lane of lanes) if (i < lane.length) out.push(lane[i]);
   }
   return out;
+}
+
+/** The party's short name in the reader's language: INC / कांग्रेस. */
+export function partyShort(slug, lang) {
+  const meta = partyMeta(slug);
+  return (lang === 'hi' && meta.hi) || meta.short;
+}
+
+/**
+ * When a story was published, the way a person says it: "3 घंटे पहले" / "3h
+ * ago" for today's, "8 नवंबर" / "8 Nov" for anything older.
+ */
+export function newsDate(iso, lang) {
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return '';
+  const mins = Math.round((Date.now() - ms) / 60000);
+  const hi = lang === 'hi';
+  if (mins >= 0 && mins < 60) return mins < 1 ? (hi ? 'अभी' : 'just now') : (hi ? `${mins} मिनट पहले` : `${mins}m ago`);
+  if (mins >= 0 && mins < 24 * 60) {
+    const h = Math.round(mins / 60);
+    return hi ? `${h} घंटे पहले` : `${h}h ago`;
+  }
+  return new Date(ms).toLocaleDateString(hi ? 'hi-IN' : 'en-IN', { day: 'numeric', month: hi ? 'long' : 'short' });
 }

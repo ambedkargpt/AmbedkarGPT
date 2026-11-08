@@ -72,7 +72,7 @@ export default function ProfileMenu({ name, email, initial, party, onLogout }) {
   }
 
   const items = [
-    { label: t('dash.updateProfile'), icon: UserCog, onClick: () => go('/profile-setup') },
+    { label: t('dash.updateProfile'), icon: UserCog, onClick: () => go('/settings') },
     PREFERENCES_ENABLED && { label: t('dash.preferences'), icon: SlidersHorizontal, onClick: () => go('/preferences') },
   ].filter(Boolean);
 

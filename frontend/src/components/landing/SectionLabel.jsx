@@ -3,7 +3,7 @@ import Sparkle from './Sparkle';
 export default function SectionLabel({ children, size = 'md' }) {
   const isLg = size === 'lg';
   return (
-    <div className="flex justify-center">
+    <div data-eyebrow className="flex justify-center">
       <div
         className={`pill-premium relative inline-flex max-w-full items-center gap-2 rounded-full sm:gap-4 ${
           isLg ? 'px-5 py-2.5 sm:px-12 sm:py-5' : 'px-4 py-2 sm:px-11 sm:py-4.5'

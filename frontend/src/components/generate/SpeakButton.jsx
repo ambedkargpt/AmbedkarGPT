@@ -33,7 +33,7 @@ function speakableText(content) {
   return [headline, ...paragraphs].filter(Boolean).join(' ');
 }
 
-export default function SpeakButton({ content, lang = 'hi', className = '', compact = false }) {
+export default function SpeakButton({ content, lang = 'hi', className = '', compact = false, tile = false }) {
   const { t } = useI18n();
   const [speaking, setSpeaking] = useState(false);
   const [voices, setVoices]     = useState([]);
@@ -98,7 +98,7 @@ export default function SpeakButton({ content, lang = 'hi', className = '', comp
   if (!supported) return null;
 
   return (
-    <div className={`flex flex-col items-start gap-1 ${className}`}>
+    <div className={`flex flex-col gap-1 ${tile ? 'items-stretch' : 'items-start'} ${className}`}>
       <button
         type="button"
         onClick={speaking ? stop : start}
@@ -106,7 +106,11 @@ export default function SpeakButton({ content, lang = 'hi', className = '', comp
         aria-label={speaking ? t('gen.stopReading') : t('gen.readAloud')}
         title={speaking ? t('gen.stop') : t('gen.listen')}
         className={
-          compact
+          tile
+            // A tile in the post screen's grid of actions, the same size as
+            // Copy and Preview beside it, with its label always shown.
+            ? 'inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] text-[15px] font-semibold text-white transition hover:border-white/30 disabled:cursor-not-allowed disabled:opacity-50'
+            : compact
             // Sits in the history card's action row, which is h-7 with 12px
             // icons; the default size would tower over the buttons beside it.
             ? 'flex h-9 min-w-9 items-center justify-center gap-1 rounded-lg border border-[#1e3260]/60 px-1.5 text-[#6b78a0] transition hover:border-[#3f9fff]/50 hover:text-[#3f9fff] disabled:cursor-not-allowed disabled:opacity-50 sm:h-7 sm:min-w-0 sm:px-2.5'
@@ -121,12 +125,12 @@ export default function SpeakButton({ content, lang = 'hi', className = '', comp
         {speaking ? (
           <>
             <Square size={compact ? 12 : 14} strokeWidth={2.4} className={compact ? '' : 'text-[#ff8a8a]'} />
-            <span className={compact ? 'hidden text-[11px] font-medium sm:inline' : 'hidden sm:inline'}>{t('gen.stop')}</span>
+            <span className={tile ? '' : compact ? 'hidden text-[11px] font-medium sm:inline' : 'hidden sm:inline'}>{t('gen.stop')}</span>
           </>
         ) : (
           <>
             <Volume2 size={compact ? 12 : 15} strokeWidth={2} className={compact ? '' : 'text-[#7fb5ff]'} />
-            <span className={compact ? 'hidden text-[11px] font-medium sm:inline' : 'hidden sm:inline'}>{t('gen.listen')}</span>
+            <span className={tile ? '' : compact ? 'hidden text-[11px] font-medium sm:inline' : 'hidden sm:inline'}>{t('gen.listen')}</span>
           </>
         )}
       </button>

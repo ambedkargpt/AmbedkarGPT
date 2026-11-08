@@ -21,7 +21,7 @@ export default function PravartanIntro({ size = 160, tone = 'ink', tagline, capt
       <span
         className="pv-word"
         aria-label="AmbedkarGPT"
-        style={{ fontFamily: "'Anek Devanagari', 'Mukta', sans-serif", fontWeight: 750, fontSize: Math.round(size * 0.26), lineHeight: 1.15, color: text, whiteSpace: 'nowrap' }}
+        style={{ fontFamily: "'Anek Devanagari Variable', 'Anek Devanagari', sans-serif", fontWeight: 750, fontSize: Math.round(size * 0.26), lineHeight: 1.15, color: text, whiteSpace: 'nowrap' }}
       >
         Ambedkar<span style={{ color: gpt }}>GPT</span>
       </span>
@@ -31,7 +31,7 @@ export default function PravartanIntro({ size = 160, tone = 'ink', tagline, capt
         </span>
       )}
       {caption && (
-        <span className="pv-tag" style={{ fontFamily: "'Mukta', sans-serif", fontWeight: 600, fontSize: 17, lineHeight: 1.5, color: onNeela ? '#FFFFFF' : '#C9CCD6' }}>
+        <span className="pv-tag" style={{ fontFamily: "'Anek Devanagari Variable', sans-serif", fontWeight: 600, fontSize: 17, lineHeight: 1.5, color: onNeela ? '#FFFFFF' : '#C9CCD6' }}>
           {caption}
         </span>
       )}

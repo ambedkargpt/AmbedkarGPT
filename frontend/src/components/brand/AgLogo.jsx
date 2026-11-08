@@ -31,7 +31,7 @@ export default function AgLogo({ size = 24, tone = 'ink', stacked = false, tagli
       style={{ display: 'inline-flex', alignItems: 'center', flexDirection: stacked ? 'column' : 'row', gap: stacked ? size * 0.3 : size * 0.35 }}
     >
       {Mark}
-      <span aria-hidden="true" style={{ fontFamily: "'Anek Devanagari', 'Mukta', sans-serif", fontWeight: 750, fontSize: size, lineHeight: 1.15, color: t.a, whiteSpace: 'nowrap' }}>
+      <span aria-hidden="true" style={{ fontFamily: "'Anek Devanagari Variable', 'Anek Devanagari', sans-serif", fontWeight: 750, fontSize: size, lineHeight: 1.15, color: t.a, whiteSpace: 'nowrap' }}>
         Ambedkar<span style={{ color: t.g }}>GPT</span>
       </span>
       {stacked && tagline && (

@@ -99,7 +99,10 @@ function shareTags(page, site) {
 }
 
 function withShareTags(html, page, site) {
-  const titled = html.replace(/<title>[^<]*<\/title>/, `<title>${esc(page.title)}</title>`)
+  // The site-wide description and og/twitter tags in index.html go first, so
+  // a crawler reads this page's own (it takes the first og:image it finds).
+  const bare = html.replace(/\s*<meta (?:name|property)="(?:description|og:[^"]+|twitter:[^"]+)"[^>]*>/g, '')
+  const titled = bare.replace(/<title>[^<]*<\/title>/, `<title>${esc(page.title)}</title>`)
   return titled.replace('</head>', `    ${shareTags(page, site)}\n  </head>`)
 }
 

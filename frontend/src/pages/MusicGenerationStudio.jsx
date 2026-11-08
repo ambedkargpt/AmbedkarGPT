@@ -270,7 +270,7 @@ export default function MusicGenerationStudio() {
                 <p className="text-[14px] font-medium" style={{ color: accent }}>
                   {type === 'song-only' ? 'Composing your track…' : type === 'lyrics' ? 'Writing your lyrics…' : 'Building beat & lyrics…'}
                 </p>
-                <p className="mt-1 font-count text-[11px] text-[#3a4e70]">{genSeconds}s elapsed</p>
+                <p className="mt-1 font-count text-[11px] text-[#7f8db3]">{genSeconds}s elapsed</p>
               </div>
             </div>
           ) : output ? (
@@ -292,7 +292,7 @@ export default function MusicGenerationStudio() {
               </div>
               <div className="text-center">
                 <p className="text-[14px] font-medium text-[#5a6e9a]">Your output will appear here</p>
-                <p className="mt-1 text-[12px] text-[#3a4e70]">Fill in the form and click Generate</p>
+                <p className="mt-1 text-[12px] text-[#7f8db3]">Fill in the form and click Generate</p>
               </div>
             </div>
           )}

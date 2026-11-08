@@ -40,7 +40,7 @@ export default function DalitCorpusSection() {
         <div className="hidden md:block absolute right-[5%] bottom-[10%] h-[360px] w-[360px] rounded-full bg-[#1a3fa0]/7 blur-[130px]" />
       </div>
 
-      <div className="relative mx-auto max-w-[1440px] px-6">
+      <div className="relative mx-auto max-w-7xl px-6">
         <div className="flex justify-center">
           <SectionLabel size="lg">{t('landing.dalitCorpus')}</SectionLabel>
         </div>

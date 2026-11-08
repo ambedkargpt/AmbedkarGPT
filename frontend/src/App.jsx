@@ -33,7 +33,8 @@ const ServiceSelection = lazy(() => import('./pages/ServiceSelection'));
 const SocialMediaPostGenerator = lazy(() => import('./pages/SocialMediaPostGenerator'));
 const MusicGeneration = lazy(() => import('./pages/MusicGeneration'));
 const MusicGenerationStudio = lazy(() => import('./pages/MusicGenerationStudio'));
-const Preferences = lazy(() => import('./pages/Preferences'));
+const Settings = lazy(() => import('./pages/Settings'));
+const PreferencesRedirect = lazy(() => import('./pages/PreferencesRedirect'));
 const PostHistory = lazy(() => import('./pages/PostHistory'));
 const BheemBot = lazy(() => import('./pages/BheemBot'));
 // Opened in a new tab from a BheemBot source pill; carries pdf.js, so it is its own chunk.
@@ -52,6 +53,7 @@ import { I18nProvider }    from './i18n/index.jsx';
 import TransitionCurtain   from './components/TransitionCurtain';
 import ErrorBoundary       from './components/ErrorBoundary';
 import OnboardingGate       from './components/onboarding/OnboardingGate';
+import RouteTitle          from './components/seo/RouteTitle';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -158,6 +160,7 @@ export default function App() {
               </div>
             )}
           >
+          <RouteTitle />
           <Routes>
             {/* public */}
             <Route path="/"          element={<Home splashDone={splashDone} />} />
@@ -200,7 +203,11 @@ export default function App() {
               {/* Switched off, not removed: see data/features.js. */}
               <Route path="/dashboard" element={DASHBOARD_ENABLED ? <Dashboard /> : <Navigate to={HOME_ROUTE} replace />} />
               <Route path="/generate" element={<ServiceSelection />} />
-              <Route path="/preferences" element={<Preferences />} />
+              <Route path="/settings" element={<Settings />} />
+              {/* Preferences and accounts are tabs of Settings now. Reddit's
+                  sign-in still returns to /preferences, so its ?reddit= result
+                  is carried over to the Accounts tab. */}
+              <Route path="/preferences" element={<PreferencesRedirect />} />
               <Route path="/posts" element={<PostHistory />} />
               {RADIO_REQUIRES_LOGIN && <Route path="/bhimradio" element={<BhimRadio />} />}
               <Route path="/admin/errors" element={<AdminErrors />} />

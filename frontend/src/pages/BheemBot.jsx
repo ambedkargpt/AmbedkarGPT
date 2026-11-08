@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   Scale, BookOpen, Heart, HelpCircle,
   Send, Plus, Copy, Check,
-  ExternalLink, X, ArrowLeft, Menu, History, Trash2, PlayCircle,
+  ExternalLink, X, ArrowLeft, Menu, History, Trash2, PlayCircle, Mic, Square,
 } from 'lucide-react';
+import SpeakButton from '../components/generate/SpeakButton';
 import { useAuth } from '../context/AuthContext';
 import { sendChatMessage } from '../api/chat';
 import { useI18n } from '../i18n/index.jsx';
@@ -111,7 +112,7 @@ function TypingDots() {
 // ── Answer actions ─────────────────────────────────────────────────────────────
 
 const actionBtn =
-  'inline-flex items-center gap-1.5 rounded-xl border border-[#1e3260]/70 bg-[#0a1428]/80 px-3.5 py-2 text-[12.5px] font-medium text-[#c7d6ee] transition hover:border-[#3a6bc4]/70 hover:text-white';
+  'inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#1e3260]/70 bg-[#0a1428]/80 px-4 text-[14.5px] font-semibold text-[#c7d6ee] transition hover:border-[#3a6bc4]/70 hover:text-white';
 
 function CopyButton({ text }) {
   const { t } = useI18n();
@@ -137,11 +138,11 @@ function UserMessage({ msg }) {
   const { t } = useI18n();
   return (
     <div className="mb-5 flex justify-end">
-      <div className="max-w-[78%] rounded-2xl rounded-tr-sm border border-[#1e3260]/70 bg-[#0d1838] px-4 py-3">
-        <p className="mb-1 text-[11px] text-[#6f86ad]">
+      <div className="bot-in max-w-[80%] rounded-2xl rounded-tr-sm border border-[#1e3260]/70 bg-[#0d1838] px-5 py-3.5">
+        <p className="mb-1 text-[12.5px] text-[#7d93bb]">
           {t('bot.you')}{msg.timestamp ? ` · ${clock(msg.timestamp)}` : ''}
         </p>
-        <p className="whitespace-pre-wrap text-[14px] font-medium leading-relaxed text-white">{msg.content}</p>
+        <p className="whitespace-pre-wrap text-[16.5px] font-medium leading-relaxed text-white">{msg.content}</p>
       </div>
     </div>
   );
@@ -155,7 +156,7 @@ function SourcePill({ s }) {
   const Icon = isBook ? BookOpen : PlayCircle;
   const label = s.video_title.length > 48 ? `${s.video_title.slice(0, 48)}…` : s.video_title;
   const pill =
-    'inline-flex items-center gap-1.5 rounded-lg border border-[#1e3260]/80 bg-[#0a1428] px-2.5 py-1 text-[11.5px] text-[#9db6dc]';
+    'inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-[#1e3260]/80 bg-[#0a1428] px-3 py-1 text-[13.5px] text-[#9db6dc]';
   return s.url ? (
     <a
       href={s.url}
@@ -177,7 +178,7 @@ function SourcePill({ s }) {
 }
 
 function BotMessage({ msg, showActions }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [expanded, setExpanded] = useState(false);
   const blocks = msg.typing ? [] : parseReply(msg.content);
   const collapsedCount = blocks.length ? visibleBlockCount(blocks) : 0;
@@ -186,20 +187,21 @@ function BotMessage({ msg, showActions }) {
 
   return (
     <div className="mb-5">
-      <article className="max-w-[860px] rounded-2xl border border-[#1e3260]/70 bg-[#081127]/95 px-5 py-4 shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
+      <article className="bot-in relative max-w-[860px] overflow-hidden rounded-2xl border border-[#1e3260]/70 bg-[#081127]/95 px-6 py-5 shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
+        <span aria-hidden="true" className="absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-[#3f9fff] to-[#7b5cff]" />
         <header className="mb-2.5 flex items-center gap-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#2d6fff] to-[#7b5cff]">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#2d6fff] to-[#7b5cff]">
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-white" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
               <circle cx="12" cy="12" r="9" /><path d="M12 3v18M3 12h18" />
             </svg>
           </span>
-          <span className="text-[12.5px] font-semibold text-white">{t('bot.name')}</span>
+          <span className="text-[14.5px] font-semibold text-white">{t('bot.name')}</span>
           {msg.timestamp && !msg.typing && (
-            <span className="font-mono text-[11px] text-[#6f86ad]">{clock(msg.timestamp)}</span>
+            <span className="font-mono text-[12px] text-[#7d93bb]">{clock(msg.timestamp)}</span>
           )}
         </header>
 
-        <div className="text-[14.5px] leading-[1.75] text-[#d6e2f5]">
+        <div className="text-[16.5px] leading-[1.8] text-[#dbe6f7]">
           {msg.typing ? (
             <TypingDots />
           ) : (
@@ -209,7 +211,7 @@ function BotMessage({ msg, showActions }) {
                 <button
                   type="button"
                   onClick={() => setExpanded((v) => !v)}
-                  className="mt-2 block text-[12.5px] text-[#4d94ff] underline underline-offset-2 hover:text-[#7ab4ff]"
+                  className="mt-2 block min-h-9 text-[14.5px] font-semibold text-[#6aa8ff] underline underline-offset-2 hover:text-[#9cc3ff]"
                 >
                   {expanded ? t('bot.showLess') : t('bot.showMore')}
                 </button>
@@ -220,7 +222,7 @@ function BotMessage({ msg, showActions }) {
 
         {!msg.typing && msg.sources?.length > 0 && (
           <div className="mt-4 border-t border-[#1e3260]/60 pt-3">
-            <p className="mb-2 text-[11px] font-medium text-[#6f86ad]">{t('bot.sources')}</p>
+            <p className="mb-2 text-[13px] font-semibold text-[#7d93bb]">{t('bot.sources')}</p>
             <div className="flex flex-wrap gap-2">
               {msg.sources.map((s, i) => <SourcePill key={i} s={s} />)}
             </div>
@@ -231,6 +233,7 @@ function BotMessage({ msg, showActions }) {
       {showActions && !msg.typing && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <CopyButton text={text} />
+          <SpeakButton content={text} lang={lang} />
         </div>
       )}
     </div>
@@ -262,7 +265,7 @@ function RecentChats({ chats, currentId, onOpen, onDelete }) {
   const when = (ts) => new Date(ts).toLocaleDateString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'short' });
   return (
     <div className="mb-6">
-      <h2 className="mb-2 flex items-center gap-2 font-display text-[15px] font-semibold text-white">
+      <h2 className="mb-2 flex items-center gap-2 font-display text-[18px] font-semibold text-white">
         <History size={15} strokeWidth={2} className="text-[#7fb5ff]" /> {t('bot.recent')}
       </h2>
       <ul className="space-y-1">
@@ -278,8 +281,8 @@ function RecentChats({ chats, currentId, onOpen, onDelete }) {
                   : 'border-transparent hover:border-[#1e3260]/70 hover:bg-[#0d1531]/60',
               ].join(' ')}
             >
-              <span className="line-clamp-2 block text-[12.5px] leading-snug text-[#d6e2f5]">{chatTitle(c)}</span>
-              <span className="mt-0.5 block text-[10.5px] text-[#6f86ad]">{when(c.updatedAt)}</span>
+              <span className="line-clamp-2 block text-[14.5px] leading-snug text-[#d6e2f5]">{chatTitle(c)}</span>
+              <span className="mt-0.5 block text-[12.5px] text-[#7d93bb]">{when(c.updatedAt)}</span>
             </button>
             <button
               type="button"
@@ -310,20 +313,20 @@ function CategoryList({ onPick }) {
             <button
               type="button"
               onClick={() => onPick(t(`bot.cat.${id}.prompt`))}
-              className="group flex w-full items-start gap-2.5 px-1 py-3 text-left transition hover:bg-[#0d1531]/60"
+              className="group flex w-full items-start gap-3 rounded-lg px-2 py-3.5 text-left transition hover:bg-[#0d1531]/60"
             >
-              <CatIcon size={14} strokeWidth={1.9} className="mt-0.5 shrink-0 text-[#7fb5ff]" />
+              <CatIcon size={18} strokeWidth={1.9} className="mt-0.5 shrink-0 text-[#7fb5ff]" />
               <span className="min-w-0">
-                <span className="block text-[13px] font-semibold text-white group-hover:text-[#9cc3ff]">
+                <span className="block text-[15.5px] font-semibold text-white group-hover:text-[#9cc3ff]">
                   {t(`bot.cat.${id}.title`)}
                 </span>
-                <span className="mt-0.5 block text-[11.5px] leading-snug text-[#6f86ad]">{t(`bot.cat.${id}.desc`)}</span>
+                <span className="mt-0.5 block text-[13.5px] leading-snug text-[#8ea3c7]">{t(`bot.cat.${id}.desc`)}</span>
               </span>
             </button>
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-[11.5px] leading-relaxed text-[#6f86ad]">{t('bot.pickHint')}</p>
+      <p className="mt-3 text-[13.5px] leading-relaxed text-[#7d93bb]">{t('bot.pickHint')}</p>
     </>
   );
 }
@@ -345,6 +348,39 @@ export default function BheemBot() {
 
   const messagesEndRef = useRef(null);
   const inputRef       = useRef(null);
+
+  // ── Speaking a question ──
+  // The browser's own speech recognition (Chrome and Edge on desktop and
+  // Android). Where it is missing the button is not drawn at all.
+  const SpeechRec = typeof window !== 'undefined' ? (window.SpeechRecognition || window.webkitSpeechRecognition) : null;
+  const voiceSupported = Boolean(SpeechRec);
+  const recRef = useRef(null);
+  const [listening, setListening] = useState(false);
+  const [voiceNote, setVoiceNote] = useState('');
+
+  function toggleVoice() {
+    if (listening) { recRef.current?.stop(); return; }
+    if (!SpeechRec || sending) return;
+    const rec = new SpeechRec();
+    rec.lang = lang === 'hi' ? 'hi-IN' : 'en-IN';
+    rec.interimResults = true;
+    rec.continuous = false;
+    const before = input ? `${input.trim()} ` : '';
+    rec.onresult = (e) => {
+      const heard = Array.from(e.results).map((r) => r[0].transcript).join('');
+      setInput(before + heard);
+    };
+    rec.onerror = (e) => {
+      if (e.error === 'not-allowed' || e.error === 'service-not-allowed') setVoiceNote(t('bot2.micBlocked'));
+    };
+    rec.onend = () => { setListening(false); inputRef.current?.focus(); };
+    recRef.current = rec;
+    setVoiceNote('');
+    setListening(true);
+    try { rec.start(); } catch { setListening(false); }
+  }
+
+  useEffect(() => () => recRef.current?.abort?.(), []);
 
   // ── Remove legacy shared key on first mount ──
   useEffect(() => {
@@ -504,6 +540,11 @@ export default function BheemBot() {
   const page = (
     <div className="relative flex h-full min-h-0 text-[#e5e7eb]">
       <style>{`
+        .bot-in { animation: bot-in .32s cubic-bezier(.2,.8,.2,1) backwards; }
+        @keyframes bot-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        .bot-ping { animation: bot-ping 1.4s cubic-bezier(0,0,.2,1) infinite; }
+        @keyframes bot-ping { 75%, 100% { transform: scale(1.12); opacity: 0; } }
+        @media (prefers-reduced-motion: reduce) { .bot-in, .bot-ping { animation: none; } }
         @keyframes bheembot-dot {
           0%, 60%, 100% { transform: translateY(0); opacity: .5; }
           30%            { transform: translateY(-5px); opacity: 1; }
@@ -526,8 +567,8 @@ export default function BheemBot() {
                   <ArrowLeft size={13} strokeWidth={2} /> {t('bot.home')}
                 </button>
               )}
-              <h1 className="font-display text-[24px] font-bold leading-tight text-white md:text-[34px]">{t('bot.name')}</h1>
-              <p className="mt-1 hidden text-[13px] text-[#8ea3c7] sm:block">{t('bot.subtitle')}</p>
+              <h1 className="font-display text-[30px] font-bold leading-tight text-white md:text-[46px]">{t('bot.name')}</h1>
+              <p className="mt-1 hidden text-[15.5px] text-[#8ea3c7] sm:block">{t('bot.subtitle')}</p>
             </div>
             </div>
             <div className="flex items-center gap-2">
@@ -536,14 +577,14 @@ export default function BheemBot() {
               <button
                 type="button"
                 onClick={() => setCatsOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#1e3260]/70 bg-[#0a1428]/80 px-3 py-2 text-[12.5px] font-medium text-[#c7d6ee] transition hover:text-white xl:hidden"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#1e3260]/70 bg-[#0a1428]/80 px-3.5 text-[14.5px] font-semibold text-[#c7d6ee] transition hover:text-white xl:hidden"
               >
                 <History size={14} strokeWidth={2} /> <span className="hidden sm:inline">{t('bot.chatsAndTopics')}</span>
               </button>
               <button
                 type="button"
                 onClick={newChat}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-[#1e3260]/70 bg-[#0a1428]/80 px-3 py-2 text-[12.5px] font-medium text-[#c7d6ee] transition hover:border-[#3a6bc4]/70 hover:text-white"
+                className="inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#1e3260]/70 bg-[#0a1428]/80 px-3.5 text-[14.5px] font-semibold text-[#c7d6ee] transition hover:border-[#3a6bc4]/70 hover:text-white"
               >
                 <Plus size={14} strokeWidth={2.2} /> <span className="hidden sm:inline">{t('bot.newChat')}</span>
               </button>
@@ -562,14 +603,14 @@ export default function BheemBot() {
 
           {showTopics && (
             <div className="mt-2">
-              <p className="mb-2 text-[12px] text-[#6f86ad]">{t('bot.startTopic')}</p>
+              <p className="mb-2.5 text-[14px] font-semibold text-[#8ea3c7]">{t('bot.startTopic')}</p>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map(({ id }) => (
                   <button
                     key={id}
                     type="button"
                     onClick={() => pickCategory(t(`bot.cat.${id}.prompt`))}
-                    className="rounded-full border border-[#1e3260]/80 bg-[#0a1428]/80 px-3.5 py-1.5 text-[12.5px] text-[#c7d6ee] transition hover:border-[#4d94ff] hover:text-white"
+                    className="inline-flex min-h-11 items-center rounded-full border border-[#1e3260]/80 bg-[#0a1428]/80 px-4 text-[15px] text-[#c7d6ee] transition hover:-translate-y-0.5 hover:border-[#4d94ff] hover:text-white"
                   >
                     {t(`bot.cat.${id}.title`)}
                   </button>
@@ -582,7 +623,7 @@ export default function BheemBot() {
 
         {/* ── Composer ── */}
         <div className="relative z-10 shrink-0 border-t border-[#1e3260]/60 bg-[#070b1c]/85 px-4 pb-3 pt-3 backdrop-blur-sm md:px-8 md:pb-4">
-          <label htmlFor="bhimbot-input" className="mb-2 hidden text-[12px] font-medium text-[#8ea3c7] sm:block">
+          <label htmlFor="bhimbot-input" className="mb-2 hidden text-[14px] font-semibold text-[#8ea3c7] sm:block">
             {t('bot.askLabel')}
           </label>
           <div className="flex items-stretch gap-2.5">
@@ -595,7 +636,7 @@ export default function BheemBot() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={t('bot.askAnything')}
-                className="w-full resize-none bg-transparent text-[14px] leading-[1.5] text-white outline-none placeholder:text-[#4a5f84]"
+                className="w-full resize-none bg-transparent text-[16px] leading-[1.5] text-white outline-none placeholder:text-[#5a6f94]"
                 style={{ maxHeight: '120px', overflowY: 'auto' }}
                 onInput={(e) => {
                   e.target.style.height = 'auto';
@@ -604,13 +645,33 @@ export default function BheemBot() {
               />
             </div>
 
+            {voiceSupported && (
+              <button
+                type="button"
+                onClick={toggleVoice}
+                aria-pressed={listening}
+                aria-label={listening ? t('bot2.stop') : t('bot2.speak')}
+                title={listening ? t('bot2.listening') : t('bot2.speak')}
+                className={[
+                  'relative flex min-h-14 shrink-0 items-center justify-center gap-2 rounded-2xl border px-4 text-[15px] font-semibold transition',
+                  listening
+                    ? 'border-[#ff6b70] bg-[#ff6b70]/12 text-[#ff8a8a]'
+                    : 'border-[#2a4a85] bg-[#0a1428] text-[#9cc3ff] hover:border-[#3f9fff] hover:text-white',
+                ].join(' ')}
+              >
+                {listening && <span aria-hidden="true" className="bot-ping absolute inset-0 rounded-2xl border border-[#ff6b70]" />}
+                {listening ? <Square size={16} strokeWidth={2.4} /> : <Mic size={19} strokeWidth={2.1} />}
+                <span className="hidden md:inline">{listening ? t('bot2.listening') : t('bot2.speak')}</span>
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => send()}
               disabled={!input.trim() || sending}
               aria-label={t('bot.send')}
               className={[
-                'flex w-14 shrink-0 items-center justify-center rounded-2xl transition',
+                'flex min-h-14 w-14 shrink-0 items-center justify-center rounded-2xl transition',
                 input.trim() && !sending
                   ? 'bg-[#2d6fff] text-white shadow-[0_0_16px_rgba(45,111,255,0.4)] hover:bg-[#3d7fff]'
                   : 'bg-[#1a2c5c] text-[#6f86ad]',
@@ -619,7 +680,8 @@ export default function BheemBot() {
               <Send size={17} strokeWidth={2.2} />
             </button>
           </div>
-          <p className="mt-2 text-[11px] text-[#4a5f84]">{t('bot.disclaimer')}</p>
+          {voiceNote && <p className="mt-2 text-[13px] text-[#ffb27a]" role="status">{voiceNote}</p>}
+          <p className="mt-2 text-[12.5px] text-[#5a6f94]">{t('bot.disclaimer')}</p>
         </div>
       </section>
 

@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Edit3, Headphones, Mic2, Video, Newspaper, Scale, ArrowRight, Check } from 'lucide-react';
 import SectionLabel from './SectionLabel';
-import { NavButton } from './CarouselNav';
-import ToolCardCarousel from './ToolCardCarousel';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import useSlidingPill, { pillStyle } from '../generate/useSlidingPill';
+import { prefersReducedMotion } from '../../hooks/useScrollAnimations';
 import { useI18n } from '../../i18n/index.jsx';
 
 const SERVICES = [
@@ -59,296 +61,232 @@ function handleCardMove(e) {
   el.style.setProperty('--my', `${e.clientY - rect.top}px`);
 }
 
-function ServiceCard({ service }) {
+function ServiceCard({ service, compact = false }) {
   const { t } = useI18n();
   const { icon: Icon, id, color, gradient, live, route } = service;
   const title = t(`svc.${id}.title`);
   const sub = t(`svc.${id}.sub`);
   const features = [1, 2, 3].map((n) => t(`svc.${id}.f${n}`));
+  const index = SERVICES.findIndex((x) => x.id === id);
   return (
     <div
       onMouseMove={handleCardMove}
-      /* min-h, not h: the card was pinned to 480px with overflow hidden, so a
-         longer description — or a Hindi one, which the type scale sets larger
-         — pushed the "coming soon" line out through the bottom edge. The
-         carousel stretches every card to the tallest, so they still line up. */
-      className="liquid-glass group relative flex min-h-[480px] w-full flex-1 flex-col overflow-hidden rounded-2xl p-7"
+      // The service's own colour runs through the card: a wash from the
+      // corner, the top edge, the progress bar, the feature tiles and, for a
+      // live service, a filled button.
+      className={`group relative flex w-full flex-1 flex-col overflow-hidden rounded-[20px] border ${compact ? 'p-5 sm:p-7' : 'min-h-[460px] p-7 md:p-8'}`}
+      style={{
+        borderColor: `${color}55`,
+        background: `radial-gradient(90% 70% at 100% 0%, ${color}33 0%, transparent 60%), radial-gradient(60% 60% at 0% 100%, ${color}14 0%, transparent 70%), linear-gradient(165deg, #121b40 0%, #0b1130 55%, #090d24 100%)`,
+        boxShadow: `0 40px 80px -40px ${color}99, inset 0 1px 0 rgba(255,255,255,0.06)`,
+      }}
     >
+      <span aria-hidden="true" className="absolute inset-x-0 top-0 h-[3px]" style={{ background: `linear-gradient(90deg, ${color} 0%, ${color}00 80%)` }} />
       {/* cursor spotlight */}
       <div
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{ background: `radial-gradient(220px circle at var(--mx,50%) var(--my,50%), ${color}22, transparent 65%)` }}
+        style={{ background: `radial-gradient(260px circle at var(--mx,50%) var(--my,50%), ${color}26, transparent 65%)` }}
       />
-      <div
-        className="pointer-events-none absolute -top-14 -right-14 h-32 w-32 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100"
-        style={{ background: `${color}20` }}
-      />
+      {/* The service's icon, large and faint, behind the copy. */}
+      <Icon aria-hidden="true" size={compact ? 140 : 230} strokeWidth={0.9} className="pointer-events-none absolute -bottom-10 -right-10 opacity-[0.07]" style={{ color }} />
 
-      {/* ── Top row: icon + badge ── */}
-      <div className="relative flex items-start justify-between">
+      {/* ── Top row: icon, place in the set, status ── */}
+      <div className="relative flex items-center gap-4">
         <span
-          className={`flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} shadow-[0_4px_18px_rgba(0,0,0,0.35)]`}
+          className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-[16px] bg-gradient-to-br ${gradient}`}
+          style={{ boxShadow: `0 10px 28px ${color}66` }}
         >
-          <Icon size={24} strokeWidth={1.8} className="text-white" />
+          <Icon size={25} strokeWidth={1.8} className="text-white" />
         </span>
+        <div className="min-w-0 flex-1">
+          <p className="font-count text-[13px] font-semibold tabular-nums" style={{ color }}>
+            {String(index + 1).padStart(2, '0')} <span className="text-white/35">/ {String(SERVICES.length).padStart(2, '0')}</span>
+          </p>
+          {/* Where this service sits among the six. */}
+          <div className="mt-1.5 flex max-w-[180px] gap-1" aria-hidden="true">
+            {SERVICES.map((x, k) => (
+              <span key={x.id} className="h-1 flex-1 rounded-full" style={{ background: k <= index ? color : 'rgba(255,255,255,0.12)' }} />
+            ))}
+          </div>
+        </div>
         {live ? (
-          <span className="rounded-full border border-green-500/30 bg-green-500/10 px-2.5 py-1 font-count text-[11px] font-semibold uppercase tracking-widest text-green-400">
+          <span className="flex items-center gap-1.5 rounded-full border border-green-500/40 bg-green-500/15 px-3 py-1 font-count text-[12px] font-semibold uppercase tracking-widest text-green-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-400 motion-safe:animate-pulse" />
             {t('landing.live')}
           </span>
         ) : (
-          <span className="rounded-full border border-[#2a4375]/50 bg-[#0c1735]/60 px-2.5 py-1 font-count text-[11px] font-semibold uppercase tracking-widest text-[#5a7aaa]">
+          <span className="rounded-full border border-white/15 bg-white/[0.06] px-3 py-1 font-count text-[12px] font-semibold uppercase tracking-widest text-[#9fb3d6]">
             {t('landing.soon')}
           </span>
         )}
       </div>
 
       {/* ── Title & description ── */}
-      {/* The service's place in the set, so the four read as one product
-          ecosystem rather than four loose cards. */}
-      <p className="card-index relative mt-5 font-count text-[11px] font-semibold">
-        {String(SERVICES.findIndex((s) => s.id === id) + 1).padStart(2, '0')}
-      </p>
-      <p className="relative mt-1.5 text-[26px] font-semibold text-white">{title}</p>
-      <p className="relative mt-2 text-[clamp(15px,4vw,19px)] leading-relaxed text-[#8aabcc]">{sub}</p>
+      <p className="relative mt-6 font-display text-[28px] font-bold leading-tight text-white md:text-[32px]">{title}</p>
+      <p className="relative mt-2 max-w-[620px] text-[clamp(15px,4vw,19px)] leading-relaxed text-[#b4c6e4]">{sub}</p>
 
-      {/* ── Divider ── */}
-      <div className="relative my-5 h-px w-full rounded-full bg-[#1e3260]/70" />
-
-      {/* ── Feature bullets ── */}
-      <ul className="relative flex-1 space-y-3">
+      {/* ── Features, each on a tile in the service's colour ── */}
+      <ul className={`relative mt-6 grid flex-1 content-start gap-2.5 ${compact ? '' : 'sm:grid-cols-3'}`}>
         {features.map((f) => (
-          <li key={f} className="flex items-center gap-2.5">
-            <span
-              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-              style={{ background: `${color}22` }}
-            >
-              <Check size={11} strokeWidth={2.5} style={{ color }} />
+          <li
+            key={f}
+            className="flex items-start gap-2.5 rounded-[14px] border px-3.5 py-3"
+            style={{ borderColor: `${color}33`, background: `${color}12` }}
+          >
+            <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full" style={{ background: color }}>
+              <Check size={12} strokeWidth={3} className="text-white" />
             </span>
-            <span className="text-[18px] text-[#a8c0dc]">{f}</span>
+            <span className="text-[16.5px] leading-snug text-[#dbe6f7]">{f}</span>
           </li>
         ))}
       </ul>
 
       {/* ── Bottom CTA ── */}
-      <div className="relative mt-6 border-t border-[#1e3260]/50 pt-5">
+      <div className="relative mt-6">
         {live && route ? (
           <Link
             to={route}
-            className="inline-flex items-center gap-1.5 text-[18px] font-semibold transition-all duration-200 hover:gap-2.5"
-            style={{ color }}
+            className="inline-flex h-12 items-center gap-2 rounded-[14px] px-6 text-[17px] font-bold text-white transition hover:brightness-110"
+            style={{ background: `linear-gradient(135deg, ${color} 0%, ${color}b3 100%)`, boxShadow: `0 12px 28px ${color}55` }}
           >
             {t('landing.tryNow')}
-            <ArrowRight size={14} strokeWidth={2.2} />
+            <ArrowRight size={17} strokeWidth={2.4} className="transition-transform group-hover:translate-x-1" />
           </Link>
         ) : (
-          <p className="text-[17px] text-[#3d5a80]">{t('landing.comingSoon')}</p>
+          <p className="inline-flex h-12 items-center rounded-[14px] border border-white/10 bg-white/[0.04] px-5 text-[16px] text-[#9fb3d6]">{t('landing.comingSoon')}</p>
         )}
       </div>
     </div>
   );
 }
 
-// Triple-clone so the track is always deep enough to loop seamlessly
-const TRACK      = [...SERVICES, ...SERVICES, ...SERVICES];
-const GAP        = 24;
-// The width a card wants. How many actually fit is measured, not assumed.
-const CARD_TARGET = 360;
-const AUTO_MS    = 3000;
-
 /**
- * How many cards fit in the measured width, and how wide each one is.
- *
- * This used to be three 360px cards in a hard 1128px box, with the arrows
- * pinned 64px outside it. That needs 1256px of screen. Below it the arrows
- * simply left the viewport, and the box itself overflowed the page: at 800px
- * wide, or at 100% on a 1280px screen zoomed to 150%, the carousel was cut off
- * at both edges with no way to reach the controls.
- *
- * Browser zoom is the same thing as a narrower screen as far as CSS is
- * concerned, which is why zooming in reproduced it exactly.
+ * Services, as tabs that the scroll moves through (desktop, lg and up): the
+ * section pins, the list on the left lights the current service with a
+ * sliding highlight, and the card on the right crossfades. A click on the
+ * list jumps there. Under reduced motion nothing pins; the list is plain tabs.
  */
-function layoutFor(width) {
-  if (!width) return { visible: 3, cardW: CARD_TARGET, step: CARD_TARGET + GAP };
-  const visible = Math.max(1, Math.min(3, Math.floor((width + GAP) / (CARD_TARGET + GAP))));
-  const cardW = (width - GAP * (visible - 1)) / visible;
-  return { visible, cardW, step: cardW + GAP };
+// How much of the top of the screen fixed bars cover (navbar, radio strip).
+function fixedTopHeight() {
+  const pinned = (el) => {
+    for (let n = el; n && n !== document.body; n = n.parentElement) {
+      const pos = getComputedStyle(n).position;
+      if (pos === 'fixed' || pos === 'sticky') return true;
+    }
+    return false;
+  };
+  let bottom = 0;
+  document.querySelectorAll('header, .radio-live-strip').forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (r.height && r.top < 200 && pinned(el)) bottom = Math.max(bottom, r.bottom);
+  });
+  return Math.round(bottom);
 }
-const SLIDE_EASE = 'transform 0.55s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
 
-function DesktopCarousel() {
-  // Measured rather than assumed, so the carousel fits whatever width it is
-  // given. A callback ref backed by state, because the element is present from
-  // the first render but its width is not known until layout.
-  const [viewportEl, setViewportEl] = useState(null);
-  const viewportRef = useCallback((el) => setViewportEl(el), []);
-  const [width, setWidth] = useState(0);
-
-  useEffect(() => {
-    if (!viewportEl || typeof ResizeObserver === 'undefined') return undefined;
-    // observe() delivers the current size straight away, so there is no need to
-    // measure once by hand first. Without a ResizeObserver at all, width stays
-    // 0 and layoutFor falls back to the three fixed cards it used to draw.
-    const ro = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
-    ro.observe(viewportEl);
-    return () => ro.disconnect();
-  }, [viewportEl]);
-
-  const { cardW, step } = layoutFor(width);
-
-  // Start in the middle copy so we can go left or right without hitting the edge
-  const [trackIdx, setTrackIdx] = useState(SERVICES.length);
-  const [animated, setAnimated] = useState(true);
-  const trackIdxRef             = useRef(SERVICES.length);
-  const timerRef                = useRef(null);
-
-  // Where a move starts from. The wrap back to the middle copy happens on
-  // transitionend, and a hidden tab runs no transitions, so that event never
-  // came while the timer kept stepping: after a while in the background the
-  // track had slid past every card and the section came back empty, just the
-  // arrows and dots. A position outside the middle copy is brought back into
-  // it before the next step, whatever happened to the events.
-  function settled() {
-    const n = SERVICES.length;
-    const cur = trackIdxRef.current;
-    return cur >= n && cur < n * 2 ? cur : n + (((cur % n) + n) % n);
-  }
-
-  const startTimer = useCallback(() => {
-    clearInterval(timerRef.current);
-    timerRef.current = setInterval(() => {
-      if (document.hidden) return;   // nothing to see, and nothing would settle
-      const next = settled() + 1;
-      trackIdxRef.current = next;
-      setAnimated(true);
-      setTrackIdx(next);
-    }, AUTO_MS);
-  }, []);
+function PinnedServices() {
+  const { t } = useI18n();
+  const wrapRef = useRef(null);
+  const listRef = useRef(null);
+  const triggerRef = useRef(null);
+  const [active, setActive] = useState(0);
+  const pill = useSlidingPill(listRef, active);
+  const n = SERVICES.length;
 
   useEffect(() => {
-    startTimer();
-    return () => clearInterval(timerRef.current);
-  }, [startTimer]);
+    const el = wrapRef.current;
+    if (!el || prefersReducedMotion()) return undefined;
+    const mm = gsap.matchMedia();
+    mm.add('(min-width: 1024px)', () => {
+      triggerRef.current = ScrollTrigger.create({
+        trigger: el,
+        // Pinned just under whatever is fixed at the top (the navbar and the
+        // radio strip), measured rather than guessed, so nothing is covered.
+        // Centred in the space under the fixed bars (navbar, radio strip),
+        // not pressed up against them. The bars grow a little once the page
+        // scrolls, so the measurement gets a margin.
+        // Then a little lower than the exact middle (56px), which reads as
+        // settled rather than hanging under the navbar, while keeping at
+        // least 16px clear at the bottom of the screen.
+        start: () => {
+          const top = fixedTopHeight() + 24;
+          const room = window.innerHeight - top;
+          const centred = top + Math.max(0, (room - el.offsetHeight) / 2);
+          const lowest = window.innerHeight - el.offsetHeight - 16;
+          return `top ${Math.round(Math.max(top, Math.min(centred + 56, lowest)))}px`;
+        },
+        invalidateOnRefresh: true,
+        end: () => `+=${Math.round(window.innerHeight * 0.6 * n)}`,
+        pin: true,
+        anticipatePin: 1,
+        onUpdate: (self) => setActive(Math.min(n - 1, Math.floor(self.progress * n))),
+      });
+      // The bars above change height (the radio strip is dismissed, the
+      // navbar settles once the page scrolls): measure the pin again then.
+      const ro = typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(() => ScrollTrigger.refresh())
+        : null;
+      document.querySelectorAll('header').forEach((h) => ro?.observe(h));
+      return () => { ro?.disconnect(); triggerRef.current = null; };
+    });
+    return () => mm.revert();
+  }, [n]);
 
-  // Coming back to the tab: put the track on the middle copy at once, without
-  // a slide, in case a step was taken that never settled.
-  useEffect(() => {
-    function onVisible() {
-      if (document.hidden) return;
-      const cur = settled();
-      if (cur !== trackIdxRef.current) {
-        trackIdxRef.current = cur;
-        setAnimated(false);
-        setTrackIdx(cur);
-      }
-    }
-    document.addEventListener('visibilitychange', onVisible);
-    return () => document.removeEventListener('visibilitychange', onVisible);
-  }, []);
-
-  // After each slide completes, silently jump back to the middle copy if needed
-  function onTransitionEnd() {
-    const n   = SERVICES.length;
-    const cur = trackIdxRef.current;
-    if (cur >= n * 2) {
-      const next = cur - n;
-      trackIdxRef.current = next;
-      setAnimated(false);
-      setTrackIdx(next);
-    } else if (cur < n) {
-      const next = cur + n;
-      trackIdxRef.current = next;
-      setAnimated(false);
-      setTrackIdx(next);
-    }
+  function choose(i) {
+    const st = triggerRef.current;
+    if (!st) { setActive(i); return; }
+    const y = st.start + ((i + 0.5) / n) * (st.end - st.start);
+    window.scrollTo({ top: y, behavior: 'smooth' });
   }
-
-  // Re-enable transition on the frame after the silent jump
-  useEffect(() => {
-    if (!animated) {
-      const id = requestAnimationFrame(() =>
-        requestAnimationFrame(() => setAnimated(true))
-      );
-      return () => cancelAnimationFrame(id);
-    }
-  }, [animated]);
-
-  function goPrev() {
-    const next = settled() - 1;
-    trackIdxRef.current = next;
-    setAnimated(true);
-    setTrackIdx(next);
-    startTimer();
-  }
-  function goNext() {
-    const next = settled() + 1;
-    trackIdxRef.current = next;
-    setAnimated(true);
-    setTrackIdx(next);
-    startTimer();
-  }
-  function goTo(serviceIdx) {
-    const n    = SERVICES.length;
-    const cur  = trackIdxRef.current;
-    // jump to whichever copy of serviceIdx is closest to current position
-    const base = Math.round(cur / n) * n + serviceIdx;
-    trackIdxRef.current = base;
-    setAnimated(true);
-    setTrackIdx(base);
-    startTimer();
-  }
-
-  const activeService = ((trackIdx % SERVICES.length) + SERVICES.length) % SERVICES.length;
 
   return (
-    <div className="mt-8 sm:mt-14">
-      {/* The gutters are padding rather than negative offsets, so the buttons
-          are inside the element's own box and cannot leave the screen however
-          narrow it gets. 56px holds a 44px button with room either side. */}
-      <div className="relative mx-auto w-full max-w-[1256px] px-12 lg:px-14">
-        <div className="absolute left-0 top-1/2 z-10 -translate-y-1/2 pl-1 lg:pl-1.5">
-          <NavButton onClick={goPrev} direction="left" label="Previous" />
-        </div>
-
-        {/* Clipped viewport */}
-        <div ref={viewportRef} style={{ overflow: 'hidden' }}>
-          <div
-            onTransitionEnd={onTransitionEnd}
-            style={{
-              display:    'flex',
-              gap:        GAP,
-              transform:  `translateX(${-(trackIdx * step)}px)`,
-              transition: animated ? SLIDE_EASE : 'none',
-            }}
+    <div ref={wrapRef} className="mx-auto max-w-7xl px-6 py-6">
+      <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+        <ul ref={listRef} className="relative space-y-1.5" role="tablist" aria-label={t('landing.ourServices')}>
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute left-0 top-0 rounded-[14px] border transition-[transform,width,height,opacity,background-color,border-color] duration-500 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none"
+            style={{ ...pillStyle(pill), borderColor: `${SERVICES[active].color}66`, backgroundColor: `${SERVICES[active].color}1f` }}
           >
-            {TRACK.map((service, i) => (
-              <div key={i} style={{ flexShrink: 0, width: cardW, display: 'flex' }}>
-                <ServiceCard service={service} />
-              </div>
-            ))}
-          </div>
+            <span className="absolute left-0 top-1/2 h-7 w-[3px] -translate-y-1/2 rounded-r-full transition-colors duration-500" style={{ background: SERVICES[active].color }} />
+          </span>
+          {SERVICES.map((s, i) => {
+            const on = i === active;
+            const Icon = s.icon;
+            return (
+              <li key={s.id}>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={on}
+                  data-pill-active={on ? 'true' : undefined}
+                  onClick={() => choose(i)}
+                  className={`relative flex w-full items-center gap-4 rounded-[14px] px-4 py-3.5 text-left transition-colors duration-300 ${on ? 'text-white' : 'text-[#8aabcc] hover:text-white'}`}
+                >
+                  <span className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-gradient-to-br ${s.gradient} transition-opacity duration-300 ${on ? 'opacity-100' : 'opacity-60'}`}>
+                    <Icon size={20} strokeWidth={1.9} className="text-white" />
+                  </span>
+                  <span className="min-w-0 flex-1 text-[19px] font-semibold leading-snug">{t(`svc.${s.id}.title`)}</span>
+                  <span className={`shrink-0 font-count text-[13px] ${s.live ? 'text-green-400' : 'text-[#5a7aaa]'}`}>
+                    {s.live ? t('landing.live') : t('landing.soon')}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+        {/* All six cards share one grid cell, so the panel is as tall as the
+            tallest and the change is a pure crossfade. */}
+        <div className="grid" role="tabpanel">
+          {SERVICES.map((s, i) => (
+            <div
+              key={s.id}
+              aria-hidden={i !== active}
+              className={`flex [grid-area:1/1] transition-opacity duration-500 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none ${i === active ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+            >
+              <ServiceCard service={s} />
+            </div>
+          ))}
         </div>
-
-        <div className="absolute right-0 top-1/2 z-10 -translate-y-1/2 pr-1 lg:pr-1.5">
-          <NavButton onClick={goNext} direction="right" label="Next" />
-        </div>
-      </div>
-
-      {/* Dots */}
-      <div className="mt-7 flex justify-center gap-2">
-        {SERVICES.map((_, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => goTo(i)}
-            className={[
-              'rounded-full transition-all duration-300',
-              i === activeService
-                ? 'h-2 w-6 bg-[#3f9fff]'
-                : 'h-2 w-2 bg-[#2a4375]/60 hover:bg-[#3f9fff]/50',
-            ].join(' ')}
-            aria-label={`Go to ${SERVICES[i].title}`}
-          />
-        ))}
       </div>
     </div>
   );
@@ -363,7 +301,7 @@ export default function KnowledgeSection() {
         <div className="hidden md:block absolute right-[10%] bottom-[20%] h-[380px] w-[380px] rounded-full bg-[#1a5fff]/7 blur-[120px]" />
       </div>
 
-      <div className="relative mx-auto max-w-[1440px] px-6">
+      <div className="relative mx-auto max-w-7xl px-6">
         <SectionLabel>{t('landing.ourServices')}</SectionLabel>
 
         <h2 className="mx-auto mt-5 max-w-[820px] md:mt-8 text-center font-display text-[clamp(30px,8vw,46px)] font-bold leading-[1.05] text-white md:text-[62px]">
@@ -380,14 +318,18 @@ export default function KnowledgeSection() {
         </p>
       </div>
 
-      {/* Mobile: compact tool cards, the next one peeking in */}
-      <div className="mt-6 md:hidden">
-        <ToolCardCarousel />
+      {/* Below lg: the services as plain stacked cards, no pinning. */}
+      <div className="mx-auto mt-6 grid max-w-7xl gap-4 px-6 md:mt-10 md:grid-cols-2 lg:hidden">
+        {SERVICES.map((s) => (
+          <div key={s.id} data-card className="flex rounded-2xl">
+            <ServiceCard service={s} compact />
+          </div>
+        ))}
       </div>
 
-      {/* Desktop: carousel with left/right nav */}
-      <div className="hidden md:block">
-        <DesktopCarousel />
+      {/* lg and up: scroll moves through the services. */}
+      <div className="mt-10 hidden lg:block">
+        <PinnedServices />
       </div>
 
       {/* ── CTA ── */}

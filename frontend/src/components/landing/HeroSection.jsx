@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { EASE as GSAP_EASE, prefersReducedMotion } from "../../hooks/useScrollAnimations";
 import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Sparkle from "./Sparkle";
@@ -20,59 +22,33 @@ const RAW_WORDS = [
   { key: "hero.w7", cyan: true  },
 ];
 
-let _wi = 0;
-const WORDS = RAW_WORDS.map((w) =>
-  w ? { ...w, delay: 150 + _wi++ * 130 } : null
-);
+const WORDS = RAW_WORDS;
 
-const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 export default function HeroSection({ splashDone = true }) {
   const { t } = useI18n();
-  const [ready, setReady] = useState(false);
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const sectionRef = useRef(null);
-  const hasPlayedOnce = useRef(false);
 
-  // Initial play — fires once when splash clears
+  // The intro, once the splash has gone: each headline word rises out of its
+  // own mask, 80ms apart, then the badge, the sub-copy and the buttons fade
+  // up, and the portrait slides in. The hidden start is set here, by gsap, so
+  // the words are never hidden in the markup itself; under reduced motion
+  // none of this runs and the hero is simply there.
   useEffect(() => {
-    if (!splashDone) return;
-    const id = requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        setReady(true);
-        hasPlayedOnce.current = true;
-      })
-    );
-    return () => cancelAnimationFrame(id);
-  }, [splashDone]);
-
-  // Replay on scroll-back-up
-  useEffect(() => {
-    if (!splashDone) return;
+    if (!splashDone || prefersReducedMotion()) return undefined;
     const el = sectionRef.current;
-    if (!el) return;
-
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) {
-          setReady(false);
-        } else if (hasPlayedOnce.current) {
-          requestAnimationFrame(() =>
-            requestAnimationFrame(() => setReady(true))
-          );
-        }
-      },
-      { threshold: 0 }
-    );
-
-    obs.observe(el);
-    return () => obs.disconnect();
+    if (!el) return undefined;
+    const ctx = gsap.context(() => {
+      const tl = gsap.timeline({ defaults: { ease: GSAP_EASE } });
+      tl.from("[data-hero-word-inner]", { yPercent: 110, duration: 0.8, stagger: 0.08, clearProps: "transform" })
+        .from("[data-hero-fade]", { opacity: 0, y: 20, duration: 0.6, stagger: 0.1, clearProps: "transform,opacity" }, "-=0.45")
+        .from("[data-hero-intro-media]", { opacity: 0, x: 36, duration: 0.9, clearProps: "transform,opacity" }, 0.3);
+    }, el);
+    return () => ctx.revert();
   }, [splashDone]);
 
-  // Same destination and same signed-out path as the CTA further down the
-  // page, so both entry points land people in the generator rather than on
-  // the dashboard after logging in.
   function handleBuildNarrative() {
     const target = "/generate/social-media";
     if (currentUser) {
@@ -92,14 +68,6 @@ export default function HeroSection({ splashDone = true }) {
     }
   }
 
-  function fadeUp(delayMs) {
-    return {
-      transition: `opacity 0.9s ${EASE}, transform 0.9s ${EASE}`,
-      transitionDelay: ready ? `${delayMs}ms` : "0ms",
-      opacity: ready ? 1 : 0,
-      transform: ready ? "translateY(0)" : "translateY(24px)",
-    };
-  }
 
   return (
     <section id="home" ref={sectionRef} className="relative pt-0 md:pt-2">
@@ -153,7 +121,8 @@ export default function HeroSection({ splashDone = true }) {
       </div>
 
       {/* Scanner beam */}
-      <div className="pointer-events-none absolute inset-x-0 z-10" style={{ top: "96px" }}>
+      {/* Behind the content (z-0): at z-10 it swept across the headline and cut through "(AI)". */}
+      <div className="pointer-events-none absolute inset-x-0 z-0" style={{ top: "96px" }}>
         <div className="hero-scan-beam relative h-px w-full">
           <div
             className="absolute inset-x-0 h-px"
@@ -174,7 +143,7 @@ export default function HeroSection({ splashDone = true }) {
       </div>
 
       {/* ── Main content ── */}
-      <div className="relative z-10 mx-auto grid max-w-[1440px] items-stretch gap-8 px-6 pb-6 pt-4 md:grid-cols-[1fr_auto] md:pb-10 md:pt-8">
+      <div className="relative z-10 mx-auto grid max-w-7xl items-stretch gap-8 px-6 pb-6 pt-4 md:grid-cols-[1fr_auto] md:pb-10 md:pt-8">
 
         {/* LEFT: text */}
         {/* No bottom padding. The grid is items-stretch, so both columns are the
@@ -186,8 +155,7 @@ export default function HeroSection({ splashDone = true }) {
 
           {/* Badge */}
           <div
-            className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#3a5e94] bg-[#0f1d3b]/75 px-4 py-2 text-[13px] text-[#d3e4ff] shadow-[0_0_24px_rgba(43,126,255,0.22)] sm:mb-7 sm:gap-3 sm:px-7 sm:py-3 sm:text-[18px]"
-            style={fadeUp(0)}
+            className="mb-5 inline-flex items-center gap-2 rounded-full border border-[#3a5e94] bg-[#0f1d3b]/75 px-4 py-2 text-[13px] text-[#d3e4ff] shadow-[0_0_24px_rgba(43,126,255,0.22)] sm:mb-7 sm:gap-3 sm:px-7 sm:py-3 sm:text-[18px]" data-hero-fade
           >
             <Sparkle size={16} color="#4fb4ff" />
             {t('landing.badge')}
@@ -202,23 +170,23 @@ export default function HeroSection({ splashDone = true }) {
               to the 46px this design already used, so every width from 320px
               to the md breakpoint gets a size that fits, and md upward is
               untouched. */}
-          <h1 className="relative mt-1 font-display max-w-[900px] text-[clamp(31px,8.6vw,46px)] font-bold leading-[1.16] tracking-tight text-white md:text-[60px] md:leading-[1.18]">
+          <h1 className="relative mt-1 font-display max-w-[900px] text-[clamp(31px,8.6vw,46px)] font-bold leading-[1.16] tracking-tight text-white md:text-[46px] md:leading-[1.18] xl:text-[54px]">
             {WORDS.map((item, i) => {
               if (!item) return <br key={i} />;
               return (
+                // The mask is padded and pulled back by the same amount, so
+                // matras above the line and the italic's overhang are not cut.
                 <span
                   key={i}
-                  className={item.cyan ? "gradient-text-cyan ai-emphasis italic" : undefined}
-                  style={{
-                    display: "inline-block",
-                    marginRight: "0.26em",
-                    transition: `opacity 0.7s ${EASE}, transform 0.7s ${EASE}`,
-                    transitionDelay: ready ? `${item.delay}ms` : "0ms",
-                    opacity: ready ? 1 : 0,
-                    transform: ready ? "translateY(0)" : "translateY(18px)",
-                  }}
+                  className="inline-block overflow-hidden align-bottom"
+                  style={{ padding: "0.12em 0.08em", margin: "-0.12em 0.18em -0.12em -0.08em" }}
                 >
-                  {t(item.key)}
+                  <span
+                    data-hero-word-inner
+                    className={`inline-block ${item.cyan ? "gradient-text-cyan ai-emphasis italic" : ""}`}
+                  >
+                    {t(item.key)}
+                  </span>
                 </span>
               );
             })}
@@ -236,8 +204,7 @@ export default function HeroSection({ splashDone = true }) {
               Only from sm up: below that the CTA carries its own mt-8 and the
               gap was never in question, so a margin here would just double it. */}
           <p
-            className="font-count mt-5 max-w-[700px] text-[clamp(16px,4.3vw,22px)] leading-[1.6] text-[#b7c6e1] sm:mt-6 sm:mb-10 sm:leading-8 md:text-[24px] md:leading-9"
-            style={fadeUp(1050)}
+            className="font-count mt-5 max-w-[700px] text-[clamp(16px,4.3vw,22px)] leading-[1.6] text-[#b7c6e1] sm:mt-6 sm:mb-10 sm:leading-8 md:text-[24px] md:leading-9" data-hero-fade
           >
             {t('landing.heroSub')}
           </p>
@@ -245,7 +212,7 @@ export default function HeroSection({ splashDone = true }) {
           {/* CTA */}
           {/* Stacked on a phone, where the two labels cannot share a line
               without wrapping inside the buttons. */}
-          <div className="mt-8 flex w-full flex-col items-stretch gap-3 sm:mt-auto sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-4" style={fadeUp(1300)}>
+          <div className="mt-8 flex w-full flex-col items-stretch gap-3 sm:mt-auto sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-4" data-hero-fade>
             <button
               type="button"
               onClick={handleBheemBot}
@@ -269,15 +236,11 @@ export default function HeroSection({ splashDone = true }) {
 
         {/* RIGHT: image */}
         <div
+          data-hero-intro-media
           className="relative hidden md:flex md:w-[460px] md:flex-col md:items-end"
-          style={{
-            transition: `opacity 1.1s ${EASE}, transform 1.1s ${EASE}`,
-            transitionDelay: ready ? "600ms" : "0ms",
-            opacity: ready ? 1 : 0,
-            transform: ready ? "translateX(0)" : "translateX(36px)",
-          }}
         >
-          <div className="relative w-full overflow-hidden rounded-2xl" style={{ height: "535px" }}>
+          {/* Scales back as the hero scrolls away (see useScrollAnimations). */}
+          <div data-hero-media className="relative w-full overflow-hidden rounded-2xl" style={{ height: "535px" }}>
             <img
               src={ambedkarPortrait}
               alt="Dr. B. R. Ambedkar holding the Constitution of India"

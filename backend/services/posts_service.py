@@ -1653,4 +1653,5 @@ class PostsService:
             previous_content=doc.get("previous_content"),
             refined_at=doc.get("refined_at"),
             refined_is_live=doc.get("refined_is_live"),
+            feedback=doc.get("feedback"),
         )

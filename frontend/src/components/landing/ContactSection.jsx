@@ -149,7 +149,7 @@ export default function ContactSection() {
         <div className="hidden md:block absolute left-[20%] top-[40%] h-[320px] w-[400px] rounded-full bg-[#1a3fa0]/7 blur-[130px]" />
       </div>
 
-      <div className="relative mx-auto max-w-[1440px] px-6">
+      <div className="relative mx-auto max-w-7xl px-6">
         {/* ══════════ Top: Work With Us CTA strip ══════════ */}
         <SectionLabel>{t('landing.connectWithUs')}</SectionLabel>
 

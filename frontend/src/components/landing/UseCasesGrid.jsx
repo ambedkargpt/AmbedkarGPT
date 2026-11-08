@@ -1,6 +1,5 @@
 ﻿import { Cpu, Search, Zap, Target, ArrowRight } from "lucide-react";
 import SectionLabel from "./SectionLabel";
-import StaggerReveal from "../ui/StaggerReveal";
 import PeekCarousel from "./PeekCarousel";
 import { useI18n } from "../../i18n/index.jsx";
 
@@ -24,7 +23,7 @@ function UseCaseCard({ icon: Icon, id }) {
         }}
       />
 
-      <div className="glass-card hover-lift relative flex h-full w-full flex-col overflow-hidden p-5 transition-all duration-500 hover:border-[#3f9fff]/30 sm:p-8 md:p-10">
+      <div data-card className="glass-card hover-lift relative flex h-full w-full flex-col overflow-hidden p-5 transition-all duration-500 hover:border-[#3f9fff]/30 sm:p-8 md:p-10">
         <div
           className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
           style={{
@@ -78,7 +77,7 @@ export default function UseCasesGrid() {
         <div className="hidden md:block absolute left-1/2 bottom-0 h-[300px] w-[600px] -translate-x-1/2 rounded-full bg-[#2d55c0]/7 blur-[130px]" />
       </div>
 
-      <div className="relative mx-auto max-w-[1440px] px-6">
+      <div className="relative mx-auto max-w-7xl px-6">
         <SectionLabel>{t('uc.label')}</SectionLabel>
 
         <h2 className="mx-auto mt-8 max-w-[900px] text-center font-display text-[clamp(26px,7.2vw,38px)] font-bold leading-[1.2] text-white md:text-[52px]">
@@ -92,11 +91,11 @@ export default function UseCasesGrid() {
             four tall cards stacked down the page. From md up, the 2x2 grid. */}
         <UseCasesMobileCarousel />
 
-        <StaggerReveal step={100} className="mt-8 sm:mt-14 hidden gap-6 md:grid md:grid-cols-2">
+        <div className="mt-8 sm:mt-14 hidden gap-6 md:grid md:grid-cols-2">
           {USE_CASES.map((uc) => (
             <UseCaseCard key={uc.id} {...uc} />
           ))}
-        </StaggerReveal>
+        </div>
 
         <div className="mt-8 sm:mt-14 flex justify-center px-2">
           <button

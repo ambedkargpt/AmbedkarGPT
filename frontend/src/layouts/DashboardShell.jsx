@@ -26,6 +26,7 @@ const ACTIVE_BY_PATH = {
   '/generate': 'generate',
   '/posts': 'searches',
   '/preferences': 'prefs',
+  '/settings': 'profile',
   '/profile-setup': 'profile',
   '/bhimbot': 'bheembot',
   '/bhimradio': 'radio',

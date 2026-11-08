@@ -1,4 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Anybody:ital,wght@0,100..900;1,100..900&family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Noto+Sans+Devanagari:wght@300;400;500;600;700&family=Anek+Devanagari:wght@600..800&family=Mukta:wght@600&family=Tiro+Devanagari+Hindi&display=swap');
+/* Fonts are self-hosted (main.jsx imports them from @fontsource): five
+   families, served from this site, no third-party request on first paint. */
 @import "tailwindcss";
 
 @font-face {
@@ -11,13 +12,17 @@
 }
 
 @theme {
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
-  --font-display: 'Anybody', 'Inter', system-ui, sans-serif;
-  --font-count: 'Poppins', 'Count', sans-serif;
-  --font-hindi: 'Mangal', 'Noto Sans Devanagari', serif;
+  --font-sans: 'Inter Variable', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
+  /* Headings: Anek Latin, the Latin half of the Anek family whose Devanagari
+     half is the wordmark, so English and Hindi headings read as one brand. A
+     Devanagari character falls through to Anek Devanagari. */
+  --font-display: 'Anek Latin Variable', 'Anek Devanagari Variable', 'Inter Variable', system-ui, sans-serif;
+  /* Numbers and small UI: Inter, with tabular figures (see .font-count). */
+  --font-count: 'Inter Variable', 'Inter', system-ui, sans-serif;
+  --font-hindi: 'Mangal', 'Noto Sans Devanagari Variable', 'Noto Sans Devanagari', serif;
   /* The AmbedkarGPT wordmark (brand/AgLogo.jsx). */
-  --font-brand: 'Anek Devanagari', 'Mukta', sans-serif;
+  --font-brand: 'Anek Devanagari Variable', 'Anek Devanagari', sans-serif;
 
   --color-navy-950: #05081a;
   --color-navy-900: #0a0e27;
@@ -107,16 +112,23 @@ html { scroll-behavior: smooth; }
 }
 
 /* Headings set .font-display directly, which does not chain to --font-hindi:
-   Anybody/Inter have no Devanagari glyphs, so the browser fell through to
+   Latin display faces have no Devanagari glyphs, so the browser fell through to
    whatever Devanagari font the OS happens to install, at line-heights tuned
    for Latin ascenders. Devanagari's matras and reph sit taller and lower
    than that, so they were getting clipped by the line box. Unlayered rules
    here already beat Tailwind's leading-* utilities (Tailwind's own output
    is layered; plain CSS in this file is not), so this wins without !important.*/
-:root[lang="hi"] .font-display,
 :root[lang="hi"] .font-serif {
   font-family: var(--font-hindi);
   line-height: 1.4;
+}
+/* Hindi headings in Anek Devanagari, the same family as the English ones and
+   the wordmark; body text stays in Noto Sans Devanagari. No tracking here:
+   letter-spacing pulls Devanagari conjuncts apart. */
+:root[lang="hi"] .font-display {
+  font-family: 'Anek Devanagari Variable', var(--font-hindi);
+  line-height: 1.4;
+  letter-spacing: 0;
 }
 
 /* Devanagari sits shorter in its em-box than Latin at the same font-size:
@@ -1432,4 +1444,37 @@ html { scroll-behavior: smooth; }
 @keyframes peekFadeIn1 { from { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
   .peek-track [style*="peekFadeIn"] { animation: none !important; }
+}
+
+/* ag-focus-ring: keyboard focus is always visible, on every control, in a
+   colour that reads on both the navy ground and the cards. Pointer clicks do
+   not trigger it (focus-visible), so mouse users see nothing new. */
+:where(a, button, input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+  outline: 2px solid #8fa8ff;
+  outline-offset: 2px;
+}
+
+/* Headings set tight, poster-like: Anek Latin's width axis at 92% and a hair
+   of negative tracking. English only (tracking breaks Devanagari). */
+.font-display { font-stretch: 92%; }
+:root:not([lang="hi"]) .font-display { letter-spacing: -0.01em; }
+/* Figures line up in columns and counters do not jitter as they change. */
+.font-count, .tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* lp-card-glow: landing cards ([data-card]). On hover they lift 4px, the edge
+   brightens and a soft light follows the pointer (--x/--y are set by
+   useScrollAnimations). Transform and opacity only. */
+[data-card] { position: relative; transition: transform .35s cubic-bezier(.2,.8,.2,1), border-color .35s ease; }
+[data-card]::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  opacity: 0; transition: opacity .3s ease;
+  background: radial-gradient(260px circle at var(--x, 50%) var(--y, 50%), rgba(63,159,255,0.16), transparent 65%);
+}
+@media (hover: hover) {
+  [data-card]:hover { transform: translateY(-4px); border-color: rgba(120,170,255,0.45); }
+  [data-card]:hover::after { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-card] { transition: none; }
+  [data-card]:hover { transform: none; }
 }

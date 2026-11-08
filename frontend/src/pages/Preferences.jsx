@@ -185,7 +185,7 @@ function SectionHeader({ label, badge, description }) {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function Preferences() {
+export default function Preferences({ embedded = false }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
@@ -405,8 +405,8 @@ export default function Preferences() {
       {/* The brand and the back-to-dashboard button that used to head this page
           are both in the sidebar now, which is always on screen. The answered
           count stays: it belongs to this page. */}
-      <div className="relative px-4 sm:px-6 md:px-10">
-        <Topbar
+      <div className={embedded ? 'relative' : 'relative px-4 sm:px-6 md:px-10'}>
+        {!embedded && <Topbar
           title={t('prefs.pageTitle')}
           icon={<SlidersHorizontal size={15} strokeWidth={2} className="hidden shrink-0 text-[#4f7fd4] lg:block" />}
           right={
@@ -431,22 +431,23 @@ export default function Preferences() {
               </div>
             </div>
           }
-        />
+        />}
 
-        <div className="relative mx-auto max-w-[780px] pb-28 pt-2">
+        <div className={embedded ? 'relative pb-6' : 'relative mx-auto max-w-[780px] pb-28 pt-2'}>
 
         {/* ── Page hero ── The logo that used to sit beside this heading is in
             the sidebar now, so the heading stands on its own. */}
-        <div className="mb-9">
+        {!embedded && <div className="mb-9">
           <h1 className="font-display text-[30px] font-bold leading-tight text-white md:text-[40px]">
             {t('prefs.pageTitle')}
           </h1>
           <p className="mt-2 text-[14px] text-[#7a90b8]">
             {t('prefs.helpUs')}
           </p>
-        </div>
+        </div>}
 
-        <ConnectedAccounts />
+        {/* In Settings the accounts have a tab of their own. */}
+        {!embedded && <ConnectedAccounts />}
 
         {/* ── Compulsory questions ── */}
         {SHOW_CORE_QUESTIONS && (
@@ -514,7 +515,7 @@ export default function Preferences() {
             <p className="text-[13px] text-[#8b94b8]">{t('prefs.partyNeedParty')}</p>
             <button
               type="button"
-              onClick={() => navigate('/profile-setup')}
+              onClick={() => navigate('/settings?tab=profile')}
               className="rounded-full border border-[#1e3260]/70 px-4 py-2 text-[12.5px] font-medium text-[#a3b0d4] transition hover:border-[#3a6bc4]/60 hover:text-white"
             >
               {t('prefs.partySetParty')}
@@ -549,7 +550,7 @@ export default function Preferences() {
             <p className="text-[13px] text-[#8b94b8]">{t('prefs.positionNeedRole')}</p>
             <button
               type="button"
-              onClick={() => navigate('/profile-setup')}
+              onClick={() => navigate('/settings?tab=profile')}
               className="rounded-full border border-[#1e3260]/70 px-4 py-2 text-[12.5px] font-medium text-[#a3b0d4] transition hover:border-[#3a6bc4]/60 hover:text-white"
             >
               {t('prefs.positionSetRole')}

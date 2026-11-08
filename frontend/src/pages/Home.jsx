@@ -1,9 +1,8 @@
-import { useEffect } from 'react';
-import Lenis from 'lenis';
+import { useEffect, useRef } from 'react';
 import 'lenis/dist/lenis.css';
 
 import MainLayout from '../layouts/MainLayout';
-import RevealOnScroll from '../components/ui/RevealOnScroll';
+import useScrollAnimations from '../hooks/useScrollAnimations';
 
 import LandingBackground   from '../components/landing/LandingBackground';
 import HeroSection         from '../components/landing/HeroSection';
@@ -13,18 +12,14 @@ import DalitHistoryMakers  from '../components/landing/DalitHistoryMakers';
 import DalitCorpusSection  from '../components/landing/DalitCorpusSection';
 import ContactSection      from '../components/landing/ContactSection';
 import FourIdeasSection    from '../components/landing/FourIdeasSection';
+import WarRoomBanner       from '../components/landing/WarRoomBanner';
+import WhySection          from '../components/landing/WhySection';
 
 export default function Home({ splashDone = true }) {
-  // Smooth, weighted scrolling on the landing page, as rssgpt's has. Off for
-  // reduced motion and on touch screens, where native scrolling is better;
-  // a scrollable box inside the page (a dialog, a list) still scrolls itself.
-  useEffect(() => {
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const coarse = window.matchMedia?.('(pointer: coarse)').matches;
-    if (reduce || coarse) return undefined;
-    const lenis = new Lenis({ lerp: 0.1, smoothWheel: true, autoRaf: true, anchors: false, allowNestedScroll: true });
-    return () => lenis.destroy();
-  }, []);
+  // Scroll motion and the smooth scroll it rides on (Lenis, desktop only),
+  // set up and torn down together: see hooks/useScrollAnimations.
+  const rootRef = useRef(null);
+  useScrollAnimations(rootRef);
 
   // support deep-linking to a section after navigating from another route
   useEffect(() => {
@@ -40,6 +35,7 @@ export default function Home({ splashDone = true }) {
 
   return (
     <MainLayout>
+      <div ref={rootRef}>
       {/* Full-page animated background — absolute so it grows with page height */}
       <LandingBackground />
 
@@ -51,33 +47,29 @@ export default function Home({ splashDone = true }) {
           as separate blocks. */}
       <div className="section-seam" aria-hidden="true" />
 
-      <RevealOnScroll delayMs={60}>
-        <KnowledgeSection />
-      </RevealOnScroll>
+      {/* The war room: right under the hero, the first thing a party worker
+          reads after the headline. */}
+      <WarRoomBanner />
 
-      <RevealOnScroll delayMs={60}>
-        <DalitCorpusSection />
-      </RevealOnScroll>
+      <KnowledgeSection />
 
-      <RevealOnScroll delayMs={60}>
-        <DalitHistoryMakers />
-      </RevealOnScroll>
+      {/* Why AmbedkarGPT: the sticky-list story, after cerebrium.ai. */}
+      <WhySection />
 
-      <div className="section-seam" aria-hidden="true" />
+      <DalitCorpusSection />
 
-      <RevealOnScroll delayMs={60}>
-        <FourIdeasSection />
-      </RevealOnScroll>
-
-      <RevealOnScroll delayMs={60}>
-        <UseCasesGrid />
-      </RevealOnScroll>
+      <DalitHistoryMakers />
 
       <div className="section-seam" aria-hidden="true" />
 
-      <RevealOnScroll delayMs={60}>
-        <ContactSection />
-      </RevealOnScroll>
+      <FourIdeasSection />
+
+      <UseCasesGrid />
+
+      <div className="section-seam" aria-hidden="true" />
+
+      <ContactSection />
+      </div>
     </MainLayout>
   );
 }
