@@ -50,9 +50,12 @@ def test_the_state_channels_load_as_state_and_never_own_a_party_index():
     from backend.pipeline.orchestration import load_channel_config
 
     backend = Path(__file__).resolve().parents[1]
-    for name, tenant in (("congress_mp", "congress"), ("bjp_mp", "bjp")):
+    for name, tenant, region in (
+        ("congress_mp", "congress", "Madhya Pradesh"), ("bjp_mp", "bjp", "Madhya Pradesh"),
+        ("congress_up", "congress", "Uttar Pradesh"), ("bjp_up", "bjp", "Uttar Pradesh"),
+    ):
         channel = load_channel_config(backend, name)
-        assert (channel.scope, channel.region, channel.tenant_slug) == ("state", "Madhya Pradesh", tenant)
+        assert (channel.scope, channel.region, channel.tenant_slug) == ("state", region, tenant)
         assert not channel.rebuild_rag
 
     mapping = _tenant_to_channel()

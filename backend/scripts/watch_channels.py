@@ -64,7 +64,7 @@ CONFIG_DIR = ROOT / "backend" / "config" / "channels"
 # Only the party channels requested for the local watcher. Keep the national
 # and Madhya Pradesh feeds for BJP and Congress, plus Samajwadi.
 CHANNEL_ORDER = (
-    "bjp", "congress", "samajwadi", "congress_mp", "bjp_mp",
+    "bjp", "congress", "samajwadi", "congress_mp", "bjp_mp", "congress_up", "bjp_up",
 )
 
 # A lock whose holder has not been heard from in this long is assumed dead. Long

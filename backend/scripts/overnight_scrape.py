@@ -45,7 +45,7 @@ LOG = ROOT / "backend" / "outputs" / "overnight_scrape.log"
 # missing from this list entirely, so every catch-up run skipped it.
 CHANNELS = (
     "samajwadi", "ravish", "dalitdastak",
-    "congress_mp", "bjp_mp",
+    "congress_mp", "bjp_mp", "congress_up", "bjp_up",
     "congress", "bjp",
 )
 
