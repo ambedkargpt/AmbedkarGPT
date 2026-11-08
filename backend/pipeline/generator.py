@@ -467,7 +467,9 @@ def _platform_char_limit(profile: Dict[str, str]) -> Optional[int]:
 _PLATFORM_LENGTHS = {
     "twitter": "One tweet: at most 280 characters in total, hashtags and line breaks included (max 45 words). One sharp point with one fact, at most two hashtags.",
     "reddit": "A Reddit post: a headline line, then two to four short paragraphs that make the case plainly with the facts (150-250 words).",
-    "whatsapp": "A WhatsApp forward: four to six short sentences that read well on a phone (80-120 words).",
+    # Longer than a forward of a few lines: a worker sends this to groups, and
+    # four sentences read as a caption rather than a message worth passing on.
+    "whatsapp": "A WhatsApp message people forward: a strong headline line, then three or four short paragraphs separated by blank lines that say what happened, give the facts and say why it matters, and a closing line that asks the reader to act or pass it on, with three or four hashtags at the end (180-280 words).",
     "facebook": "A Facebook post: a strong first line, then two or three short paragraphs that make the case with the facts (100-180 words), and two or three hashtags at the end.",
 }
 _PLATFORM_ALIASES = {"twitter / x": "twitter", "x": "twitter"}

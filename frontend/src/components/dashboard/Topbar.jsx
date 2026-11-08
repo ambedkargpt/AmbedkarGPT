@@ -1,9 +1,4 @@
 import { Menu } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import LanguageSwitcher from '../LanguageSwitcher';
-import NotificationBell from './NotificationBell';
-import ProfileMenu from './ProfileMenu';
-import { useAuth } from '../../context/AuthContext';
 import { useShell } from '../../layouts/dashboardShellContext';
 import { useI18n } from '../../i18n/index.jsx';
 
@@ -20,29 +15,16 @@ import { useI18n } from '../../i18n/index.jsx';
  * @param {JSX.Element} p.icon      – small mark beside the title, desktop only
  * @param {JSX.Element} p.right     – page-specific controls, before the account ones
  */
-export default function Topbar({ user, totalPosts, title, icon = null, right = null }) {
+// The account controls (language, notifications, profile menu) moved into the
+// rail, which now carries the language toggle, the signed-in card and log out;
+// `user` and `totalPosts` are still accepted so callers need not change.
+export default function Topbar({ title, icon = null, right = null }) {
   const { t } = useI18n();
   const { openMenu } = useShell();
-  const { currentUser, logout } = useAuth();
-  const navigate = useNavigate();
-
-  // Pages that do not load their own copy of the user still get a filled-in
-  // avatar menu, because the session already holds one.
-  const name  = user?.name  ?? currentUser?.username ?? '—';
-  const email = user?.email ?? currentUser?.email ?? currentUser?.phone ?? '';
-  const party = user?.party ?? currentUser?.political_party ?? '';
-  const initial = (name?.[0] ?? 'A').toUpperCase();
-
-  async function handleLogout() {
-    await logout();
-    // The landing page, not the login form: signing out is leaving, and being
-    // dropped straight onto a form reads as "sign in again" rather than "done".
-    navigate('/', { replace: true });
-  }
 
   return (
     <header className="dash-header sticky top-0 z-30 -mx-4 mb-5 px-4 sm:-mx-6 sm:px-6 md:-mx-10 md:px-10">
-      <div className="flex h-14 items-center gap-3 md:h-16">
+      <div className="flex h-16 items-center gap-3 md:h-[76px]">
         {/* Hamburger — phones and tablets */}
         <button
           type="button"
@@ -53,24 +35,22 @@ export default function Topbar({ user, totalPosts, title, icon = null, right = n
           <Menu size={17} strokeWidth={1.9} />
         </button>
 
-        <div className="flex min-w-0 items-center gap-2.5">
-          {icon}
-          <span className="truncate font-display text-[14.5px] font-semibold tracking-tight text-white">
+        <div className="flex min-w-0 items-center gap-3">
+          {icon && (
+            <span
+              className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white lg:flex [&>svg]:block [&>svg]:!text-white"
+              style={{ background: 'linear-gradient(140deg, #3f9fff 0%, #7b5cff 100%)', boxShadow: '0 10px 26px rgba(63,110,255,0.4)' }}
+            >
+              {icon}
+            </span>
+          )}
+          <span className="truncate font-display text-[22px] font-bold tracking-tight text-white md:text-[26px]">
             {title ?? t('nav.dashboard')}
           </span>
         </div>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
           {right}
-          <LanguageSwitcher />
-          <NotificationBell totalPosts={totalPosts} />
-          <ProfileMenu
-            name={name}
-            email={email}
-            initial={initial}
-            party={party}
-            onLogout={handleLogout}
-          />
         </div>
       </div>
     </header>

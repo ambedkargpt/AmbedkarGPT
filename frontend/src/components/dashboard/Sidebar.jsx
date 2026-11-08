@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import AgMark from '../brand/AgMark';
 import { useI18n } from '../../i18n/index.jsx';
+import { SITE_LANGUAGES } from '../../utils/siteLanguage';
 import { useRadio } from '../../context/RadioContext';
 import { RADIO_REQUIRES_LOGIN } from '../../data/radioAccess';
 import AdminNavLink from './AdminNavLink';
@@ -71,7 +72,45 @@ function fadeCls(collapsed) {
   }`;
 }
 
-function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false, onToggleCollapse }) {
+// Hindi or English, as two halves of one pill: one tap, and the current
+// language is always visible, where the globe menu hid it behind a click.
+function LanguageToggle({ compact = false }) {
+  const { t, lang, changeLanguage } = useI18n();
+  if (compact) {
+    const next = SITE_LANGUAGES.find((l) => l.code !== lang) ?? SITE_LANGUAGES[0];
+    return (
+      <button
+        type="button"
+        onClick={() => changeLanguage(next.code)}
+        title={`${t('lang.change')}: ${next.label}`}
+        aria-label={`${t('lang.change')}: ${next.label}`}
+        className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-white/[0.1] bg-white/[0.05] text-[14px] font-bold text-white transition hover:border-white/30"
+      >
+        {lang === 'hi' ? 'हिं' : 'EN'}
+      </button>
+    );
+  }
+  return (
+    <div role="group" aria-label={t('lang.change')} className="mb-3 grid grid-cols-2 gap-1 rounded-full border border-white/[0.08] bg-white/[0.04] p-1">
+      {SITE_LANGUAGES.map((l) => {
+        const on = l.code === lang;
+        return (
+          <button
+            key={l.code}
+            type="button"
+            onClick={() => changeLanguage(l.code)}
+            aria-pressed={on}
+            className={`h-10 rounded-full text-[15.5px] font-semibold transition ${on ? 'bg-white text-[#0b1029] shadow-[0_4px_14px_rgba(255,255,255,0.15)]' : 'text-[#9fb0d4] hover:text-white'}`}
+          >
+            {l.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false, onToggleCollapse, large = false, user }) {
   // Read, never controlled: the rail reports the broadcast, it does not drive
   // it. Both copies of the rail - the desktop column and the mobile drawer -
   // render through here, so the note cannot appear on one and not the other.
@@ -105,13 +144,17 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
 
   const navigate = useNavigate();
   const fade = fadeCls(collapsed);
+  // The wide rail (the news page) has room to spare, so its type is set
+  // larger: a narrow list of four rows in small type looked unfinished.
+  const rowText = large ? 'text-[16.5px] py-3.5 gap-3.5' : 'text-[13.5px] py-2.5 gap-3';
+  const iconSize = large ? 20 : 17;
   return (
     <>
       {/* The masthead. It used to say "Dashboard" — a wordmark for the page
           you were already on, above a nav item of the same name. This is the
           product's own mark, and it is the one place the brand is stated on a
           signed-in screen. Collapsed, the mark stands in for the whole thing. */}
-      <div className="relative flex items-center gap-2.5 px-5 pt-5 pb-5 lg:pt-6">
+      <div className={`relative flex items-center gap-2.5 pb-5 ${large ? (collapsed ? 'px-5 pt-6' : 'flex-wrap px-5 pt-6') : 'px-5 pt-5 lg:pt-6'}`}>
         {/* Collapsed, the toggle has nowhere to sit, so the mark opens the
             rail again (it shows the arrow on hover); open, it goes home. */}
         <button
@@ -120,12 +163,17 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
             if (collapsed && onToggleCollapse) { onToggleCollapse(); return; }
             navigate(HOME_ROUTE); onClose?.();
           }}
-          className="group/mark flex min-w-0 flex-1 items-center gap-2.5 text-left transition-opacity hover:opacity-85"
+          className={`group/mark flex min-w-0 flex-1 items-center text-left transition-opacity hover:opacity-85 ${large ? 'gap-3.5' : 'gap-2.5'}`}
           aria-label={collapsed && onToggleCollapse ? t('side.expand') : (DASHBOARD_ENABLED ? t('nav.dashboard') : t('brand.wordmark'))}
           title={collapsed && onToggleCollapse ? t('side.expand') : undefined}
         >
-          <span className="relative flex h-9 w-9 shrink-0 items-center justify-center">
-            <AgMark size={32} color="#8FA8FF" decorative />
+          {/* On the wide rail the mark sits on a lit disc and is half as big
+              again, so it reads as the product's logo, not one more icon. */}
+          <span
+            className={`relative flex shrink-0 items-center justify-center ${large ? (collapsed ? 'h-12 w-12 rounded-2xl' : 'h-[62px] w-[62px] rounded-2xl') : 'h-9 w-9'}`}
+            style={large ? { background: 'radial-gradient(circle at 50% 35%, rgba(143,168,255,0.32) 0%, rgba(63,110,255,0.12) 60%, transparent 100%)', boxShadow: 'inset 0 0 0 1px rgba(143,168,255,0.28), 0 10px 30px rgba(63,110,255,0.3)' } : undefined}
+          >
+            <AgMark size={large ? (collapsed ? 38 : 50) : 32} color="#8FA8FF" decorative />
             {collapsed && onToggleCollapse && (
               <span className="absolute inset-0 flex items-center justify-center rounded-full bg-[#0c1330]/90 text-white opacity-0 transition-opacity duration-150 group-hover/mark:opacity-100">
                 <ChevronRight size={16} strokeWidth={2.2} />
@@ -136,15 +184,26 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
               {/* 14px rather than 16. With the line underneath it the two read
                   as one mark; at 16 the name was a few pixels from losing its
                   GPT to the truncation whenever the toggle sat beside it. */}
-              <span className="block truncate font-brand text-[15px] leading-none" style={{ fontWeight: 750 }}>
+              <span className={`block truncate font-brand leading-none ${large ? 'text-[23px]' : 'text-[15px]'}`} style={{ fontWeight: 750 }}>
                 <span className="text-[#EDEEF2]">Ambedkar</span>
                 <span className="text-[#8FA8FF]">GPT</span>
               </span>
-              <span className="mt-[3px] block truncate text-[10.5px] font-medium leading-none text-[#5f7099]">
+              <span className={`block truncate font-medium leading-none ${large ? 'mt-1.5 text-[14px] text-[#8ea0cc]' : 'mt-[3px] text-[10.5px] text-[#5f7099]'}`}>
                 {t('splash.tagline')}
               </span>
           </span>
         </button>
+
+        {/* What the product is for, in one line under the mark. */}
+        {large && !collapsed && (
+          <p
+            className="mt-4 basis-full rounded-2xl border border-[#8FA8FF]/25 px-3.5 py-2.5 text-center text-[14.5px] font-semibold leading-snug text-[#dbe4ff]"
+            style={{ background: 'linear-gradient(120deg, rgba(63,110,255,0.22) 0%, rgba(139,92,255,0.16) 100%)' }}
+          >
+            <Sparkles size={14} className="mr-1.5 inline-block -translate-y-px text-[#8FA8FF]" />
+            {t('landing.badge')}
+          </p>
+        )}
 
         {/* An outlined square rather than a bare icon, so it reads as a control
             sitting beside the brand instead of a stray glyph in the row.
@@ -182,14 +241,14 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
       </div>
 
       {/* nav */}
-      <nav className="flex-1 space-y-1.5 px-4">
+      <nav className={`flex-1 px-4 ${large ? 'space-y-2' : 'space-y-1.5'}`}>
         {/* Primary action */}
         <button
           type="button"
           onClick={() => { navigate(PRIMARY.route); onClose?.(); }}
-          className="group mb-3 flex w-full items-center gap-2.5 overflow-hidden rounded-xl px-3.5 py-3 text-[14px] font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110"
+          className={`group mb-3 flex w-full items-center gap-2.5 overflow-hidden rounded-xl px-3.5 font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 ${large ? 'py-4 text-[17px]' : 'py-3 text-[14px]'}`}
           style={{
-            background: 'linear-gradient(135deg, #1a5fff 0%, #3f9fff 100%)',
+            background: large ? 'linear-gradient(120deg, #1a5fff 0%, #4f7dff 50%, #8b5cff 100%)' : 'linear-gradient(135deg, #1a5fff 0%, #3f9fff 100%)',
             // On the services page this button is where you already are, so it
             // wears the active ring instead of a second nav row saying so.
             boxShadow: active === PRIMARY.id
@@ -199,7 +258,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
           aria-current={active === PRIMARY.id ? 'page' : undefined}
           title={tip(t(PRIMARY.labelKey))}
         >
-          <PRIMARY.Icon size={17} strokeWidth={2} className="shrink-0" />
+          <PRIMARY.Icon size={iconSize} strokeWidth={2} className="shrink-0" />
           <span className={fade}>{t(PRIMARY.labelKey)}</span>
           <ChevronRight
             size={15}
@@ -239,7 +298,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
               }}
               title={tip(t(item.labelKey))}
               className={[
-                'group relative flex w-full items-center gap-3 overflow-hidden rounded-xl px-3.5 py-2.5 text-[13.5px] font-medium transition-all duration-200',
+                `group relative flex w-full items-center overflow-hidden rounded-xl px-3.5 font-medium transition-all duration-200 ${rowText}`,
                 isActive
                   ? 'text-white'
                   : 'text-[#7b88ad] hover:text-[#c7d1eb] hover:bg-[#0f173a]/70',
@@ -258,7 +317,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
               {isActive && (
                 <span className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-gradient-to-b from-[#3f9fff] to-[#7b5cff]" />
               )}
-              <IconComp size={17} strokeWidth={1.8} className="shrink-0" />
+              <IconComp size={iconSize} strokeWidth={1.8} className="shrink-0" />
               <span className={fade}>{t(item.labelKey)}</span>
               {/* The station runs whether or not anyone has it open, so the
                   rail says so: ON AIR when it is broadcasting, TUNED IN when
@@ -283,13 +342,34 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
       </nav>
 
       <div className="px-4 pb-4 pt-2">
+        {/* Who is signed in, on the wide rail: the page beside it no longer
+            has its own profile card. */}
+        {large && <LanguageToggle compact={collapsed} />}
+        {large && user && (
+          <button
+            type="button"
+            onClick={() => { navigate('/profile-setup'); onClose?.(); }}
+            title={tip(user.name)}
+            className={`mb-3 flex w-full items-center gap-3 overflow-hidden rounded-2xl border text-left transition hover:border-white/20 ${collapsed ? 'justify-center border-transparent px-0 py-1' : 'border-white/[0.08] px-3 py-3'}`}
+            style={collapsed ? undefined : { background: 'linear-gradient(135deg, rgba(63,110,255,0.18) 0%, rgba(123,92,255,0.08) 100%)' }}
+          >
+            <span className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#3f9fff] to-[#7b5cff] font-display text-[18px] font-bold text-white">
+              {user.initial}
+              <span className="absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-[#0a1024] bg-[#22c55e]" />
+            </span>
+            <span className={`min-w-0 ${collapsed ? 'hidden' : ''}`}>
+              <span className="block truncate text-[16px] font-semibold text-white">{user.name}</span>
+              {user.sub && <span className="block truncate text-[13px] text-[#8f9cc2]">{user.sub}</span>}
+            </span>
+          </button>
+        )}
         {onLogout && (
           <button
             type="button"
             onClick={handleLogout}
             disabled={loggingOut}
             title={tip(t('auth.logout'))}
-            className="flex w-full items-center gap-3 overflow-hidden rounded-xl border-t border-[#141d3a]/70 px-3.5 py-3 text-[13.5px] font-medium text-[#7b88ad] transition hover:bg-[#0f173a]/70 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-transparent disabled:hover:text-[#7b88ad]"
+            className={`flex w-full items-center gap-3 overflow-hidden rounded-xl border-t border-[#141d3a]/70 px-3.5 py-3 font-medium ${large ? 'text-[16px]' : 'text-[13.5px]'} text-[#7b88ad] transition hover:bg-[#0f173a]/70 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-transparent disabled:hover:text-[#7b88ad]`}
           >
             {loggingOut ? (
               <>
@@ -298,7 +378,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
               </>
             ) : (
               <>
-                <LogOut size={17} strokeWidth={1.8} className="shrink-0" />
+                <LogOut size={iconSize} strokeWidth={1.8} className="shrink-0" />
                 <span className={fade}>{t('auth.logout')}</span>
               </>
             )}
@@ -313,9 +393,10 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
   );
 }
 
-export default function Sidebar({ active = 'dashboard', onSelect, mobileOpen = false, onMobileClose, onLogout, hoverExpand = false }) {
+export default function Sidebar({ active = 'dashboard', onSelect, mobileOpen = false, onMobileClose, onLogout, hoverExpand = false, wide = false, user }) {
   // Read once, on the first render, rather than in an effect: starting wide and
   // narrowing a frame later is a visible jump on every page load.
+  const { t } = useI18n();
   const [collapsed, setCollapsed] = useState(readCollapsed);
   // hoverExpand is for a screen that needs its width (the post generator):
   // the rail stays closed to icons, opens over the page while the pointer or
@@ -342,6 +423,51 @@ export default function Sidebar({ active = 'dashboard', onSelect, mobileOpen = f
     drawerRef.current?.querySelector('button')?.focus();
     return () => document.removeEventListener('keydown', onKey);
   }, [mobileOpen, onMobileClose]);
+
+  // Always open and wider, with larger type: the news page, where this rail
+  // is the only navigation and the page beside it has no panel of its own.
+  if (wide) {
+    return (
+      <>
+        <div
+          className={`sticky top-0 z-40 hidden h-screen shrink-0 self-start transition-[width] duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] motion-reduce:transition-none lg:block ${
+            collapsed ? 'w-[88px]' : 'w-[288px]'
+          }`}
+        >
+          {/* On the rail's edge, level with the logo: closes it to icons and
+              opens it again. The choice is remembered across pages. */}
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            aria-label={collapsed ? t('side.expand') : t('side.collapse')}
+            aria-expanded={!collapsed}
+            title={collapsed ? t('side.expand') : t('side.collapse')}
+            className="absolute -right-4 top-[38px] z-50 flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-[#151f4a] text-white shadow-[0_6px_18px_rgba(0,0,0,0.5)] transition hover:scale-110 hover:border-[#8FA8FF]/70"
+          >
+            {collapsed ? <ChevronRight size={17} strokeWidth={2.4} /> : <ChevronLeft size={17} strokeWidth={2.4} />}
+          </button>
+          <aside
+            className="flex h-full flex-col overflow-y-auto overflow-x-hidden border-r border-white/[0.06]"
+            style={{ background: 'radial-gradient(120% 50% at 0% 0%, rgba(63,110,255,0.16) 0%, transparent 60%), radial-gradient(120% 40% at 100% 100%, rgba(123,92,255,0.12) 0%, transparent 60%), linear-gradient(180deg,#0b1128 0%,#070b1c 100%)' }}
+          >
+            <SidebarContent active={active} onSelect={onSelect} onLogout={onLogout} large collapsed={collapsed} user={user} />
+          </aside>
+        </div>
+        {mobileOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true">
+            <div className="dash-backdrop absolute inset-0 bg-[#03060f]/78 backdrop-blur-[3px]" onClick={onMobileClose} />
+            <aside
+              ref={drawerRef}
+              className="dash-drawer absolute left-0 top-0 flex h-full w-[min(84vw,320px)] flex-col border-r border-[#243665]/80 shadow-[16px_0_48px_rgba(0,0,0,0.55)]"
+              style={{ background: 'linear-gradient(180deg,#0b1128 0%,#070b1c 100%)' }}
+            >
+              <SidebarContent active={active} onSelect={onSelect} onClose={onMobileClose} onLogout={onLogout} large user={user} />
+            </aside>
+          </div>
+        )}
+      </>
+    );
+  }
 
   if (hoverExpand) {
     const closed = !hoverOpen;

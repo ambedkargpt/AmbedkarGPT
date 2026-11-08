@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 import Sidebar from '../components/dashboard/Sidebar';
 import { useAuth } from '../context/AuthContext';
+import { useI18n } from '../i18n/index.jsx';
+import { labelForId } from '../utils/partyRoles';
 import { ShellContext } from './dashboardShellContext';
 import OnboardingStrip from '../components/onboarding/OnboardingStrip';
 import NewsTicker from '../components/NewsTicker';
@@ -31,7 +33,8 @@ const ACTIVE_BY_PATH = {
 };
 
 export default function DashboardShell({ children, background, active: activeProp }) {
-  const { logout } = useAuth();
+  const { logout, currentUser } = useAuth();
+  const { lang } = useI18n();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -64,11 +67,21 @@ export default function DashboardShell({ children, background, active: activePro
             // near-black base, rather than one flat radial: the shell frames
             // every working screen, and a single colour behind all of them read
             // as unfinished.
-            'radial-gradient(1200px 700px at 18% -4%, #101c46 0%, rgba(7,11,28,0) 58%),' +
-            'linear-gradient(168deg, #0a1030 0%, #070b1f 48%, #04081a 100%)',
+            // The same ground as the news page, so moving between the
+            // screens does not change the room you are in.
+            'radial-gradient(1100px 650px at 85% -10%, rgba(123,92,255,0.22) 0%, transparent 60%),' +
+            'radial-gradient(900px 600px at 15% 0%, rgba(26,95,255,0.22) 0%, transparent 60%),' +
+            'radial-gradient(900px 700px at 50% 110%, rgba(240,135,42,0.10) 0%, transparent 60%),' +
+            'linear-gradient(180deg, #0a0f26 0%, #070b1c 60%, #060914 100%)',
         }}
       >
         <Sidebar
+          wide
+          user={{
+            name: currentUser?.full_name || currentUser?.username || '—',
+            sub: labelForId(currentUser?.party_position || '', currentUser?.political_party || '', lang) || currentUser?.email || '',
+            initial: (currentUser?.full_name || currentUser?.username || 'A')[0].toUpperCase(),
+          }}
           active={active}
           onSelect={(id) => { if (id === 'dashboard') navigate('/dashboard'); }}
           mobileOpen={mobileOpen}

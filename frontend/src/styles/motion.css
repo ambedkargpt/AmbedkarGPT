@@ -63,8 +63,15 @@
 .ag-pop { animation: ag-pop .45s cubic-bezier(.34, 1.36, .64, 1) backwards; }
 @keyframes ag-pop { from { opacity: 0; transform: translateY(24px) scale(.96); } }
 
+/* A slow sweep of light across the main call to action. */
+@keyframes ag-sheen {
+  0%, 60% { transform: translateX(0) skewX(-20deg); }
+  100%    { transform: translateX(450%) skewX(-20deg); }
+}
+.ag-sheen { animation: ag-sheen 3.6s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
-  .ag-page-in, .ag-rise, .ag-type, .ag-fade, .ag-pop, .ag-shimmer, .ag-progress::after { animation: none !important; }
+  .ag-page-in, .ag-rise, .ag-type, .ag-fade, .ag-pop, .ag-shimmer, .ag-progress::after, .ag-sheen { animation: none !important; }
   .ag-card, .ag-card .ag-arrow { transition: none !important; }
   .ag-card:hover, .ag-card:focus-visible { transform: none; }
 }
