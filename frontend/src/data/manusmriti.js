@@ -30,3 +30,49 @@ export function xComposeUrl(post) {
 export function topicFromQuery(value, topics) {
   return topics.some((t) => t.id === value) ? value : ALL;
 }
+
+/** How many entries a page shows. */
+export const PAGE_SIZE = 10;
+
+/**
+ * One page of a list. `value` is whatever the address said (?page=...), so it may be missing, not a number, or
+ * out of range: it falls back to the nearest page that exists instead of showing an empty one. Also returns the
+ * figures the counter shows ("Showing 11-20 of 37").
+ */
+export function paginate(items, value, size = PAGE_SIZE) {
+  const total = items.length;
+  const pages = Math.max(1, Math.ceil(total / size));
+  const wanted = Number.parseInt(value, 10);
+  const page = Number.isInteger(wanted) ? Math.min(Math.max(wanted, 1), pages) : 1;
+  const start = (page - 1) * size;
+  return {
+    items: items.slice(start, start + size),
+    page,
+    pages,
+    total,
+    from: total ? start + 1 : 0,
+    to: Math.min(start + size, total),
+  };
+}
+
+/**
+ * The page buttons to draw. Up to seven pages are all shown; more than that, the first, the last and the
+ * neighbours of the current page, with 'gap' where numbers are left out.
+ */
+export function pageNumbers(page, pages) {
+  if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+  const keep = [...new Set([1, pages, page - 1, page, page + 1])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
+  const out = [];
+  let last = 0;
+  for (const n of keep) {
+    if (n - last > 1) out.push('gap');
+    out.push(n);
+    last = n;
+  }
+  return out;
+}
+
+/** The address query for a topic and page: nothing for "all, first page", so the plain address stays plain. */
+export function sectionQuery(topic, page) {
+  return { ...(topic !== ALL && { topic }), ...(page > 1 && { page: String(page) }) };
+}

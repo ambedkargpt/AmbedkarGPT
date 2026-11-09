@@ -182,7 +182,8 @@ How it fits together:
   `TRIAL_MANUSMRITI_CRITIQUE` is on, so with the flag off the route does not exist. It has no write route and no
   input (a test pins that).
 * The page is `frontend/src/pages/Manusmriti.jsx` with `components/manusmriti/PostCard.jsx`. A topic is a link
-  (`/manusmriti?topic=<id>`). Each card shows the headline, the verses (the first three; the rest on request), "What it
+  (`/manusmriti?topic=<id>`), and so is a page (`&page=2`): ten entries are shown at a time, with Previous, the page
+  numbers and Next below them (no pager when a topic has ten or fewer). Changing topic returns to page 1. Each card shows the headline, the verses (the first three; the rest on request), "What it
   says", "The critique" in a separate warm-tinted panel with an "opinion" tag so the text and the writer's view cannot be
   confused, and the note. The X post is behind "Show the post", with Copy and Post on X (a thread has Copy only, since X
   cannot post a thread in one go). An entry not yet marked reviewed carries an "Awaiting review" tag, so nothing looks
