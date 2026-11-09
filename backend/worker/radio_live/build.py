@@ -52,6 +52,17 @@ REPEAT_FLOOR = 0.30            # word overlap two stories need before they count
 STATE_PREFIX = "_state/"       # in the radio bucket; never linked from the site
 LOCK_TTL_SEC = 100 * 60        # longer than the job's own timeout
 
+# How often the bulletin is rebuilt. Every rebuild re-mixes the whole
+# bulletin (up to an hour of audio) and asks the model to regroup every
+# story, so rebuilding on every small change kept the job busy most of the
+# day once nine channels were feeding it. Both can be set on the job
+# definition; 0 restores rebuilding on every change.
+#   RADIO_MIN_REBUILD_MINUTES  a new story waits until the bulletin on air is
+#                              at least this old (default 30)
+#   RADIO_DROP_ONLY_HOURS      when stories have only aged out of the window
+#                              and nothing is new, rebuild once the bulletin
+#                              on air is this old (default 6)
+
 
 # ── environment ──────────────────────────────────────────────────────────────
 
@@ -255,6 +266,54 @@ def _spread_by_subject(selected, similarity_matrix):
     return spread
 
 
+# ── when to rebuild ──────────────────────────────────────────────────────────
+
+def _env_number(name: str, default: float) -> float:
+    try:
+        return float(os.environ.get(name, default))
+    except ValueError:
+        return default
+
+
+def should_rebuild(last: dict, ids: list[str], today: str, now: datetime, force: bool = False) -> tuple[bool, str]:
+    """
+    Whether the bulletin on air should be rebuilt for these stories, and why.
+
+    `last` is last_build.json: the story ids, date and time of the bulletin on
+    air. A new day always rebuilds (the intro says the date); otherwise a new
+    story rebuilds once the bulletin is RADIO_MIN_REBUILD_MINUTES old, and
+    stories that only aged out wait for RADIO_DROP_ONLY_HOURS.
+    """
+    if force:
+        return True, "forced"
+    if not last or last.get("date") != today:
+        return True, "new day or first build"
+
+    on_air = set(last.get("story_ids", []))
+    current = set(ids)
+    if current == on_air:
+        return False, "same stories as the bulletin on air"
+
+    age_minutes = None
+    try:
+        built_at = datetime.fromisoformat(last["at"])
+        age_minutes = (now - built_at).total_seconds() / 60
+    except (KeyError, TypeError, ValueError):
+        pass  # no usable time: treat the bulletin as old enough
+
+    new_stories = current - on_air
+    if new_stories:
+        min_gap = _env_number("RADIO_MIN_REBUILD_MINUTES", 30)
+        if age_minutes is not None and age_minutes < min_gap:
+            return False, f"{len(new_stories)} new, but the bulletin on air is only {age_minutes:.0f} min old"
+        return True, f"{len(new_stories)} new story/stories"
+
+    drop_only_hours = _env_number("RADIO_DROP_ONLY_HOURS", 6)
+    if age_minutes is not None and age_minutes < drop_only_hours * 60:
+        return False, "stories only aged out; the bulletin on air is recent enough"
+    return True, "stories aged out of the window"
+
+
 # ── the build ────────────────────────────────────────────────────────────────
 
 def main(argv: list[str] | None = None) -> int:
@@ -347,9 +406,11 @@ def _build(args, settings, build_radio, engine_storage, state, publish_storage, 
         return 0
 
     last = state.get("last_build.json", {})
-    if not args.force and sorted(last.get("story_ids", [])) == sorted(ids) and last.get("date") == today.isoformat():
-        log.info("same %d stories as the bulletin on air; nothing to do", len(ids))
+    rebuild, reason = should_rebuild(last, ids, today.isoformat(), now, force=args.force)
+    if not rebuild:
+        log.info("%d stories: %s; nothing to do", len(ids), reason)
         return 0
+    log.info("rebuilding: %s", reason)
 
     # One event, one story. The news pipeline often writes the same press
     # conference or rally up several times. The writer model reads every

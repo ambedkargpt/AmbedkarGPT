@@ -52,11 +52,17 @@ class _Body:
 
 
 class _FakeBatch:
-    def __init__(self, *, running=False):
+    def __init__(self, *, running=False, started_recently=False):
         self.running = running
+        # A watch job created inside the WATCH_MIN_GAP_MINUTES window.
+        self.started_recently = started_recently
         self.submitted: list[dict] = []
 
-    def list_jobs(self, jobQueue, jobStatus):  # noqa: N803
+    def list_jobs(self, jobQueue, jobStatus=None, filters=None):  # noqa: N803
+        if filters is not None:
+            if self.started_recently:
+                return {"jobSummaryList": [{"jobName": "watch-20260924-090000"}]}
+            return {"jobSummaryList": []}
         if self.running and jobStatus == "RUNNING":
             return {"jobSummaryList": [{"jobName": "watch-20260924-090000"}]}
         return {"jobSummaryList": []}
@@ -220,3 +226,66 @@ def test_a_backlog_is_not_retired_unattempted(aws, monkeypatch):
 
     ledger = json.loads(s3.objects[watch_handler._ledger_key()])
     assert sorted(ledger["testchannel"]) == ["vid0000000", "vid0000001"]
+
+
+# ── cost: container size and spacing (see "Container size" in watch_handler) ──
+
+def test_the_pipeline_job_asks_for_a_small_container(aws, monkeypatch):
+    """The definition's 4 vCPU / 16 GB is for the RAG rebuild, not this job."""
+    watch_handler, _s3, batch = aws
+    _feed(monkeypatch, [_upload("aaaaaaaaaaa")])
+
+    watch_handler.handler()
+
+    size = batch.submitted[0]["containerOverrides"]["resourceRequirements"]
+    assert size == [{"type": "VCPU", "value": "1"}, {"type": "MEMORY", "value": "4096"}]
+
+
+def test_the_old_size_comes_back_with_two_settings(aws, monkeypatch):
+    watch_handler, _s3, batch = aws
+    monkeypatch.setenv("WATCH_JOB_VCPU", "4")
+    monkeypatch.setenv("WATCH_JOB_MEMORY_MB", "16384")
+    _feed(monkeypatch, [_upload("aaaaaaaaaaa")])
+
+    watch_handler.handler()
+
+    size = batch.submitted[0]["containerOverrides"]["resourceRequirements"]
+    assert size == [{"type": "VCPU", "value": "4"}, {"type": "MEMORY", "value": "16384"}]
+
+
+def test_a_size_fargate_would_refuse_falls_back_to_the_definition(aws, monkeypatch):
+    """A typo must not stop news: Batch rejects bad sizes, so none is sent."""
+    watch_handler, _s3, batch = aws
+    monkeypatch.setenv("WATCH_JOB_VCPU", "1")
+    monkeypatch.setenv("WATCH_JOB_MEMORY_MB", "16384")  # too much for 1 vCPU
+    _feed(monkeypatch, [_upload("aaaaaaaaaaa")])
+
+    watch_handler.handler()
+
+    assert len(batch.submitted) == 1
+    assert "resourceRequirements" not in batch.submitted[0]["containerOverrides"]
+
+
+def test_no_new_job_soon_after_the_last_one(aws, monkeypatch):
+    """New videos wait for the next job instead of starting one every 10 minutes."""
+    watch_handler, s3, batch = aws
+    batch.started_recently = True
+    _feed(monkeypatch, [_upload("aaaaaaaaaaa")])
+
+    result = watch_handler.handler()
+
+    assert result["submitted"] is None and result["reason"] == "too_soon"
+    assert batch.submitted == []
+    # Nothing was attempted, so no video was charged an attempt.
+    assert watch_handler._ledger_key() not in s3.objects
+
+
+def test_spacing_can_be_switched_off(aws, monkeypatch):
+    watch_handler, _s3, batch = aws
+    batch.started_recently = True
+    monkeypatch.setenv("WATCH_MIN_GAP_MINUTES", "0")
+    _feed(monkeypatch, [_upload("aaaaaaaaaaa")])
+
+    watch_handler.handler()
+
+    assert len(batch.submitted) == 1
