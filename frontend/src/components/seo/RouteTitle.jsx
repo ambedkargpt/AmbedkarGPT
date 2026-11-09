@@ -17,6 +17,7 @@ const TITLES = {
   '/profile-setup': { en: 'Your profile', hi: 'आपकी प्रोफ़ाइल' },
   '/questionnaire': { en: 'A few questions', hi: 'कुछ सवाल' },
   '/bhimradio': { en: 'Bhim Radio', hi: 'भीम रेडियो' },
+  '/manusmriti': { en: 'Manusmriti, in its own words', hi: 'मनुस्मृति, उसी के शब्दों में' },
 };
 
 export default function RouteTitle() {

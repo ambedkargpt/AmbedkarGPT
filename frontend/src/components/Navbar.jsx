@@ -7,14 +7,16 @@ import LanguageSwitcher from './LanguageSwitcher';
 import { SITE_LANGUAGES } from '../utils/siteLanguage';
 import { useI18n } from '../i18n/index.jsx';
 import { RADIO_REQUIRES_LOGIN } from '../data/radioAccess';
+import { MANUSMRITI_SECTION_ENABLED } from '../data/features';
 
-// action: 'scroll' (default) | 'bheembot' | 'dashboard' | 'radio' | 'section:<id>'
+// action: 'scroll' (default) | 'bheembot' | 'dashboard' | 'radio' | 'manusmriti' | 'section:<id>'
 const navItems = [
   { key: 'nav.homeCaps',     sectionId: 'home' },
   { key: 'nav.corpusCaps',   sectionId: 'ambedkarverse' },
   { key: 'nav.servicesCaps', sectionId: 'services' },
   { key: 'nav.bheemCaps',    sectionId: 'bheem',   action: 'bheembot' },
   { key: 'nav.radioCaps',    sectionId: 'radio',   action: 'radio' },
+  ...(MANUSMRITI_SECTION_ENABLED ? [{ key: 'nav.manusmritiCaps', sectionId: 'manusmriti', action: 'manusmriti' }] : []),
   { key: 'nav.contactCaps',  sectionId: 'contact' },
 ];
 
@@ -24,6 +26,7 @@ const navItems = [
 const ITEM_FOR_PATH = {
   '/bhimradio': 'radio',
   '/bhimbot': 'bheem',
+  '/manusmriti': 'manusmriti',
   '/contact': 'contact',
 };
 
@@ -111,6 +114,12 @@ export default function Navbar() {
         sessionStorage.setItem('auth_redirect', '/bhimradio');
         navigate('/login');
       }
+      return;
+    }
+
+    // A public page of its own: anyone can read it, signed in or not.
+    if (item.action === 'manusmriti') {
+      navigate('/manusmriti');
       return;
     }
 

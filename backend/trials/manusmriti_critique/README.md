@@ -5,11 +5,16 @@ method the supplied YouTube videos use. Every fact in a post is a verse of the s
 quoted word for word with its reference. Nothing is published automatically: a person reads each review
 sheet and decides.
 
+The result is a **Manusmriti section on the website** (`/manusmriti`): a page to read, with the posts grouped by topic,
+each with the verse it is built on, a Copy button and a Post-on-X link. It is a page, not a bot: there is no text box
+and nothing a visitor types reaches a model (§7).
+
 It is a trial, so it is built to be redone and removed:
 
-* everything lives in this folder; the website does not import it;
-* it is switched off unless `TRIAL_MANUSMRITI_CRITIQUE=true` is set (only used by the optional API mount, see §7);
-* removing it is `git rm -r backend/trials backend/tests/test_manusmriti_trial_*.py` (see §6).
+* the work lives in this folder; the website touches it in only a few lines (§6 lists them);
+* it is switched off unless `TRIAL_MANUSMRITI_CRITIQUE=true` is set on the server and the frontend is built with the
+  section enabled (it always is under `vite dev`; a production build needs `VITE_MANUSMRITI_SECTION=true`);
+* removing it is a few deletions (§6).
 
 ## 1. What was done, in order
 
@@ -20,7 +25,9 @@ It is a trial, so it is built to be redone and removed:
 | 3. Write the report | the playbook | what the videos do and how the X posts follow it | `analysis/playbook.md` (**read this first**) |
 | 4. Read the book | `Manu-Smriti.pdf` | 2,684 verses, English only, with page numbers | `sources/manusmriti_verses.json` |
 | 5. Write posts | chosen verses + playbook | posts, checked and saved for review | `output/runs/<time>-<format>/review.md` |
-| 6. Choose the menu of the no-questions bot (§7) | the whole book, sent to Gemini once | ranked candidate topics with the verses a talk would use, every verse id checked against the book | `output/topics_proposed-<purpose>-<time>.json` |
+| 6. Choose the topics | the whole book, sent to Gemini once | ranked candidate topics with their verses, every verse id checked against the book | `output/topics_proposed-<purpose>-<time>.json` |
+| 7. Choose what is published | the posts a person picked (`published/picks.json`) | `published/posts.json`: every post re-checked against the verse text, with the cited verses embedded | `published/` (committed) |
+| 8. Show it | `posts.json` | the section at `/manusmriti` | `api.py`, the frontend page |
 
 ## 2. Quick start
 
@@ -50,6 +57,10 @@ python3 -m backend.trials.manusmriti_critique.generate --check-file my_post.txt
 # --purpose critique (default) asks for topics where the verses themselves show unequal rules; --purpose general for the most interesting ones.
 python3 backend/trials/manusmriti_critique/tools/propose_topics.py --env-file path/to/.env
 python3 backend/trials/manusmriti_critique/tools/propose_topics.py --dry-run          # size of the prompt only
+
+# choose what the website shows: edit published/picks.json, then check every post against the verses and build posts.json
+python3 backend/trials/manusmriti_critique/tools/publish_posts.py --check
+python3 backend/trials/manusmriti_critique/tools/publish_posts.py
 ```
 
 The topic finder does not decide the menu: it ranks candidates, drops any verse id the book does not have, and suggests ten
@@ -126,34 +137,64 @@ is committed. On a fresh checkout the two tests that compare the playbook with t
 
 ```bash
 git rm -r backend/trials backend/tests/test_manusmriti_trial_*.py
+git rm -r frontend/src/components/manusmriti frontend/src/pages/Manusmriti.jsx \
+          frontend/src/data/manusmriti.js frontend/src/data/manusmriti.test.js frontend/src/api/manusmriti.js
 ```
 
-If the optional API mount of §7 was added, also delete its one line (and the import) in `backend/main.py`.
-Nothing else refers to this folder: no database tables, no migrations, no frontend files, no new
-dependencies (`google-genai` and `openai` are already in `backend/requirements-api.txt`; PyMuPDF is needed only for the one-off ingest).
+then delete the lines that mention the trial in four existing files (a search for `manusmriti` or `MANUSMRITI` finds them):
 
-## 7. Putting it on the website (not done yet, on purpose)
+| file | what to delete |
+|---|---|
+| `backend/main.py` | the block at the end that mounts the router behind `TRIAL_MANUSMRITI_CRITIQUE` |
+| `frontend/src/App.jsx` | the `Manusmriti` lazy import, the `/manusmriti` route and `MANUSMRITI_SECTION_ENABLED` in the import |
+| `frontend/src/components/Navbar.jsx` | the nav item, the `ITEM_FOR_PATH` entry, the `manusmriti` branch of `handleNav` and the import |
+| `frontend/src/data/features.js`, `i18n/pages.js`, `components/seo/RouteTitle.jsx` | the `MANUSMRITI_SECTION_ENABLED` constant, the `msm.*` and `nav.manusmritiCaps` strings, the `/manusmriti` title |
 
-**Product rule: the visitor never asks a question.** Unlike BheemBot, this bot has no text box. The visitor sees 10
-topics, taps one, and the bot talks through that topic from pre-written cards (a verse, a plain restatement, one
-opinion line), moving on with fixed buttons (Next / Show the verse / Another topic). The cards are written and checked
-offline by this folder's pipeline and read by a person; nothing is generated at request time. That keeps every word
-inside what was reviewed, which open question-and-answer cannot promise, and the API only ever receives a topic id
-and a card number.
+Nothing else refers to it: no database tables, no migrations, no new dependencies (`google-genai` and `openai` are
+already in `backend/requirements-api.txt`; PyMuPDF is needed only for the one-off ingest).
 
-Posts have not been approved by an owner, so no route or page exists. When they are:
+## 7. The website section
 
-* `backend/trials/manusmriti_critique/api.py`: a router that returns 404 unless `trial_enabled()` and is guarded by
-  the existing `backend.core.admin.require_admin` (admins are listed in `ADMIN_USER_IDS`); it calls
-  `generate.run(...)`, caps `variants`, and returns the posts with their status and issues. One `include_router`
-  line behind the flag in `backend/main.py`, so with the flag off the route does not exist.
-* The verse file (`sources/manusmriti_verses.json`) is not in git; on a server, run the ingest once or ship the
-  file with the deployment (only if the translation's licence allows it).
-* A frontend page only for admins, listing posts with their verses and status, and a copy button. Publishing
-  to X stays manual.
+**Product rule: the visitor never asks a question.** Unlike BheemBot, this is not a bot. There is no text box, nothing
+a visitor types is sent anywhere, and no model runs while they read. The posts were written and checked beforehand;
+the visitor only chooses which topic to read. That keeps every word inside what was reviewed, which open
+question-and-answer cannot promise.
+
+How it fits together:
+
+* `published/picks.json` is what a person chose: the topics (title and one line, English and Hindi) and the posts, each
+  with its topic, text, the verses it cites and `"reviewed": false|true`.
+* `tools/publish_posts.py` turns it into `published/posts.json`. It re-checks every post against the verse text
+  (`--check` to only check, `--only-reviewed` to leave out what nobody has read) and stops on the first problem. The
+  file carries the text of the cited verses, so the site and its tests need neither the PDF nor a model.
+* `api.py` serves that file read-only at `GET /api/v1/manusmriti/posts`. `backend/main.py` mounts it only while
+  `TRIAL_MANUSMRITI_CRITIQUE` is on, so with the flag off the route does not exist. It has no write route and no
+  input (a test pins that).
+* The page is `frontend/src/pages/Manusmriti.jsx` with `components/manusmriti/PostCard.jsx`. A topic is a link
+  (`/manusmriti?topic=<id>`). Each card has the post as it would read on X, the verse text one tap away, Copy and
+  Post on X (a thread has Copy only, since X cannot post a thread in one go). A post not yet marked reviewed carries an
+  "Awaiting review" tag, so nothing looks signed off that is not.
+
+Run it locally (the backend needs its usual `.env`):
+
+```bash
+TRIAL_MANUSMRITI_CRITIQUE=true python3 -m uvicorn backend.main:app --reload --port 8000
+cd frontend && npm run dev            # then open http://localhost:5173/manusmriti
+```
+
+Change the content: edit `published/picks.json` (add, remove or reword a post, mark it `"reviewed": true` after reading
+it), run `python3 backend/trials/manusmriti_critique/tools/publish_posts.py`, and commit both files. A reworded post
+must pass the same checks, so it cannot say more than its verse does.
+
+Before it goes live: set `TRIAL_MANUSMRITI_CRITIQUE=true` in the server's environment (for the Lambda, in the AWS
+console), build the frontend with `VITE_MANUSMRITI_SECTION=true`, read every post and mark it reviewed, confirm the
+translation and put its name in `picks.json` (`"translation"`; the page shows it once set), and run the build with
+`--only-reviewed`.
 
 ## 8. Known limits
 
+* The 41 posts in `picks.json` are marked `"reviewed": false`: the checks above are strong on numbers, quotations and
+  dropped qualifiers, but they are not a reader. A person reads each one before the section goes live.
 * Hooks and closers are often plain ("Is this justice?"). A human edit is expected; `--focus` helps.
 * The model sometimes reuses the playbook's example wording (the 5.148 post is close to the example).
 * The fact-check is strict and sometimes pedantic (it flags "by birth" because the verse says "Brahmana"
@@ -165,9 +206,9 @@ Posts have not been approved by an owner, so no route or page exists. When they 
 ## 9. Tests
 
 ```bash
-python3 -m pytest backend/tests/test_manusmriti_trial_*.py
+python3 -m pytest backend/tests/test_manusmriti_trial_*.py        # the trial: verifier, ingest, generator, topics, API, published file
+cd frontend && npx vitest run src/data/manusmriti.test.js         # the section's small decisions
 ```
 
-They need no network, model or PDF (tests that compare with the real book or transcripts skip if those
-are absent): the verifier, the ingest, the generator (with a fake model), the analysis validator and the
-playbook.
+They need no network, model or PDF (tests that compare with the real book or transcripts skip if those are absent).
+The published file is re-verified against the verse text it carries itself, so that test runs on a fresh checkout too.

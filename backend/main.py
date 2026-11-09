@@ -102,3 +102,12 @@ app.include_router(chat_router, prefix="/api/v1")
 app.include_router(contact_router, prefix="/api/v1")
 app.include_router(integrations_router, prefix="/api/v1")
 app.include_router(monitoring_router, prefix="/api/v1")
+
+# Trial: the Manusmriti section. The route exists only while TRIAL_MANUSMRITI_CRITIQUE is on (read once at
+# start-up, like the setting above). Remove the trial by deleting backend/trials and these four lines.
+from backend.trials.manusmriti_critique.config import trial_enabled as _manusmriti_trial_enabled  # noqa: E402
+
+if _manusmriti_trial_enabled():
+    from backend.trials.manusmriti_critique.api import router as manusmriti_router  # noqa: E402
+
+    app.include_router(manusmriti_router, prefix="/api/v1")

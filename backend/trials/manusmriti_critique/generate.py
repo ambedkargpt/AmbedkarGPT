@@ -482,8 +482,12 @@ def render_review(result: Run, verses: Dict[str, Verse]) -> str:
 
 def write_run(result: Run, verses: Dict[str, Verse], out_dir: Optional[Path] = None) -> Path:
     stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    folder = (out_dir or config.OUTPUT_DIR / "runs") / f"{stamp}-{result.request.fmt}"
-    folder.mkdir(parents=True, exist_ok=True)
+    base = (out_dir or config.OUTPUT_DIR / "runs") / f"{stamp}-{result.request.fmt}"
+    folder, n = base, 1
+    while folder.exists():          # two runs that finish in the same second (they can, in parallel) must not overwrite each other
+        n += 1
+        folder = base.with_name(f"{base.name}-{n}")
+    folder.mkdir(parents=True)
     (folder / "run.json").write_text(json.dumps(asdict(result), ensure_ascii=False, indent=2), encoding="utf-8")
     (folder / "review.md").write_text(render_review(result, verses), encoding="utf-8")
     return folder

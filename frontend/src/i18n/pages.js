@@ -90,6 +90,28 @@ export const pagesEn = {
   'bot2.listening': 'Listening… speak now',
   'bot2.stop': 'Stop',
   'bot2.micBlocked': 'Microphone access was blocked. Allow it in the browser to speak your question.',
+
+  // The Manusmriti section (a trial): posts that criticise what the text says, each built on a verse.
+  'nav.manusmritiCaps': 'MANUSMRITI',
+  'msm.eyebrow': 'MANUSMRITI',
+  'msm.title': 'What the text says, in its own words',
+  'msm.desc': 'Short posts, each built on a verse of the Manusmriti. Every quotation is word for word, every post names its verse, and the closing line is the writer’s opinion.',
+  'msm.topics': 'Topics',
+  'msm.all': 'All',
+  'msm.showVerse': 'Show the verse',
+  'msm.showVerses': 'Show the verses',
+  'msm.copy': 'Copy',
+  'msm.copyThread': 'Copy thread',
+  'msm.copied': 'Copied',
+  'msm.postOnX': 'Post on X',
+  'msm.threadHint': 'This is a thread: post each part as a reply to the one before.',
+  'msm.draft': 'Awaiting review',
+  'msm.loading': 'Loading the posts',
+  'msm.error': 'The posts could not be loaded. Please try again.',
+  'msm.retry': 'Try again',
+  'msm.empty': 'Nothing here yet.',
+  'msm.note': 'A critique of what a text says, not of any people.',
+  'msm.translation': 'Translation: {name}.',
 };
 
 export const pagesHi = {
@@ -180,4 +202,26 @@ export const pagesHi = {
   'bot2.listening': 'सुन रहे हैं… बोलिए',
   'bot2.stop': 'रोकें',
   'bot2.micBlocked': 'माइक की इजाज़त नहीं मिली। सवाल बोलने के लिए ब्राउज़र में माइक चालू करें।',
+
+  // मनुस्मृति खंड (ट्रायल): ग्रंथ में जो लिखा है उसकी आलोचना करती पोस्ट, हर एक किसी श्लोक पर टिकी।
+  'nav.manusmritiCaps': 'मनुस्मृति',
+  'msm.eyebrow': 'MANUSMRITI',   // Latin in Hindi too: the heading's letter-spaced capitals break Devanagari conjuncts apart
+  'msm.title': 'मनुस्मृति क्या कहती है, उसी के शब्दों में',
+  'msm.desc': 'छोटी पोस्ट, हर एक मनुस्मृति के किसी श्लोक पर टिकी। हर उद्धरण शब्दशः है, हर पोस्ट अपना श्लोक बताती है, और आख़िरी पंक्ति लिखने वाले की राय है।',
+  'msm.topics': 'विषय',
+  'msm.all': 'सभी',
+  'msm.showVerse': 'श्लोक देखें',
+  'msm.showVerses': 'श्लोक देखें',
+  'msm.copy': 'कॉपी',
+  'msm.copyThread': 'थ्रेड कॉपी करें',
+  'msm.copied': 'कॉपी हो गया',
+  'msm.postOnX': 'X पर पोस्ट करें',
+  'msm.threadHint': 'यह एक थ्रेड है: हर हिस्सा पिछले हिस्से के जवाब में पोस्ट करें।',
+  'msm.draft': 'समीक्षा बाक़ी',
+  'msm.loading': 'पोस्ट लोड हो रही हैं',
+  'msm.error': 'पोस्ट लोड नहीं हो सकीं। कृपया दोबारा कोशिश करें।',
+  'msm.retry': 'दोबारा कोशिश करें',
+  'msm.empty': 'यहाँ अभी कुछ नहीं है।',
+  'msm.note': 'यह एक ग्रंथ में लिखी बातों की आलोचना है, किसी समुदाय या व्यक्ति की नहीं।',
+  'msm.translation': 'अनुवाद: {name}।',
 };

@@ -14,6 +14,7 @@ PLAYBOOK_JSON = ANALYSIS_DIR / "playbook.json"    # the synthesized patterns the
 PLAYBOOK_MD = ANALYSIS_DIR / "playbook.md"        # the same, written for people
 SOURCES_DIR = TRIAL_DIR / "sources"               # the Manusmriti text goes here (never the transcripts)
 OUTPUT_DIR = TRIAL_DIR / "output"                 # generated posts (gitignored)
+PUBLISHED_DIR = TRIAL_DIR / "published"           # picks.json (what a person chose) and posts.json (what the website reads); both committed
 
 # The YouTube transcripts are third-party material: they are read from where they live and are
 # never copied into the repository. Only the derived analysis (with short quotes) is stored.

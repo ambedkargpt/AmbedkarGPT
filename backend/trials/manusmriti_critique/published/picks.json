@@ -1,0 +1,590 @@
+{
+ "translation": null,
+ "topics": [
+  {
+   "id": "punishment_by_caste",
+   "title": "Punishment by caste",
+   "title_hi": "जाति के आधार पर दंड",
+   "blurb": "The same offence, a different penalty, depending on who offends and who is offended.",
+   "blurb_hi": "एक ही अपराध, अलग-अलग दंड, इस पर निर्भर कि अपराध किसने किया और किसके साथ।"
+  },
+  {
+   "id": "rules_for_sudras",
+   "title": "Rules for Sudras",
+   "title_hi": "शूद्रों के लिए नियम",
+   "blurb": "What the text prescribes for the Sudra: service, servitude, and what is withheld.",
+   "blurb_hi": "शूद्र के लिए ग्रंथ क्या तय करता है: सेवा, दासता, और क्या रोका गया है।"
+  },
+  {
+   "id": "brahmana_above_the_law",
+   "title": "Brahmanas above the law",
+   "title_hi": "ब्राह्मण: क़ानून से ऊपर",
+   "blurb": "The text's own claims about the Brahmana: ownership, divinity, and a sentence no other caste gets.",
+   "blurb_hi": "ब्राह्मण के बारे में ग्रंथ के अपने दावे: स्वामित्व, देवत्व, और ऐसा दंड जो किसी और जाति को नहीं मिलता।"
+  },
+  {
+   "id": "women_and_independence",
+   "title": "Women and independence",
+   "title_hi": "स्त्री और स्वतंत्रता",
+   "blurb": "What the text says a woman may and may not be: dependence, worship of the husband, and her nature.",
+   "blurb_hi": "ग्रंथ के अनुसार स्त्री क्या हो सकती है और क्या नहीं: निर्भरता, पति की पूजा, और उसका स्वभाव।"
+  },
+  {
+   "id": "learning_and_the_veda",
+   "title": "Who may learn the Veda",
+   "title_hi": "वेद पढ़ने का अधिकार किसे",
+   "blurb": "Who may study, who may teach, and who is kept from hearing.",
+   "blurb_hi": "कौन पढ़ सकता है, कौन पढ़ा सकता है, और किसे सुनने तक से रोका गया है।"
+  },
+  {
+   "id": "wealth_and_property",
+   "title": "Wealth and property",
+   "title_hi": "धन और संपत्ति",
+   "blurb": "Who may keep wealth, who may take it, and who may own nothing.",
+   "blurb_hi": "कौन धन रख सकता है, कौन उसे ले सकता है, और किसके पास कुछ भी नहीं हो सकता।"
+  },
+  {
+   "id": "kandalas_and_svapakas",
+   "title": "Kandalas and Svapakas",
+   "title_hi": "चांडाल और श्वपच",
+   "blurb": "How the text says Kandalas and Svapakas must live: where, on what, in what clothes.",
+   "blurb_hi": "ग्रंथ के अनुसार चांडाल और श्वपच को कैसे रहना है: कहाँ, किस पर, किन कपड़ों में।"
+  },
+  {
+   "id": "courts_and_oaths",
+   "title": "Courts and oaths",
+   "title_hi": "अदालत और शपथ",
+   "blurb": "How a judge is told to question and swear people of different castes.",
+   "blurb_hi": "जज को अलग-अलग जातियों के लोगों से पूछताछ और शपथ कैसे कराने को कहा गया है।"
+  },
+  {
+   "id": "inheritance",
+   "title": "Inheritance",
+   "title_hi": "उत्तराधिकार",
+   "blurb": "How a father's estate is divided among sons, by the caste of their mothers.",
+   "blurb_hi": "पिता की संपत्ति बेटों में कैसे बँटती है, उनकी माताओं की जाति के हिसाब से।"
+  },
+  {
+   "id": "penance_for_killing",
+   "title": "Penance for killing",
+   "title_hi": "हत्या का प्रायश्चित्त",
+   "blurb": "The penances the text sets for taking a life, by who was killed.",
+   "blurb_hi": "ग्रंथ में किसी की जान लेने के प्रायश्चित्त, इस पर निर्भर कि मारा किसे गया।"
+  }
+ ],
+ "posts": [
+  {
+   "topic": "punishment_by_caste",
+   "parts": [
+    "Same insult. Different price.\n\nDefame a Sudra, and a Brahmana pays twelve panas (Manusmriti 8.268).\n\nDefame a Brahmana, and a Sudra \"shall suffer corporal punishment\" (Manusmriti 8.267).\n\nIs this justice?"
+   ],
+   "verses": [
+    "8.267",
+    "8.268"
+   ],
+   "pattern": "asymmetry",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "punishment_by_caste",
+   "parts": [
+    "A Brahmana defames a Kshatriya: fine is fifty panas (Manusmriti 8.268).\n\nReverse the roles.\n\nA Kshatriya defames a Brahmana: fine is \"one hundred\" panas (Manusmriti 8.267).\n\nThe law depends on who speaks."
+   ],
+   "verses": [
+    "8.267",
+    "8.268"
+   ],
+   "pattern": "reverse_the_roles",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "punishment_by_caste",
+   "parts": [
+    "1/3 Same offence. Different price.\n\nDefame a Sudra, and a Brahmana pays twelve panas.\n\nDefame a Brahmana, and a Sudra gets corporal punishment.",
+    "2/3 Manusmriti 8.268: a Brahmana defaming a Sudra is fined \"twelve\" panas.\n\nManusmriti 8.267: a Sudra defaming a Brahmana \"shall suffer corporal punishment.\"",
+    "3/3 The same act. A different penalty for each class.\n\nIs this justice?"
+   ],
+   "verses": [
+    "8.268",
+    "8.267"
+   ],
+   "pattern": "thread",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "punishment_by_caste",
+   "parts": [
+    "A Sudra insults a twice-born man with gross invective.\n\nManusmriti 8.270 prescribes that he \"shall have his tongue cut out; for he is of low origin.\"\n\nDoes a person's origin justify such a punishment?"
+   ],
+   "verses": [
+    "8.270"
+   ],
+   "pattern": "scene_hook",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "punishment_by_caste",
+   "parts": [
+    "Manusmriti 8.270 speaks of a Sudra. Then 8.272: \"If he arrogantly teaches Brahmanas their duty, the king shall cause hot oil to be poured into his mouth and into his ears.\"\n\nIs this a fair punishment for words?"
+   ],
+   "verses": [
+    "8.270",
+    "8.272"
+   ],
+   "pattern": "scene_hook",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "punishment_by_caste",
+   "parts": [
+    "\"With whatever limb a man of a low caste does hurt to (a man of the three) highest (castes), even that limb shall be cut off\"\n\nThat is Manusmriti 8.279, not a paraphrase.\n\nA rule on cutting off a limb based on caste.\n\nIs this justice?"
+   ],
+   "verses": [
+    "8.279"
+   ],
+   "pattern": "quote_first",
+   "source": "generated 20261109-204107-single #1",
+   "reviewed": false
+  },
+  {
+   "topic": "punishment_by_caste",
+   "parts": [
+    "A low-caste man tries to sit on the same seat with a high-caste man.\n\nManusmriti 8.281: he \"shall be branded on his hip and be banished, or (the king) shall cause his buttock to be gashed.\"\n\nShould sitting on a seat carry such a penalty?"
+   ],
+   "verses": [
+    "8.281"
+   ],
+   "pattern": "scene_hook",
+   "source": "generated 20261109-204107-single #2",
+   "reviewed": false
+  },
+  {
+   "topic": "rules_for_sudras",
+   "parts": [
+    "\"One occupation only the lord prescribed to the Sudra, to serve meekly even these (other) three castes.\"\n\nThat is Manusmriti 1.91.\n\nOne occupation, prescribed in advance. Is that a choice?"
+   ],
+   "verses": [
+    "1.91"
+   ],
+   "pattern": "plain_rule",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "rules_for_sudras",
+   "parts": [
+    "Compelled to serve.\n\nManusmriti 8.413: a Brahmana \"may compel to do servile work\" a Sudra, \"for he was created by the Self-existent (Svayambhu) to be the slave of a Brahmana.\"\n\nIs that a rule, or a verdict on a person?"
+   ],
+   "verses": [
+    "8.413"
+   ],
+   "pattern": "plain_rule",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "rules_for_sudras",
+   "parts": [
+    "\"A Sudra, though emancipated by his master, is not released from servitude; since that is innate in him, who can set him free from it?\"\n\nThat is Manusmriti 8.414.\n\nA rule that denies freedom even after release."
+   ],
+   "verses": [
+    "8.414"
+   ],
+   "pattern": "quote_first",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "rules_for_sudras",
+   "parts": [
+    "1/3 Two verses, side by side.\n\nManusmriti 8.412: a Brahmana who, \"because he is powerful, out of greed,\" makes initiated twice-born men do slaves' work against their will \"shall be fined by the king six hundred (panas).\"",
+    "2/3 Manusmriti 8.413: a Brahmana \"may compel to do servile work\" a Sudra, \"for he was created by the Self-existent (Svayambhu) to be the slave of a Brahmana.\"",
+    "3/3 One is a fine. The other is a permission.\n\nIs that equal treatment?"
+   ],
+   "verses": [
+    "8.412",
+    "8.413"
+   ],
+   "pattern": "thread",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "rules_for_sudras",
+   "parts": [
+    "The Sudra who serves, Manusmriti 10.122-10.125.\n\n10.124: \"a suitable maintenance\".\n10.125: \"The remnants of their food must be given to him, as well as their old clothes, the refuse of their grain, and their old household furniture.\"\n\nIs that what \"suitable\" means?"
+   ],
+   "verses": [
+    "10.122",
+    "10.123",
+    "10.124",
+    "10.125",
+    "10.124",
+    "10.125"
+   ],
+   "pattern": "plain_rule",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "rules_for_sudras",
+   "parts": [
+    "The second part of a Brahmana's name shall be a word \"implying happiness\", but of a Sudra's an expression \"denoting service.\"\n\nThat is Manusmriti 2.32.\n\nEven a name is set by class."
+   ],
+   "verses": [
+    "2.32"
+   ],
+   "pattern": "quote_first",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "rules_for_sudras",
+   "parts": [
+    "A Sudra settles the law.\n\nManusmriti 8.21 warns that the kingdom of a monarch who permits this \"will sink (low), like a cow in a morass.\"\n\nWho should be allowed to settle the law?"
+   ],
+   "verses": [
+    "8.21"
+   ],
+   "pattern": "scene_hook",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "brahmana_above_the_law",
+   "parts": [
+    "\"Whatever exists in the world is, the property of the Brahmana\"\n\nThat is Manusmriti 1.100, not a paraphrase.\n\nThe text states \"The Brahmana is, indeed, entitled to all.\"\n\nWho decides ownership by birth?"
+   ],
+   "verses": [
+    "1.100"
+   ],
+   "pattern": "quote_first",
+   "source": "generated 20261109-204106-single #1",
+   "reviewed": false
+  },
+  {
+   "topic": "brahmana_above_the_law",
+   "parts": [
+    "The rules on birthright and property.\n\nManusmriti 1.99: he is \"born as the highest on earth, the lord of all created beings\".\n\nAnother rule, Manusmriti 1.100: \"Whatever exists in the world is, the property of the Brahmana\".\n\n2 verses of total entitlement."
+   ],
+   "verses": [
+    "1.99",
+    "1.100"
+   ],
+   "pattern": "verse_stack",
+   "source": "generated 20261109-204106-single #3",
+   "reviewed": false
+  },
+  {
+   "topic": "brahmana_above_the_law",
+   "parts": [
+    "Capital punishment depends on caste.\n\nManusmriti 8.379: \"Tonsure (of the head) is ordained for a Brahmana (instead of) capital punishment; but (men of) other castes shall suffer capital punishment.\"\n\nWho does this law protect?"
+   ],
+   "verses": [
+    "8.379"
+   ],
+   "pattern": "plain_rule",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "brahmana_above_the_law",
+   "parts": [
+    "\"Let him never slay a Brahmana, though he have committed all (possible) crimes; let him banish such an (offender), leaving all his property (to him) and (his body) unhurt.\"\n\nThat is Manusmriti 8.380.\n\nWhatever the crime, banished with his property. Is that equal justice?"
+   ],
+   "verses": [
+    "8.380"
+   ],
+   "pattern": "quote_first",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "women_and_independence",
+   "parts": [
+    "In childhood, to her father.\nIn youth, to her husband.\nWhen her lord is dead, to her sons.\n\nManusmriti 5.148: \"a woman must never be independent.\"\n\nA rule, not an accident."
+   ],
+   "verses": [
+    "5.148"
+   ],
+   "pattern": "plain_rule",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "women_and_independence",
+   "parts": [
+    "Dependence, day and night.\n\nManusmriti 9.2: \"Day and night woman must be kept in dependence by the males (of) their (families)\"\n\nWho gets to be free under this law?"
+   ],
+   "verses": [
+    "9.2"
+   ],
+   "pattern": "plain_rule",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "women_and_independence",
+   "parts": [
+    "\"a husband must be constantly worshipped as a god by a faithful wife\"\n\nThat is Manusmriti 5.154, even if he is \"destitute of virtue, or seeking pleasure (elsewhere)\".\n\nIs obedience required regardless of conduct?"
+   ],
+   "verses": [
+    "5.154"
+   ],
+   "pattern": "quote_first",
+   "source": "generated 20261109-204120-single #1",
+   "reviewed": false
+  },
+  {
+   "topic": "women_and_independence",
+   "parts": [
+    "A woman's religious life, restricted by law.\n\nManusmriti 5.155: \"No sacrifice, no vow, no fast must be performed by women apart (from their husbands)\".\n\nWhy should a woman's spiritual practice depend entirely on her husband?"
+   ],
+   "verses": [
+    "5.155"
+   ],
+   "pattern": "plain_rule",
+   "source": "generated 20261109-204120-single #2",
+   "reviewed": false
+  },
+  {
+   "topic": "women_and_independence",
+   "parts": [
+    "\"(When creating them) Manu allotted to women (a love of their) bed, (of their) seat and (of) ornament, impure desires, wrath, dishonesty, malice, and bad conduct.\"\n\nThat is Manusmriti 9.17.\n\nShould a law assign character by sex?"
+   ],
+   "verses": [
+    "9.17"
+   ],
+   "pattern": "quote_first",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "women_and_independence",
+   "parts": [
+    "Manusmriti 9.18: women \"(who are) destitute of strength and destitute of (the knowledge of) Vedic texts, (are as impure as) falsehood (itself), that is a fixed rule.\"\n\nShould a law say this of women?"
+   ],
+   "verses": [
+    "9.18"
+   ],
+   "pattern": "plain_rule",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "learning_and_the_veda",
+   "parts": [
+    "Who is allowed to teach the Veda?\n\nManusmriti 10.1: the three twice-born castes study, \"but among them the Brahmana (alone) shall teach it, not the other two; that is an established rule.\"\n\nA rule of exclusive right."
+   ],
+   "verses": [
+    "10.1"
+   ],
+   "pattern": "plain_rule",
+   "source": "generated 20261109-204043-single #1",
+   "reviewed": false
+  },
+  {
+   "topic": "learning_and_the_veda",
+   "parts": [
+    "\"Let him not give to a Sudra advice, nor the remnants (of his meal), nor food offered to the gods; nor let him explain the sacred law (to such a man)\"\n\nThat is Manusmriti 4.80.\n\nNot even advice, and not the sacred law, for one class."
+   ],
+   "verses": [
+    "4.80"
+   ],
+   "pattern": "quote_first",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "learning_and_the_veda",
+   "parts": [
+    "Restricting even who may listen.\n\nManusmriti 4.99 dictates that one must not recite the texts \"in the presence of Sudras\".\n\nIs a law fair if some are forbidden from even hearing it?"
+   ],
+   "verses": [
+    "4.99"
+   ],
+   "pattern": "plain_rule",
+   "source": "generated 20261109-204043-single #3",
+   "reviewed": false
+  },
+  {
+   "topic": "wealth_and_property",
+   "parts": [
+    "\"No collection of wealth must be made by a Sudra, even though he be able (to do it)...\"\n\nThat is Manusmriti 10.129.\n\nThe reason given? \"for a Sudra who has acquired wealth, gives pain to Brahmanas.\"\n\nWhy restrict a person's earnings?"
+   ],
+   "verses": [
+    "10.129"
+   ],
+   "pattern": "quote_first",
+   "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "wealth_and_property",
+   "parts": [
+    "\"A Brahmana may confidently seize the goods of (his) Sudra (slave); for, as that (slave) can have no property, his master may take his possessions.\"\n\nThat is Manusmriti 8.417.\n\nHis slave can own nothing, so his master may take it all. Is that a reason?"
+   ],
+   "verses": [
+    "8.417"
+   ],
+   "pattern": "quote_first",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "wealth_and_property",
+   "parts": [
+    "\"A wife, a son, and a slave, these three are declared to have no property\"\n\nThat is Manusmriti 8.416, not a paraphrase.\n\nThe text states their earnings belong to him to whom they belong.\n\nWho gets to own property under this rule?"
+   ],
+   "verses": [
+    "8.416"
+   ],
+   "pattern": "quote_first",
+   "source": "generated 20261109-204042-single #1",
+   "reviewed": false
+  },
+  {
+   "topic": "wealth_and_property",
+   "parts": [
+    "\"When a learned Brahmana has found treasure, deposited in former (times), he may take even the whole (of it); for he is master of everything.\"\n\nThat is Manusmriti 8.37.\n\nIs \"master of everything\" a reason a law can give?"
+   ],
+   "verses": [
+    "8.37"
+   ],
+   "pattern": "quote_first",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "kandalas_and_svapakas",
+   "parts": [
+    "Rules for Kandalas and Svapakas:\n\nManusmriti 10.51: their wealth shall be \"dogs and donkeys\".\nManusmriti 10.52: dress of \"garments of the dead\".\nManusmriti 10.54: \"at night they shall not walk about in villages\".\n\nThree verses."
+   ],
+   "verses": [
+    "10.51",
+    "10.52",
+    "10.54"
+   ],
+   "pattern": "verse_stack",
+   "source": "generated 20261109-204027-single #1",
+   "reviewed": false
+  },
+  {
+   "topic": "kandalas_and_svapakas",
+   "parts": [
+    "What they must wear. What they must eat from.\n\nManusmriti 10.51 speaks of Kandalas and Svapakas. Then 10.52: \"Their dress (shall be) the garments of the dead, (they shall eat) their food from broken dishes\".\n\nShould a law order this?"
+   ],
+   "verses": [
+    "10.51",
+    "10.52"
+   ],
+   "pattern": "plain_rule",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "kandalas_and_svapakas",
+   "parts": [
+    "Marked by the king's order.\n\nManusmriti 10.51 speaks of Kandalas and Svapakas. Then 10.55: \"distinguished by marks at the king’s command\", and \"carry out the corpses (of persons) who have no relatives\".\n\nWhy should a law mark people?"
+   ],
+   "verses": [
+    "10.51",
+    "10.55"
+   ],
+   "pattern": "plain_rule",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "courts_and_oaths",
+   "parts": [
+    "Same court. Different oaths.\n\nManusmriti 8.113: a Brahmana swears \"by his veracity\".\n\nA Sudra swears by imprecating on his own head \"the guilt of all grievous offences\".\n\nIs this justice?"
+   ],
+   "verses": [
+    "8.113"
+   ],
+   "pattern": "plain_rule",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "courts_and_oaths",
+   "parts": [
+    "A judge examines witnesses (Manusmriti 8.79, 8.88):\n\nA Brahmana, beginning with \"Speak\". A Kshatriya, beginning with \"Speak the truth\".\nA Vaisya is admonished by \"kine, grain, and gold\".\nA Sudra is threatened with \"every crime that causes loss of caste\".\n\nEqual treatment?"
+   ],
+   "verses": [
+    "8.79",
+    "8.88"
+   ],
+   "pattern": "plain_rule",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "inheritance",
+   "parts": [
+    "A Brahmana with four wives, one of each caste (Manusmriti 9.149).\n\nManusmriti 9.151: three shares for the Brahmana wife's son, two for the Kshatriya's, \"a share and a half\" for the Vaisya's, \"one share\" for the Sudra's.\n\nSame father. Is the mother's caste the reason?"
+   ],
+   "verses": [
+    "9.149",
+    "9.151"
+   ],
+   "pattern": "plain_rule",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "inheritance",
+   "parts": [
+    "\"The son of a Brahmana, a Kshatriya, and a Vaisya by a Sudra (wife) receives no share of the inheritance; whatever his father may give to him, that shall be his property.\"\n\nThat is Manusmriti 9.155.\n\nHis father's son, with no share. Is his mother's caste the reason?"
+   ],
+   "verses": [
+    "9.155"
+   ],
+   "pattern": "quote_first",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "penance_for_killing",
+   "parts": [
+    "The penance for slaying a Sudra.\n\nManusmriti 11.130: \"He who has slain a Sudra, shall perform that whole penance during six months, or he may also give ten white cows and one bull to a Brahmana.\"\n\nTen cows and a bull as penance for a human life?"
+   ],
+   "verses": [
+    "11.130"
+   ],
+   "pattern": "plain_rule",
+   "source": "generated 20261109-204033-single #3",
+   "reviewed": false
+  },
+  {
+   "topic": "penance_for_killing",
+   "parts": [
+    "\"Having killed a cat, an ichneumon, a blue jay, a frog, a dog, an iguana, an owl, or a crow, he shall perform the penance for the murder of a Sudra;\"\n\nThat is Manusmriti 11.131.\n\nThe same penance for a crow as for a Sudra's life."
+   ],
+   "verses": [
+    "11.131"
+   ],
+   "pattern": "quote_first",
+   "source": "hand-written, then fact-checked",
+   "reviewed": false
+  },
+  {
+   "topic": "penance_for_killing",
+   "parts": [
+    "Killing an animal or killing a Sudra.\n\nManusmriti 11.131 prescribes that for killing a cat, frog, dog, or crow, \"he shall perform the penance for the murder of a Sudra\".\n\nIs a human life worth no more than a crow?"
+   ],
+   "verses": [
+    "11.131"
+   ],
+   "pattern": "scene_hook",
+   "source": "generated 20261109-204033-single #4",
+   "reviewed": false
+  }
+ ]
+}

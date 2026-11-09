@@ -190,6 +190,18 @@ def test_a_run_is_saved_with_a_review_file_a_person_can_read(tmp_path):
     assert saved["posts"][0]["status"] == "approved" and saved["prompts"]["user"]
 
 
+def test_two_runs_saved_in_the_same_second_do_not_overwrite_each_other(tmp_path, monkeypatch):
+    class Frozen(generate.datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 11, 10, 12, 0, 0, tzinfo=tz)
+
+    monkeypatch.setattr(generate, "datetime", Frozen)
+    first = generate.write_run(go(FakeModel({"posts": [GOOD]}, JUDGE_OK)), VERSES, tmp_path)
+    second = generate.write_run(go(FakeModel({"posts": [GOOD]}, JUDGE_OK)), VERSES, tmp_path)
+    assert first != second and (first / "run.json").exists() and (second / "run.json").exists()
+
+
 def test_model_replies_are_parsed_even_inside_a_code_fence():
     assert llm.parse_json('```json\n{"posts": []}\n```') == {"posts": []}
     assert llm.parse_json('Here you go: {"posts": [1]} thanks') == {"posts": [1]}
