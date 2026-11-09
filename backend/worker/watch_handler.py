@@ -19,6 +19,27 @@ Environment:
     BATCH_JOB_DEFINITION    e.g. ambedkargpt-worker
     WATCH_MAX_ATTEMPTS      default 3 — see the ledger note below
     WATCH_CHANNELS          optional subset; default is every channel config
+    WATCH_JOB_VCPU          default 1    — see "Container size" below
+    WATCH_JOB_MEMORY_MB     default 4096
+    WATCH_MIN_GAP_MINUTES   default 30   — see "Spacing jobs out" below
+
+Container size
+--------------
+The job definition is sized for auto_rebuild, the RAG rebuild: 4 vCPU and
+16 GB. The pipeline this watcher starts does not rebuild RAG; it downloads
+transcripts and waits on LLM APIs, so most of those 4 vCPU and 16 GB sat
+idle while being paid for by the second. Each job therefore asks for its
+own, smaller size. Setting WATCH_JOB_VCPU=4 and WATCH_JOB_MEMORY_MB=16384
+on this Lambda puts back the old size without a redeploy.
+
+Spacing jobs out
+----------------
+The schedule fires every 10 minutes, and with nine channels, several of
+them party channels that post all day, something is new on almost every
+tick. One job per tick kept a container running nearly all the time, and
+each start pays again for pulling the image and the channel state. Waiting
+at least WATCH_MIN_GAP_MINUTES after the last job lets one job take
+everything that came in meanwhile. Set it to 0 for the old behaviour.
 """
 from __future__ import annotations
 
@@ -122,6 +143,53 @@ def _job_already_running(batch, queue: str) -> bool:
     return False
 
 
+def _started_recently(batch, queue: str, minutes: float) -> bool:
+    """
+    True when a watch job was started less than `minutes` ago.
+
+    Asks Batch for jobs created after that moment (any state). If the
+    question fails, the answer is "no", so a listing problem can delay
+    nothing.
+    """
+    if minutes <= 0:
+        return False
+    since_ms = int((datetime.now(UTC).timestamp() - minutes * 60) * 1000)
+    try:
+        jobs = batch.list_jobs(
+            jobQueue=queue,
+            filters=[{"name": "AFTER_CREATED_AT", "values": [str(since_ms)]}],
+        ).get("jobSummaryList", [])
+    except Exception as exc:  # noqa: BLE001 - a listing failure must not block the run
+        log.warning("could not list recent jobs: %s", exc)
+        return False
+    for job in jobs:
+        if job.get("jobName", "").startswith("watch-"):
+            log.info("job %s started within the last %s minutes - waiting", job.get("jobName"), minutes)
+            return True
+    return False
+
+
+# Memory sizes Fargate accepts for each vCPU size, in MB. A combination
+# outside these makes Batch refuse the job, so anything else falls back to
+# the job definition's own size rather than starting nothing.
+_FARGATE_MEMORY_MB = {
+    "1": range(2048, 8192 + 1, 1024),
+    "2": range(4096, 16384 + 1, 1024),
+    "4": range(8192, 30720 + 1, 1024),
+}
+
+
+def _job_size_overrides() -> list[dict]:
+    """The container size for a pipeline job, or [] to keep the definition's size."""
+    vcpu = (os.getenv("WATCH_JOB_VCPU") or "1").strip()
+    memory = (os.getenv("WATCH_JOB_MEMORY_MB") or "4096").strip()
+    allowed = _FARGATE_MEMORY_MB.get(vcpu)
+    if allowed is None or not memory.isdigit() or int(memory) not in allowed:
+        log.warning("WATCH_JOB_VCPU=%s / WATCH_JOB_MEMORY_MB=%s is not a Fargate size; using the job definition's", vcpu, memory)
+        return []
+    return [{"type": "VCPU", "value": vcpu}, {"type": "MEMORY", "value": memory}]
+
+
 def pending_by_channel(ledger: dict, max_attempts: int) -> dict[str, list]:
     """Channel -> the uploads it has posted that the pipeline has not taken in."""
     import httpx
@@ -212,19 +280,31 @@ def handler(event=None, context=None) -> dict:  # noqa: ARG001 - Lambda signatur
         # earned a strike.
         return {"ok": True, "channels": sorted(pending), "submitted": None, "reason": "job_running"}
 
+    try:
+        min_gap = float(os.getenv("WATCH_MIN_GAP_MINUTES") or 30)
+    except ValueError:
+        min_gap = 30.0
+    if _started_recently(batch, queue, min_gap):
+        # No ledger update here either: the videos wait for the next job.
+        return {"ok": True, "channels": sorted(pending), "submitted": None, "reason": "too_soon"}
+
     names = sorted(pending)
+    overrides = {
+        # The job definition's own command runs auto_rebuild, which is the
+        # Ravish-only artifact rebuild. This is the multi-channel pipeline,
+        # so the command is overridden rather than a second definition kept
+        # in step with the first.
+        "command": ["python", "-m", "backend.worker.run_channels", "--channels", ",".join(names)],
+        "environment": [{"name": "WATCH_CHANNELS", "value": ",".join(names)}],
+    }
+    size = _job_size_overrides()
+    if size:
+        overrides["resourceRequirements"] = size
     job = batch.submit_job(
         jobName=f"watch-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}",
         jobQueue=queue,
         jobDefinition=definition,
-        containerOverrides={
-            # The job definition's own command runs auto_rebuild, which is the
-            # Ravish-only artifact rebuild. This is the multi-channel pipeline,
-            # so the command is overridden rather than a second definition kept
-            # in step with the first.
-            "command": ["python", "-m", "backend.worker.run_channels", "--channels", ",".join(names)],
-            "environment": [{"name": "WATCH_CHANNELS", "value": ",".join(names)}],
-        },
+        containerOverrides=overrides,
     )
     log.info("submitted %s (%s) for %s", job["jobName"], job["jobId"], ", ".join(names))
 
