@@ -23,6 +23,9 @@ VERSE_TEXT = "A once-born man (a Sudra), who insults a twice-born man with gross
 VERSES = {"8.270": Verse("8.270", 8, 270, 1, VERSE_TEXT)}
 TOPIC = {"id": "punishment", "title": "Punishment by caste", "title_hi": "जाति के आधार पर दंड", "blurb": "Penalties set by caste.", "blurb_hi": "जाति से तय दंड।"}
 GOOD_PICK = {"topic": "punishment", "parts": ['A Sudra insults a twice-born man.\n\nManusmriti 8.270: "shall have his tongue cut out".'],
+             "headline": "A tongue for an insult",
+             "says": "A Sudra who insults a twice-born man with gross invective “shall have his tongue cut out”.",
+             "critique": "The verse gives its own reason, “for he is of low origin”: the penalty rests on who he is, not on what he did.",
              "verses": ["8.270"], "pattern": "scene_hook", "reviewed": True}
 
 
@@ -125,6 +128,45 @@ def test_only_reviewed_leaves_out_what_nobody_has_read():
     assert publish_posts.build(picks(unread), VERSES, only_reviewed=True)[0]["posts"] == []
 
 
+def card_problems(**changes):
+    return publish_posts.build(picks({**GOOD_PICK, **changes}), VERSES)[1]
+
+
+def test_a_card_must_have_a_headline_an_explanation_and_a_critique():
+    for key in ("headline", "says", "critique"):
+        assert any(f"missing {key}" in p for p in card_problems(**{key: ""})), key
+    assert card_problems(fair_note="") == []                                   # the note is optional
+
+
+def test_the_cards_own_words_are_held_to_the_verses_too():
+    assert any("invented_quote" in p for p in card_problems(critique="The verse says “must be put to the sword” and nothing else."))
+    assert any("unsupported_number" in p for p in card_problems(critique="The fine of five hundred panas is far too high."))
+    assert any("strong_word" in p for p in card_problems(says="A Sudra who insults is tortured."))
+    assert any("outside_fact" in p for p in card_problems(critique="As Ambedkar argued, this is unjust."))
+    assert any("blocked" in p or "collective_statement" in p for p in card_problems(critique="All Brahmanas wrote this for themselves."))
+
+
+def test_a_claim_about_practice_in_a_card_stops_the_build_though_it_is_only_a_warning_in_a_post():
+    assert any("practice_claim" in p for p in card_problems(critique="The rule was enforced for centuries and is unjust."))
+
+
+def test_a_card_too_long_to_read_is_a_problem():
+    assert any("critique is" in p and "over 950" in p for p in card_problems(critique="x " * 600))
+    assert any("headline is" in p and "over 90" in p for p in card_problems(headline="h" * 120))
+
+
+def test_the_card_may_quote_or_name_only_verses_it_cites():
+    assert any("undeclared_reference" in p for p in card_problems(critique="Compare 8.999, which is cited nowhere."))
+    assert card_problems(critique="Compare 8.270 itself: it names the reason.") == []
+
+
+def test_a_verse_cited_twice_is_published_once_and_a_note_comes_through_as_a_note():
+    document, problems = publish_posts.build(picks({**GOOD_PICK, "verses": ["8.270", "8.270"], "fair_note": "The verse names the offence."}), VERSES)
+    assert problems == [] and document["posts"][0]["verses"] == ["8.270"]
+    assert document["posts"][0]["fair_note"] == "The verse names the offence."
+    assert publish_posts.build(picks(GOOD_PICK), VERSES)[0]["posts"][0]["fair_note"] is None
+
+
 def test_a_post_id_stays_the_same_while_the_text_does():
     assert publish_posts.post_id(["a", "b"]) == publish_posts.post_id(["a", "b"]) != publish_posts.post_id(["a", "c"])
 
@@ -145,6 +187,20 @@ def test_every_published_post_is_provable_from_the_verse_text_the_file_carries()
         issues = verify.errors(verify.verify_post(check, verses))
         assert issues == [], (post["parts"], [str(i) for i in issues])
         assert all(xformat.fits(part) for part in post["parts"])
+
+
+@pytest.mark.skipif(not POSTS_FILE.exists(), reason="posts.json has not been built yet")
+def test_every_published_card_has_its_commentary_and_that_is_provable_from_its_verses_too():
+    document = json.loads(POSTS_FILE.read_text(encoding="utf-8"))
+    verses = {k: Verse(k, v["chapter"], v["verse"], 1, v["text"]) for k, v in document["verses"].items()}
+    for post in document["posts"]:
+        for key, limit in publish_posts.LIMITS.items():
+            assert len(post.get(key) or "") <= limit, (post["id"], key)
+        assert all(str(post.get(k) or "").strip() for k in publish_posts.REQUIRED_TEXT), post["id"]
+        text = "\n".join(str(post.get(k) or "") for k in ("headline", "says", "critique", "fair_note"))
+        issues = [i for i in verify.verify_commentary(text, post["verses"], verses) if i.level in ("error", "warning")]
+        assert issues == [], (post["headline"], [str(i) for i in issues])
+        assert len(post["verses"]) == len(set(post["verses"]))
 
 
 @pytest.mark.skipif(not POSTS_FILE.exists(), reason="posts.json has not been built yet")

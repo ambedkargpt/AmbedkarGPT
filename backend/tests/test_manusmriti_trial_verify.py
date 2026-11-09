@@ -69,6 +69,8 @@ def test_number_words_are_read_as_numbers():
     assert verify.numbers_in("an iron nail, ten fingers long") == {10}
     assert verify.numbers_in("twice-born and once-born men") == set()
     assert verify.numbers_in("fined 12 panas") == {12}
+    assert verify.numbers_in("three, two, a share and a half, and one") == {3, 2, 1}        # a comma ends a number: not 3 + 2 = 5
+    assert verify.numbers_in("one hundred, fifty") == {100, 50}
 
 
 def test_a_quote_must_be_word_for_word_but_spacing_and_punctuation_do_not_matter():
@@ -213,3 +215,40 @@ def test_the_playbook_files_verse_stack_does_not_suggest_the_penalties_add_up():
     pb = json.loads((__import__("backend.trials.manusmriti_critique.config", fromlist=["x"]).PLAYBOOK_JSON).read_text(encoding="utf-8"))
     steps = " ".join(next(s for s in pb["x_posts"]["structures"] if s["id"] == "verse_stack")["steps"])
     assert "And then" not in steps and "RULES" in steps
+
+
+# ── the text beside a post on the website ──────────────────────────────────────
+
+def commentary(text, ids=("8.268", "8.270"), **kw):
+    return verify.verify_commentary(text, list(ids), VERSES, **kw)
+
+
+def commentary_codes(text, **kw):
+    return {i.code for i in commentary(text, **kw)}
+
+
+def test_commentary_need_not_name_a_verse_or_quote_one():
+    assert not [i for i in commentary("The penalty rests on who he is, not on what he did.") if i.level == "error"]
+
+
+def test_commentary_may_quote_what_the_verses_say_and_judge_it():
+    text = 'The verse gives its reason, “for he is of low origin”. A penalty justified by birth is not a penalty for wrongdoing.'
+    assert not [i for i in commentary(text) if i.level in ("error", "warning")]
+
+
+def test_commentary_may_not_invent_a_quotation_a_number_or_a_stronger_word():
+    assert "invented_quote" in commentary_codes("The verse says “must be put to the sword”.")
+    assert "unsupported_number" in commentary_codes("A fine of five hundred panas is too much.")
+    assert "strong_word" in commentary_codes("A man is tortured for words.")
+
+
+def test_commentary_may_not_bring_in_outside_facts_or_talk_about_people_or_practice():
+    assert "outside_fact" in commentary_codes("As Ambedkar argued, this is unjust.")
+    assert "outside_fact" not in commentary_codes("As Ambedkar argued, this is unjust.", approved_context=["Ambedkar argued against it."])
+    assert "collective_statement" in commentary_codes("All Brahmanas wrote this for themselves.")
+    assert "practice_claim" in commentary_codes("It was enforced for centuries.")
+
+
+def test_commentary_may_cite_only_the_verses_the_card_cites():
+    assert "undeclared_reference" in commentary_codes("Compare 8.267 as well.")
+    assert "undeclared_reference" not in commentary_codes("Compare 8.268 as well.")

@@ -246,6 +246,25 @@ def judge_prompt(posts: List[Dict], verses: Dict[str, Verse]) -> str:
     return f"VERSES:\n{verse_lines}\n\nPOSTS:\n{json.dumps(items, ensure_ascii=False, indent=1)}"
 
 
+# The text beside a post on the website is a critique, so judgement is its job; what it may not do is misstate the verses.
+JUDGE_CARDS_SYSTEM = """You are a strict fact-checker for critical commentary on a legal text. You are given the verses (the only source of truth) and, for each card, a headline, a plain restatement ("says"), a critique ("critique") and sometimes a "fair_note".
+
+For each card decide, using ONLY the verses:
+- faithful: every statement of what the verses say or prescribe (in the headline, the restatement, the critique and the note) is supported by the cited verses. Not faithful if it exaggerates, merges two verses into one claim, changes who is covered or what the penalty is, drops a qualifier ("unintentionally", "virtuous", "arrogantly", "learned", "a man of a low caste"), or adds a detail. A claim that a verse "does not say" or "never asks" something must be true of the cited verses. A quotation must be a real part of a verse.
+- critique_ok: the critique is an argument about the text and its rules. It may judge them unequal, disproportionate, arbitrary or unjust: that is its job and is opinion. It must NOT state a fact the verses lack, claim a motive or purpose for whoever wrote the text, say what was done in practice or in history or is done today, rely on any outside source, or compare the verses with anything not given to you. Reasoning from what the verses say to a judgement, or from a missing reason to a conclusion, is fine.
+- tone_ok: it criticises the text and its rules, and does not blame, insult or generalise about any community, religion or person.
+Check the headline too. Be sceptical: if in doubt, say so in problems.
+Return only JSON: {"reviews": [{"index": 0, "faithful": true, "critique_ok": true, "tone_ok": true, "problems": []}]}"""
+
+
+def judge_cards_prompt(cards: List[Dict], verses: Dict[str, Verse]) -> str:
+    needed = sorted({v for c in cards for v in c["verses"] if v in verses})
+    verse_lines = "\n".join(f"[{i}] {verses[i].text}" for i in needed)
+    items = [{"index": c["index"], "cites": c["verses"], "headline": c["headline"], "says": c["says"],
+              "critique": c["critique"], **({"fair_note": c["fair_note"]} if c.get("fair_note") else {})} for c in cards]
+    return f"VERSES:\n{verse_lines}\n\nCARDS:\n{json.dumps(items, ensure_ascii=False, indent=1)}"
+
+
 # ── data ───────────────────────────────────────────────────────────────────────
 
 @dataclass
@@ -411,6 +430,34 @@ def _fact_check(posts: List[Post], verses: Dict[str, Verse], complete: Complete,
     by_index = {int(r.get("index", -1)): r for r in reviews if isinstance(r, dict) and str(r.get("index", "")).lstrip("-").isdigit()}
     for p in posts:
         p.judge = {**(by_index.get(p.index) or {"problems": ["the fact-check returned nothing for this post"]}), "model": used}
+
+
+def fact_check_cards(cards: List[Dict], verses: Dict[str, Verse], complete: Complete = llm.complete_json,
+                     batch: int = 8) -> Tuple[Dict[int, Dict], List[str]]:
+    """Ask the fact-check model to read each card's headline, restatement and critique against its verses.
+
+    Returns {index: review} and notes. A card the model said nothing about gets a review that fails it, so silence is
+    never taken for approval. Cards are sent in small batches: one long reply is where a model starts skipping."""
+    reviews: Dict[int, Dict] = {}
+    notes: List[str] = []
+    for start in range(0, len(cards), batch):
+        chunk = cards[start:start + batch]
+        used = None
+        got: List = []
+        for model in dict.fromkeys([os.getenv("TRIAL_JUDGE_MODEL") or DEFAULT_JUDGE_MODEL, None]):
+            try:
+                args = {"model": model} if model else {}
+                got = _items(complete(JUDGE_CARDS_SYSTEM, judge_cards_prompt(chunk, verses), temperature=0.0, max_tokens=8000,
+                                      thinking=int(os.getenv("TRIAL_JUDGE_THINKING", "2048")), **args), "reviews")
+                used = model or "the writing model"
+                break
+            except llm.LLMError as exc:
+                notes.append(f"fact-check model {model or 'default'} failed: {exc}")
+        by_index = {int(r.get("index", -1)): r for r in got if isinstance(r, dict) and str(r.get("index", "")).lstrip("-").isdigit()}
+        for c in chunk:
+            review = by_index.get(c["index"])
+            reviews[c["index"]] = {**review, "model": used} if review else {"faithful": None, "problems": ["the fact-check returned nothing for this card"], "model": used}
+    return reviews, notes
 
 
 def _set_status(p: Post) -> None:

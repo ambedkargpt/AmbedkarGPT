@@ -5,9 +5,10 @@ method the supplied YouTube videos use. Every fact in a post is a verse of the s
 quoted word for word with its reference. Nothing is published automatically: a person reads each review
 sheet and decides.
 
-The result is a **Manusmriti section on the website** (`/manusmriti`): a page to read, with the posts grouped by topic,
-each with the verse it is built on, a Copy button and a Post-on-X link. It is a page, not a bot: there is no text box
-and nothing a visitor types reaches a model (§7).
+The result is a **Manusmriti section on the website** (`/manusmriti`): a page to read, with the entries grouped by
+topic. Each entry is set out as an argument: a headline, the verse itself, what it says in plain words, a critique
+(marked as opinion), a "fair to note" line where the verse itself offers a counterpoint, and the short post for X with
+Copy and Post-on-X buttons. It is a page, not a bot: there is no text box and nothing a visitor types reaches a model (§7).
 
 It is a trial, so it is built to be redone and removed:
 
@@ -58,9 +59,11 @@ python3 -m backend.trials.manusmriti_critique.generate --check-file my_post.txt
 python3 backend/trials/manusmriti_critique/tools/propose_topics.py --env-file path/to/.env
 python3 backend/trials/manusmriti_critique/tools/propose_topics.py --dry-run          # size of the prompt only
 
-# choose what the website shows: edit published/picks.json, then check every post against the verses and build posts.json
+# choose what the website shows: edit published/picks.json, then check every entry against the verses and build posts.json
 python3 backend/trials/manusmriti_critique/tools/publish_posts.py --check
 python3 backend/trials/manusmriti_critique/tools/publish_posts.py
+# after writing or changing a critique, also have the fact-check model read every card (needs a key; stops the build on a disagreement)
+python3 backend/trials/manusmriti_critique/tools/publish_posts.py --fact-check --env-file path/to/.env
 ```
 
 The topic finder does not decide the menu: it ranks candidates, drops any verse id the book does not have, and suggests ten
@@ -162,18 +165,28 @@ question-and-answer cannot promise.
 
 How it fits together:
 
-* `published/picks.json` is what a person chose: the topics (title and one line, English and Hindi) and the posts, each
-  with its topic, text, the verses it cites and `"reviewed": false|true`.
-* `tools/publish_posts.py` turns it into `published/posts.json`. It re-checks every post against the verse text
-  (`--check` to only check, `--only-reviewed` to leave out what nobody has read) and stops on the first problem. The
-  file carries the text of the cited verses, so the site and its tests need neither the PDF nor a model.
+* `published/picks.json` is what a person chose: the topics (title and one line, English and Hindi) and the entries. An
+  entry has its `topic`, a `headline`, `says` (what the verses say, in plain words, with exact quotations), `critique`
+  (the argument), an optional `fair_note`, the X post as `parts`, the `verses` it cites (the ones the argument rests on
+  first) and `"reviewed": false|true`.
+* `tools/publish_posts.py` turns it into `published/posts.json`. It re-checks the X post and the card's own words against
+  the verse text (`--check` to only check, `--only-reviewed` to leave out what nobody has read) and stops on any
+  problem. `--fact-check` also has the fact-check model read every card. The file carries the text of the cited
+  verses, so the site and its tests need neither the PDF nor a model.
+* What a critique may do: judge the text and its rules unequal, disproportionate or arbitrary, and say why from the
+  verse's own words (the reason it gives, the reason it leaves out, who is covered and who is not, how heavy the
+  penalty is for the act). What it may not do, and the checks refuse: quote words a verse does not contain, use a
+  number or a strong word the verses lack, bring in an outside fact or source, say what was done in practice or is done
+  today, claim a motive for whoever wrote the text, or say anything about a community, a religion or a person.
 * `api.py` serves that file read-only at `GET /api/v1/manusmriti/posts`. `backend/main.py` mounts it only while
   `TRIAL_MANUSMRITI_CRITIQUE` is on, so with the flag off the route does not exist. It has no write route and no
   input (a test pins that).
 * The page is `frontend/src/pages/Manusmriti.jsx` with `components/manusmriti/PostCard.jsx`. A topic is a link
-  (`/manusmriti?topic=<id>`). Each card has the post as it would read on X, the verse text one tap away, Copy and
-  Post on X (a thread has Copy only, since X cannot post a thread in one go). A post not yet marked reviewed carries an
-  "Awaiting review" tag, so nothing looks signed off that is not.
+  (`/manusmriti?topic=<id>`). Each card shows the headline, the verses (the first three; the rest on request), "What it
+  says", "The critique" in a separate warm-tinted panel with an "opinion" tag so the text and the writer's view cannot be
+  confused, and the note. The X post is behind "Show the post", with Copy and Post on X (a thread has Copy only, since X
+  cannot post a thread in one go). An entry not yet marked reviewed carries an "Awaiting review" tag, so nothing looks
+  signed off that is not.
 
 Run it locally (the backend needs its usual `.env`):
 
@@ -193,7 +206,7 @@ translation and put its name in `picks.json` (`"translation"`; the page shows it
 
 ## 8. Known limits
 
-* The 41 posts in `picks.json` are marked `"reviewed": false`: the checks above are strong on numbers, quotations and
+* The 37 entries in `picks.json` are marked `"reviewed": false`: the checks above are strong on numbers, quotations and
   dropped qualifiers, but they are not a reader. A person reads each one before the section goes live.
 * Hooks and closers are often plain ("Is this justice?"). A human edit is expected; `--focus` helps.
 * The model sometimes reuses the playbook's example wording (the 5.148 post is close to the example).

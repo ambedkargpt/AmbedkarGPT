@@ -224,3 +224,42 @@ def test_the_playbooks_own_example_posts_pass_the_verifier_against_the_real_book
     for example in generate.DEFAULT_PLAYBOOK["x_posts"]["example_posts"]:
         issues = verify.verify_post({"text": example["text"], "verses": example["verses"]}, real)
         assert verify.passes(issues), (example["text"], [str(i) for i in issues])
+
+
+# ── the fact-check of a website card ───────────────────────────────────────────
+
+CARD = {"index": 0, "verses": ["8.270"], "headline": "A tongue for an insult", "says": "A Sudra who insults shall have his tongue cut out.",
+        "critique": "The penalty rests on who he is, not on what he did."}
+CARD_OK = {"reviews": [{"index": 0, "faithful": True, "critique_ok": True, "tone_ok": True, "problems": []}]}
+
+
+def test_a_card_the_fact_check_agrees_with_is_returned_with_its_review_and_the_model():
+    reviews, notes = generate.fact_check_cards([CARD], VERSES, FakeModel(CARD_OK))
+    assert reviews[0]["faithful"] is True and reviews[0]["critique_ok"] is True and reviews[0]["model"]
+
+
+def test_the_cards_verses_and_text_are_in_the_prompt_the_model_reads():
+    model = FakeModel(CARD_OK)
+    generate.fact_check_cards([{**CARD, "fair_note": "The verse names the offence."}], VERSES, model)
+    prompt = model.calls[0][1]
+    assert TEXT["8.270"] in prompt and "A tongue for an insult" in prompt and "The verse names the offence." in prompt
+
+
+def test_a_card_the_model_says_nothing_about_does_not_pass_by_silence():
+    reviews, _ = generate.fact_check_cards([CARD, {**CARD, "index": 1}], VERSES, FakeModel(CARD_OK))
+    assert reviews[1]["faithful"] is None and reviews[1]["problems"] == ["the fact-check returned nothing for this card"]
+
+
+def test_a_fact_check_that_answers_with_a_bare_list_is_read():
+    reviews, _ = generate.fact_check_cards([CARD], VERSES, FakeModel(CARD_OK["reviews"]))
+    assert reviews[0]["faithful"] is True
+
+
+def test_cards_go_to_the_model_in_small_batches_and_a_failed_model_is_reported_not_fatal():
+    cards = [{**CARD, "index": i} for i in range(5)]
+    model = FakeModel({"reviews": [{"index": i, "faithful": True, "critique_ok": True, "tone_ok": True, "problems": []} for i in range(2)]},
+                      {"reviews": [{"index": i, "faithful": True, "critique_ok": True, "tone_ok": True, "problems": []} for i in range(2, 4)]},
+                      llm.LLMError("quota"), llm.LLMError("quota"))
+    reviews, notes = generate.fact_check_cards(cards, VERSES, model, batch=2)
+    assert len(model.calls) == 4 and all(reviews[i]["faithful"] is True for i in range(4))
+    assert reviews[4]["faithful"] is None and any("failed" in n for n in notes)

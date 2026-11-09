@@ -39,5 +39,5 @@ def load_published() -> Dict:
 def get_posts(response: Response) -> Dict:
     if not config.trial_enabled():
         raise HTTPException(status_code=404, detail="Not found")
-    response.headers["Cache-Control"] = "public, max-age=300"
+    response.headers["Cache-Control"] = "public, max-age=60"       # short: the content is under review and changes with a rebuild
     return load_published()

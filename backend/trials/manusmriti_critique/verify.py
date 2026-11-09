@@ -86,11 +86,13 @@ _UNITS = {w: i for i, w in enumerate(
     "seventeen eighteen nineteen".split())}
 _TENS = {w: 10 * i for i, w in enumerate("_ _ twenty thirty forty fifty sixty seventy eighty ninety".split()) if w != "_"}
 _WORDS = {**_UNITS, **_TENS, "hundred": 100, "thousand": 1000}
-_TOKEN = re.compile(r"[a-z]+|\d+")
+_TOKEN = re.compile(r"[a-z]+|\d+|[,;:.!?()\"“”—–]")      # punctuation is kept as a token so it can end a number
 
 
 def numbers_in(text: str) -> Set[int]:
-    """Every number in a text, written as digits or as words ('one hundred and fifty' -> 150)."""
+    """Every number in a text, written as digits or as words ('one hundred and fifty' -> 150).
+
+    A comma or other punctuation ends a number: 'three, two, one' is three numbers, not 3 + 2 + 1."""
     found: Set[int] = set()
     tokens = _TOKEN.findall(text.lower().replace("-", " "))
     i = 0
@@ -263,6 +265,21 @@ def verify_post(post: Dict, verses: Dict[str, Verse], approved_context: Sequence
         if m.group(0).lower() not in allowed_words:
             err("outside_fact", f"“{m.group(0)}” is not in the cited verses and was not supplied as approved context")
     return issues
+
+
+COMMENTARY_LIMIT = 2600        # characters for a card's headline, explanation, critique and note taken together
+
+
+def verify_commentary(text: str, cited_ids: Sequence[str], verses: Dict[str, Verse], approved_context: Sequence[str] = (),
+                      limit: int = COMMENTARY_LIMIT) -> List[Issue]:
+    """The same checks for the text that sits beside a post on the website: a headline, a plain restatement, a critique.
+
+    It need not name a verse itself (the card shows them), but whatever it quotes, counts or claims must still be in
+    the verses the card cites: an invented quotation, a number or strong word the verses lack, an outside fact, a
+    claim about practice, or a remark about a community is as much an error here as in a post. Its length is the
+    reader's, not X's, so the limit is a generous one."""
+    issues = verify_post({"text": text, "verses": list(dict.fromkeys(cited_ids))}, verses, approved_context, limit)
+    return [i for i in issues if i.code not in {"no_reference", "no_quote", "unreferenced_verse"}]
 
 
 def errors(issues: Iterable[Issue]) -> List[Issue]:
