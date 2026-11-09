@@ -20,6 +20,7 @@ It is a trial, so it is built to be redone and removed:
 | 3. Write the report | the playbook | what the videos do and how the X posts follow it | `analysis/playbook.md` (**read this first**) |
 | 4. Read the book | `Manu-Smriti.pdf` | 2,684 verses, English only, with page numbers | `sources/manusmriti_verses.json` |
 | 5. Write posts | chosen verses + playbook | posts, checked and saved for review | `output/runs/<time>-<format>/review.md` |
+| 6. Choose the menu of the no-questions bot (§7) | the whole book, sent to Gemini once | ranked candidate topics with the verses a talk would use, every verse id checked against the book | `output/topics_proposed-<purpose>-<time>.json` |
 
 ## 2. Quick start
 
@@ -44,7 +45,17 @@ python3 -m backend.trials.manusmriti_critique.generate --verses 8.270 --dry-run 
 # A thread: separate the parts with a line of ---. Verses named in the text are picked up on their own;
 # add --verses for neighbouring verses the post relies on (for example 8.270, which says who "he" is in 8.272).
 python3 -m backend.trials.manusmriti_critique.generate --check-file my_post.txt
+
+# which topics make the best menu for the no-questions bot? Sends the whole book (about 123,000 tokens) to Gemini once.
+# --purpose critique (default) asks for topics where the verses themselves show unequal rules; --purpose general for the most interesting ones.
+python3 backend/trials/manusmriti_critique/tools/propose_topics.py --env-file path/to/.env
+python3 backend/trials/manusmriti_critique/tools/propose_topics.py --dry-run          # size of the prompt only
 ```
+
+The topic finder does not decide the menu: it ranks candidates, drops any verse id the book does not have, and suggests ten
+that do not mostly repeat each other's verses. A person reads the verses behind each topic and chooses. Two runs on this book
+gave different lists because the purpose differs: a menu for "interesting" topics picked warfare, foods and forest hermits,
+while one told that the bot is a critique picked punishment by caste, the rules for Sudras, women, learning and property.
 
 Themes: `punishment_by_birth`, `sudra_exclusion`, `women_control`, `brahmana_privilege`,
 `outcastes_and_purity`, `birth_ranking`. Other flags: `--focus "note"` steers the writing,
@@ -122,6 +133,13 @@ Nothing else refers to this folder: no database tables, no migrations, no fronte
 dependencies (`google-genai` and `openai` are already in `backend/requirements-api.txt`; PyMuPDF is needed only for the one-off ingest).
 
 ## 7. Putting it on the website (not done yet, on purpose)
+
+**Product rule: the visitor never asks a question.** Unlike BheemBot, this bot has no text box. The visitor sees 10
+topics, taps one, and the bot talks through that topic from pre-written cards (a verse, a plain restatement, one
+opinion line), moving on with fixed buttons (Next / Show the verse / Another topic). The cards are written and checked
+offline by this folder's pipeline and read by a person; nothing is generated at request time. That keeps every word
+inside what was reviewed, which open question-and-answer cannot promise, and the API only ever receives a topic id
+and a card number.
 
 Posts have not been approved by an owner, so no route or page exists. When they are:
 
