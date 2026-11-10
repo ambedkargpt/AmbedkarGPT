@@ -16,11 +16,13 @@ import {
   Pause,
   ChevronRight,
   ChevronLeft,
+  UserPlus,
 } from 'lucide-react';
 import AgMark from '../brand/AgMark';
 import { useI18n } from '../../i18n/index.jsx';
 import { SITE_LANGUAGES } from '../../utils/siteLanguage';
 import { useRadio } from '../../context/RadioContext';
+import { useAuth } from '../../context/AuthContext';
 import { RADIO_REQUIRES_LOGIN } from '../../data/radioAccess';
 import AdminNavLink from './AdminNavLink';
 import useSlidingPill, { pillStyle } from '../generate/useSlidingPill';
@@ -120,6 +122,11 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
   const radioState = playing ? 'tuned' : station ? 'onair' : null;
 
   const { t } = useI18n();
+  // Someone reading the news with no account: no history or settings to open, and
+  // a way to get an account in place of the profile card and Log out.
+  const { currentUser, loading: authLoading } = useAuth();
+  const guest = !authLoading && !currentUser;
+  const navItems = guest ? NAV.filter((item) => item.id !== 'searches' && item.id !== 'profile') : NAV;
   // Signing out calls the API to revoke the refresh token before it clears the
   // session, so there is a round trip to show. Without a state the button just
   // sat there looking unpressed, and on a slow connection people clicked it
@@ -281,7 +288,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
           />
         </button>
 
-        {NAV.map((item) => {
+        {navItems.map((item) => {
           const isActive = item.id === active;
           const IconComp = item.Icon;
           if (item.soon) {
@@ -388,7 +395,38 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
         {/* Who is signed in, on the wide rail: the page beside it no longer
             has its own profile card. */}
         {large && <LanguageToggle compact={collapsed} />}
-        {large && user && (
+        {large && guest && (
+          collapsed ? (
+            <button
+              type="button"
+              onClick={() => { navigate('/signup'); onClose?.(); }}
+              title={t('guest.signUp')}
+              className="mb-3 flex h-11 w-full items-center justify-center rounded-[14px] bg-[#2d6fff] text-white transition hover:bg-[#3d7fff]"
+            >
+              <UserPlus size={20} strokeWidth={2} />
+            </button>
+          ) : (
+            <div className="mb-3 space-y-2.5 rounded-[14px] border border-white/[0.08] p-3" style={{ background: 'linear-gradient(135deg, rgba(63,110,255,0.18) 0%, rgba(123,92,255,0.08) 100%)' }}>
+              <p className="text-[15px] font-semibold text-white">{t('guest.sidebarTitle')}</p>
+              <button
+                type="button"
+                onClick={() => { navigate('/signup'); onClose?.(); }}
+                className="flex h-11 w-full items-center justify-center gap-2 rounded-[12px] bg-[#2d6fff] text-[15px] font-semibold text-white shadow-[0_0_18px_rgba(45,111,255,0.35)] transition hover:bg-[#3d7fff]"
+              >
+                <UserPlus size={17} strokeWidth={2.2} />
+                {t('guest.signUp')}
+              </button>
+              <button
+                type="button"
+                onClick={() => { navigate('/login'); onClose?.(); }}
+                className="flex h-11 w-full items-center justify-center rounded-[12px] border border-[#3a6bc4]/70 text-[15px] font-semibold text-[#dbe6ff] transition hover:border-[#6b9bff] hover:bg-[#3a6bc4]/20 hover:text-white"
+              >
+                {t('guest.logIn')}
+              </button>
+            </div>
+          )
+        )}
+        {large && user && !guest && (
           <button
             type="button"
             onClick={() => { navigate('/settings'); onClose?.(); }}
@@ -406,7 +444,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
             </span>
           </button>
         )}
-        {onLogout && (
+        {onLogout && !guest && (
           <button
             type="button"
             onClick={handleLogout}

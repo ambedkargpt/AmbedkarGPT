@@ -9,6 +9,7 @@ import PasswordInput from '../components/PasswordInput';
 import PhoneField    from '../components/PhoneField';
 import PrimaryButton from '../components/PrimaryButton';
 import AuthSwitchLink from '../components/AuthSwitchLink';
+import GuestButton from '../components/GuestButton';
 import GoogleButton  from '../components/GoogleButton';
 import { useI18n } from '../i18n/index.jsx';
 
@@ -222,6 +223,8 @@ export default function Login() {
         />
 
         <AuthSwitchLink to="/signup" prompt={t('auth.noAccount')} label={t('auth.signUp')} />
+
+        <GuestButton />
 
         {TEST_PASSWORD && (
           <div className="rounded-xl border px-3 py-2.5" style={{ borderColor: '#2a3566', backgroundColor: 'rgba(10,17,48,0.6)' }}>

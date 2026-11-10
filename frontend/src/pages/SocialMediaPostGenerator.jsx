@@ -3,6 +3,7 @@ import { createPortal, flushSync } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { clearPendingQuestions } from '../hooks/usePendingQuestions';
 import { settingsTarget } from '../utils/onboardingTarget';
+import GuestStrip from '../components/onboarding/GuestStrip';
 import {
   ArrowLeft, Sparkles, Copy, Check, RefreshCw, ChevronDown, ChevronRight, X as XIcon,
   LayoutGrid, ArrowRight, MessageCircle, Repeat2, Heart, Share, AlertTriangle, Smartphone, PenLine,
@@ -474,8 +475,17 @@ export default function SocialMediaPostGenerator() {
     goView('preview');
   }
 
+  // Reading the news needs no account; writing a post does. Someone reading as
+  // a guest is sent to sign up, and comes back to the news afterwards.
+  const isGuest = !currentUser?.id;
+  function signUpToWrite() {
+    try { sessionStorage.setItem('auth_redirect', '/generate/social-media'); } catch { /* ignore */ }
+    navigate('/signup');
+  }
+
   async function handleGenerate() {
     if (!selectedArticle) return;
+    if (isGuest) { signUpToWrite(); return; }
     setGenerating(true);
     setGenSeconds(0);
     setShareMsg('');
@@ -745,7 +755,10 @@ export default function SocialMediaPostGenerator() {
     return lang === 'hi' ? ({ 'Madhya Pradesh': 'मध्य प्रदेश', 'Uttar Pradesh': 'उत्तर प्रदेश' }[r] ?? r) : r;
   }
   const welcomeLogo = partyLogo(currentUser?.political_party);
-  const welcomeName = (currentUser?.full_name || currentUser?.username || '').split(/[\s_]/)[0];
+  const welcomeName = currentUser
+    ? (currentUser.full_name || currentUser.username || '').split(/[\s_]/)[0]
+    : t('guest.name');
+  const welcomeLead = currentUser ? t('dash.welcomeBack') : t('guest.welcome');
   const roleName = labelForId(currentUser?.party_position || '', currentUser?.political_party || '', lang);
 
 
@@ -829,9 +842,9 @@ export default function SocialMediaPostGenerator() {
               )}
               {/* One line on a phone ("Welcome back, Krish"); two from sm. */}
               <div className="min-w-0">
-                <p className="hidden text-[17px] font-medium text-[#b8c6ea] sm:block">{t('dash.welcomeBack')}</p>
+                <p className="hidden text-[17px] font-medium text-[#b8c6ea] sm:block">{welcomeLead}</p>
                 <h1 className="font-display text-[clamp(20px,5.6vw,24px)] font-bold leading-tight tracking-tight sm:text-[56px] sm:leading-[1.05]">
-                  <span className="font-medium text-[#b8c6ea] sm:hidden">{t('dash.welcomeBack')} </span>
+                  <span className="font-medium text-[#b8c6ea] sm:hidden">{welcomeLead} </span>
                   <span className="bg-gradient-to-r from-white via-[#cfe0ff] to-[#9db8ff] bg-clip-text text-transparent">{welcomeName}</span>
                 </h1>
               </div>
@@ -991,6 +1004,8 @@ export default function SocialMediaPostGenerator() {
         // scroll box, and the sticky panels inside it then stuck to nothing.
         className="relative z-10 flex min-w-0 flex-1 flex-col overflow-x-clip"
       >
+
+        {isGuest && <GuestStrip />}
 
         {/* On a story or a post: back on the left, the account (language,
             notifications, profile, log out) on the right. The feed carries
@@ -1158,6 +1173,7 @@ export default function SocialMediaPostGenerator() {
               quota={quota}
               atDailyLimit={atDailyLimit}
               onGenerate={handleGenerate}
+              guest={isGuest}
               writingAs={activeParty ? { slug: activeParty.slug, logo: welcomeLogo, partyName: partyLabel(activeParty.name, lang), roleName } : null}
               articleOpen={articleOpen}
               onToggleArticle={() => setArticleOpen((o) => !o)}
