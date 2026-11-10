@@ -207,8 +207,11 @@ translation and put its name in `picks.json` (`"translation"`; the page shows it
 
 ## 8. Known limits
 
-* The 37 entries in `picks.json` are marked `"reviewed": false`: the checks above are strong on numbers, quotations and
-  dropped qualifiers, but they are not a reader. A person reads each one before the section goes live.
+* The checks above are strong on numbers, quotations and dropped qualifiers, but they are not a reader. All 36
+  entries in `picks.json` have been read and marked `"reviewed": true`; a new or reworded entry needs the same read.
+* The checks do not catch two entries that make the same argument from the same verses. One such pair (8.267-8.268,
+  "Reverse the roles and the fine doubles") was removed by hand; when adding an entry, look for one already built on
+  its verses.
 * Hooks and closers are often plain ("Is this justice?"). A human edit is expected; `--focus` helps.
 * The model sometimes reuses the playbook's example wording (the 5.148 post is close to the example).
 * The fact-check is strict and sometimes pedantic (it flags "by birth" because the verse says "Brahmana"

@@ -1,6 +1,6 @@
 {
  "version": 2,
- "generated": "2026-11-10T10:40:10+00:00",
+ "generated": "2026-11-10T12:42:48+00:00",
  "translation": "Georg Bühler, The Laws of Manu (Sacred Books of the East, vol. 25, 1886)",
  "topics": [
   {
@@ -9,7 +9,7 @@
    "title_hi": "जाति के आधार पर दंड",
    "blurb": "The same offence, a different penalty, depending on who offends and who is offended.",
    "blurb_hi": "एक ही अपराध, अलग-अलग दंड, इस पर निर्भर कि अपराध किसने किया और किसके साथ।",
-   "count": 6
+   "count": 5
   },
   {
    "id": "rules_for_sudras",
@@ -100,23 +100,6 @@
     "8.268"
    ],
    "pattern": "asymmetry",
-   "reviewed": true
-  },
-  {
-   "id": "d212d9a6",
-   "topic": "punishment_by_caste",
-   "headline": "Reverse the roles and the fine doubles",
-   "says": "A Brahmana who defames a Kshatriya is fined fifty panas (8.268). A Kshatriya who defames a Brahmana is fined one hundred (8.267).",
-   "critique": "Nothing about the act has changed: one person speaks ill of another. Only the two roles are swapped, and the fine for the Kshatriya is twice the fine for the Brahmana. The size of the penalty follows the rank of the person spoken about, not the harm done by the words. That is what it means for a law to depend on who speaks and who is spoken of.",
-   "fair_note": null,
-   "parts": [
-    "A Brahmana defames a Kshatriya: fine is fifty panas (Manusmriti 8.268).\n\nReverse the roles.\n\nA Kshatriya defames a Brahmana: fine is \"one hundred\" panas (Manusmriti 8.267).\n\nThe law depends on who speaks."
-   ],
-   "verses": [
-    "8.267",
-    "8.268"
-   ],
-   "pattern": "reverse_the_roles",
    "reviewed": true
   },
   {
