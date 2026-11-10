@@ -124,6 +124,17 @@ export const pagesEn = {
   'msm.pageOf': 'Page {page} of {pages}',
   'msm.note': 'A critique of what a text says, not of any people.',
   'msm.translation': 'Translation: {name}.',
+  'guest.continue': 'Continue as guest',
+  'guest.hint': 'Read the news without an account. You need one only to write a post.',
+  'guest.welcome': 'Welcome',
+  'guest.name': 'Guest',
+  'guest.stripTitle': 'You are reading as a guest.',
+  'guest.stripBody': 'Sign up free to write posts in your party’s voice.',
+  'guest.signUp': 'Sign up free',
+  'guest.logIn': 'Log in',
+  'guest.signUpToWrite': 'Sign up to write this post',
+  'guest.writeHint': 'It is free, and you come back to this story.',
+  'guest.sidebarTitle': 'Reading as a guest',
 };
 
 export const pagesHi = {
@@ -248,4 +259,15 @@ export const pagesHi = {
   'msm.pageOf': 'पृष्ठ {page} / {pages}',
   'msm.note': 'यह एक ग्रंथ में लिखी बातों की आलोचना है, किसी समुदाय या व्यक्ति की नहीं।',
   'msm.translation': 'अनुवाद: {name}।',
+  'guest.continue': 'गेस्ट के रूप में जारी रखें',
+  'guest.hint': 'बिना खाते के ख़बरें पढ़ें। खाता सिर्फ़ पोस्ट लिखने के लिए चाहिए।',
+  'guest.welcome': 'स्वागत है',
+  'guest.name': 'अतिथि',
+  'guest.stripTitle': 'आप गेस्ट के रूप में पढ़ रहे हैं।',
+  'guest.stripBody': 'अपनी पार्टी की आवाज़ में पोस्ट लिखने के लिए मुफ़्त साइन अप करें।',
+  'guest.signUp': 'मुफ़्त साइन अप',
+  'guest.logIn': 'लॉग इन',
+  'guest.signUpToWrite': 'यह पोस्ट लिखने के लिए साइन अप करें',
+  'guest.writeHint': 'यह मुफ़्त है, और आप इसी ख़बर पर लौट आएँगे।',
+  'guest.sidebarTitle': 'गेस्ट के रूप में पढ़ रहे हैं',
 };

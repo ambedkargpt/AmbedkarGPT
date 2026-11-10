@@ -216,7 +216,7 @@ export default function App() {
               <Route path="/admin/errors/:id" element={<AdminErrorDetail />} />
             </Route>
             <Route path="/generate/social-media" element={
-              <ProtectedRoute><OnboardingGate><SocialMediaPostGenerator /></OnboardingGate></ProtectedRoute>
+              <ProtectedRoute allowGuest><OnboardingGate><SocialMediaPostGenerator /></OnboardingGate></ProtectedRoute>
             } />
             <Route path="/generate/music" element={
               <ProtectedRoute><MusicGeneration /></ProtectedRoute>

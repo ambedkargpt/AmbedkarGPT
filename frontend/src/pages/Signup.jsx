@@ -9,6 +9,7 @@ import PasswordInput from '../components/PasswordInput';
 import PhoneField    from '../components/PhoneField';
 import PrimaryButton from '../components/PrimaryButton';
 import AuthSwitchLink from '../components/AuthSwitchLink';
+import GuestButton from '../components/GuestButton';
 import GoogleButton  from '../components/GoogleButton';
 import LegalModal    from '../components/LegalModal';
 import { useI18n } from '../i18n/index.jsx';
@@ -228,6 +229,8 @@ export default function Signup() {
         </form>
 
         <AuthSwitchLink to="/login" prompt={t('auth.alreadyAccount')} label={t('auth.login')} />
+
+        <GuestButton />
       </div>
       {modal && <LegalModal type={modal} onClose={() => setModal(null)} />}
     </AuthLayout>

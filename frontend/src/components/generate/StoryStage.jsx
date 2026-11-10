@@ -16,7 +16,7 @@ function longDate(d, lang) {
  * goes, how many posts are left today, and the button.
  */
 export default function StoryStage({
-  article, platforms, platform, onPlatform, quota, atDailyLimit, onGenerate,
+  article, platforms, platform, onPlatform, quota, atDailyLimit, onGenerate, guest = false,
   writingAs, articleOpen, onToggleArticle, related = [], onOpenRelated, existingCount = 0, onViewExisting,
 }) {
   const { t, lang } = useI18n();
@@ -191,13 +191,13 @@ export default function StoryStage({
             >
               {!atDailyLimit && <span className="ag-sheen pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 skew-x-[-20deg] bg-white/25" />}
               <Sparkles size={19} />
-              {atDailyLimit ? t('gen.quota.allUsed', { limit }) : t('gen.story.cta')}
+              {atDailyLimit ? t('gen.quota.allUsed', { limit }) : guest ? t('guest.signUpToWrite') : t('gen.story.cta')}
             </button>
             {atDailyLimit ? (
               <p className="mt-2.5 text-center text-[15px] font-medium text-[#ffb4b4]">{t('gen.story.limitNote', { limit })}</p>
             ) : (
               <p className="mt-2.5 flex items-center justify-center gap-1.5 text-[13px] text-[#9aa8cc]">
-                <Zap size={14} className="text-[#8fb0ff]" /> {t('gen.story.hint')}
+                <Zap size={14} className="text-[#8fb0ff]" /> {guest ? t('guest.writeHint') : t('gen.story.hint')}
               </p>
             )}
           </div>
