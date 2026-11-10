@@ -23,6 +23,12 @@ def _language_clause(language: str) -> dict:
 # Kept together so widening the window or adding a tenant is one edit.
 FRESH_WINDOW = timedelta(days=3)
 FRESH_WINDOW_TENANTS = ("congress", "samajwadi", "bjp")
+# The fewest stories a party shows at one level (national, state). When its
+# channel has been quiet and fewer than this are inside FRESH_WINDOW, the feed
+# is topped up with that party's latest older stories, newest first, so a
+# reader of that party is not left with an empty row. SP's channels went five
+# days without a video and every SP reader saw no SP news at all.
+MIN_PER_PARTY = 10
 
 
 # Fields a listing leaves behind. A story's research brief is for writing a
@@ -40,6 +46,15 @@ def _scope_clause(scope: str) -> dict:
     if scope == "national":
         return {"$or": [{"scope": "national"}, {"scope": {"$exists": False}}, {"scope": None}]}
     return {"scope": scope}
+
+
+def _newest_first(doc: dict) -> tuple:
+    """Sort key matching the query's order: published_at, then created_at, newest first."""
+    def ts(value) -> float:
+        if isinstance(value, datetime):
+            return value.replace(tzinfo=timezone.utc).timestamp() if value.tzinfo is None else value.timestamp()
+        return float("-inf")
+    return (-ts(doc.get("published_at")), -ts(doc.get("created_at")))
 
 
 class NewsRepository:
@@ -78,6 +93,7 @@ class NewsRepository:
         language: str | None = None,
         tenant_ids: list[int] | None = None,
         scope: str | None = None,
+        min_per_party: int = MIN_PER_PARTY,
     ) -> list[dict]:
         clauses: list[dict] = []
         if scope:
@@ -105,6 +121,9 @@ class NewsRepository:
         #
         # Absent means visible, so nothing already stored changes meaning.
         clauses.append({"hidden_from_ui": {"$ne": True}})
+        # What the top-up below must match too: the same level, language,
+        # parties and visibility, everything except the freshness window.
+        base = list(clauses)
 
         # Party news goes stale fast.
         #
@@ -132,12 +151,40 @@ class NewsRepository:
         # shows. Sending it made a page of 100 stories ~2 MB, and the feed took
         # 23 s to load; the brief is still read with the story by id, where
         # posts are written.
-        return list(
+        docs = list(
             self.collection.find(query, LIST_PROJECTION)
             .sort([("published_at", -1), ("created_at", -1)])
             .skip(skip)
             .limit(limit)
         )
+        # Only on the first page: the top-up is a floor for what a reader sees
+        # first, and repeating it on later pages would show the same stories again.
+        if min_per_party > 0 and skip == 0:
+            extra = self._top_up(base, min_per_party)
+            if extra:
+                docs = sorted(docs + extra, key=_newest_first)
+        return docs
+
+    def _top_up(self, base: list[dict], minimum: int) -> list[dict]:
+        """
+        Each party's latest stories from before FRESH_WINDOW, as many as it needs
+        to reach `minimum` at this level. Nothing for a party that already has
+        enough fresh ones, or that this listing did not ask for (the tenant
+        clause in `base` rules it out).
+        """
+        cutoff = datetime.now(timezone.utc) - FRESH_WINDOW
+        out: list[dict] = []
+        for slug in FRESH_WINDOW_TENANTS:
+            party = base + [{"tenant_slug": slug}]
+            fresh = self.collection.count_documents({"$and": party + [{"published_at": {"$gte": cutoff}}]})
+            if fresh >= minimum:
+                continue
+            out += list(
+                self.collection.find({"$and": party + [{"published_at": {"$lt": cutoff}}]}, LIST_PROJECTION)
+                .sort([("published_at", -1), ("created_at", -1)])
+                .limit(minimum - fresh)
+            )
+        return out
 
     def count(self, language: str | None = None, tenant_ids: list[int] | None = None) -> int:
         """Total matching documents — used for paginated listings."""
