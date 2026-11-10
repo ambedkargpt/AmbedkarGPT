@@ -155,3 +155,80 @@ def test_a_guest_can_write_only_a_few_posts_a_day(monkeypatch):
     assert err.value.detail["error"] == "guest_limit"
 
     svc._check_guest_limit(str(member_id))           # a real account: no cap here
+
+
+# ── What a guest account cannot do with a post ──────────────────────────────
+
+@pytest.fixture
+def accounts(monkeypatch):
+    """A guest and a signed-up account, in a database the code under test reads."""
+    import backend.db.mongo as mongo
+
+    db = mongomock.MongoClient().db
+    monkeypatch.setattr(mongo, "db", db)
+    guest = str(db["users"].insert_one({
+        "is_guest": True, "political_party": "Indian National Congress (INC)",
+        "party_position": "national_spokesperson", "created_at": datetime.now(timezone.utc),
+    }).inserted_id)
+    member = str(db["users"].insert_one({
+        "political_party": "Indian National Congress (INC)", "party_position": "national_spokesperson",
+        "created_at": datetime.now(timezone.utc),
+    }).inserted_id)
+    return guest, member
+
+
+def test_refuse_guest_stops_a_guest_and_no_one_else(accounts):
+    guest, member = accounts
+    with pytest.raises(HTTPException) as err:
+        gs.refuse_guest(guest, "publish")
+    assert err.value.status_code == 403
+    assert err.value.detail["code"] == "guest_locked"
+    gs.refuse_guest(member, "publish")
+    gs.refuse_guest("not-an-object-id", "publish")
+
+
+def test_the_post_endpoints_refuse_a_guest_before_doing_anything(accounts, monkeypatch):
+    from backend.api.v1 import posts as api
+    from backend.schemas.integrations import PublishToRedditRequest
+    from backend.schemas.posts import PostRegenerateRequest, PostTranslateRequest, PostUpdateRequest
+
+    guest, member = accounts
+
+    def must_not_run(*a, **k):
+        raise AssertionError("the service was reached for a guest")
+
+    for name in ("translate_post", "regenerate_from_snapshot", "update", "publish_to_reddit"):
+        monkeypatch.setattr(api.service, name, must_not_run)
+    monkeypatch.setattr(api.service, "get", lambda post_id: {"user_id": guest})
+
+    calls = [
+        lambda: api.translate_post("p1", PostTranslateRequest(target_language="en"), current_user_id=guest),
+        lambda: api.regenerate_post("p1", PostRegenerateRequest(refinement_note="sharper"), current_user_id=guest),
+        lambda: api.update_post("p1", PostUpdateRequest(status="published"), current_user_id=guest),
+        lambda: api.publish_post_to_reddit("p1", PublishToRedditRequest(title="t", body="b"), current_user_id=guest),
+    ]
+    for call in calls:
+        with pytest.raises(HTTPException) as err:
+            call()
+        assert err.value.status_code == 403
+        assert err.value.detail["code"] == "guest_locked"
+
+    # Thumbs up / down is still a guest's to give: only publishing is refused.
+    reached = []
+    monkeypatch.setattr(api.service, "update", lambda *a, **k: reached.append(1) or {"ok": True})
+    api.update_post("p1", PostUpdateRequest(feedback="up"), current_user_id=guest)
+    assert reached == [1]
+
+
+def test_a_signed_up_account_still_reaches_the_service(accounts, monkeypatch):
+    from backend.api.v1 import posts as api
+    from backend.schemas.posts import PostTranslateRequest, PostUpdateRequest
+
+    _, member = accounts
+    reached = []
+    monkeypatch.setattr(api.service, "translate_post", lambda **k: reached.append("translate") or {})
+    monkeypatch.setattr(api.service, "update", lambda *a, **k: reached.append("update") or {})
+    monkeypatch.setattr(api.service, "get", lambda post_id: {"user_id": member})
+    api.translate_post("p1", PostTranslateRequest(target_language="en"), current_user_id=member)
+    api.update_post("p1", PostUpdateRequest(status="published"), current_user_id=member)
+    assert reached == ["translate", "update"]

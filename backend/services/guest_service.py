@@ -55,6 +55,38 @@ def _digest(value: str) -> str:
     return hmac.new(key, value.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
+# What a guest account cannot do with a post, by the name the app shows it.
+# Copy and listening happen in the browser and are only hidden there; these
+# are the ones the server does, so it refuses them too.
+GUEST_LOCKED = ("publish", "translate", "edit")
+
+
+def is_guest_account(user_id: str) -> bool:
+    """Whether this account was made by "Continue as guest"."""
+    from bson import ObjectId
+
+    import backend.db.mongo as mongo
+
+    try:
+        user = mongo.db["users"].find_one({"_id": ObjectId(user_id)}, {"is_guest": 1})
+    except Exception:
+        return False
+    return bool((user or {}).get("is_guest"))
+
+
+def refuse_guest(user_id: str, feature: str) -> None:
+    """A 403 when a guest account asks for something only a signed-up account can do."""
+    if is_guest_account(user_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "guest_locked",
+                "feature": feature,
+                "message": "Sign up free to copy, publish, translate or edit a post.",
+            },
+        )
+
+
 def guest_answers(party_key: str) -> dict[str, str]:
     """{question_id: answer} a guest of this party starts with (only the changed ones)."""
     from backend.pipeline import party_questions as pq

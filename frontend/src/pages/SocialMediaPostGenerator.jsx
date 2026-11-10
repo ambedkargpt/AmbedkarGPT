@@ -4,10 +4,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { clearPendingQuestions } from '../hooks/usePendingQuestions';
 import { settingsTarget } from '../utils/onboardingTarget';
 import GuestStrip from '../components/onboarding/GuestStrip';
+import GuestLock from '../components/onboarding/GuestLock';
+import { noCopyProps } from '../utils/guestAccess';
 import {
   ArrowLeft, Sparkles, Copy, Check, RefreshCw, ChevronDown, ChevronRight, X as XIcon,
   LayoutGrid, ArrowRight, MessageCircle, Repeat2, Heart, Share, AlertTriangle, Smartphone, PenLine,
   Landmark, MapPin, Building2, MessagesSquare, Menu, Clock, ThumbsUp, ThumbsDown, Quote,
+  Lock,
 } from 'lucide-react';
 
 import PreferencesPanel from '../components/generate/PreferencesPanel';
@@ -43,16 +46,16 @@ import { partyLabel } from '../utils/displayLabel';
 import { partyLogo } from '../utils/politicalParties';
 import { trackEvent } from '../analytics/metrics';
 
-// WhatsApp first and X last: in the order these posts are most shared.
+// WhatsApp, Facebook, X, Reddit: in the order these posts are most shared.
 const PLATFORMS = [
+  // WhatsApp and Facebook accept far more than anyone writes (65,536 and
+  // 63,206 characters); the length the post aims for is set on the server.
   { id: 'whatsapp',  label: 'WhatsApp',      short: 'WA',  limit: 65536, color: '#25d366' },
+  { id: 'facebook',  label: 'Facebook',      short: 'f',   limit: 63206, color: '#1877f2' },
+  { id: 'twitter',   label: 'Twitter / X',  short: '𝕏',   limit: 280,  color: '#1d9bf0' },
   // Reddit's self-post body limit really is 40,000 — the counter says so
   // rather than a rounder number that would be a guess.
   { id: 'reddit',    label: 'Reddit',        short: 'r/',  limit: 40000, color: '#ff4500' },
-  // WhatsApp and Facebook accept far more than anyone writes (65,536 and
-  // 63,206 characters); the length the post aims for is set on the server.
-  { id: 'facebook',  label: 'Facebook',      short: 'f',   limit: 63206, color: '#1877f2' },
-  { id: 'twitter',   label: 'Twitter / X',  short: '𝕏',   limit: 280,  color: '#1d9bf0' },
 ];
 
 /**
@@ -452,6 +455,7 @@ export default function SocialMediaPostGenerator() {
   function tap() { try { navigator.vibrate?.(10); } catch { /* not supported */ } }
 
   async function copyWithToast() {
+    if (guestAccount) return;   // see utils/guestAccess.js
     tap();
     await handleCopy();
     showToast(t('gen.toast.copied'));
@@ -561,6 +565,7 @@ export default function SocialMediaPostGenerator() {
   }
 
   async function handleRegenerate() {
+    if (guestAccount) return;   // see utils/guestAccess.js
     if (!selectedArticle) return;
     // If there's no saved post ID (e.g. previous generation failed), do a fresh generate instead
     if (!selectedPostId) { handleGenerate(); return; }
@@ -655,6 +660,7 @@ export default function SocialMediaPostGenerator() {
   }
 
   async function handleTranslate() {
+    if (guestAccount) return;   // see utils/guestAccess.js
     if (!selectedPostId || translating) return;
 
     // Already translated in this session — just show it, no API call needed
@@ -676,6 +682,7 @@ export default function SocialMediaPostGenerator() {
   }
 
   async function handleCopyHashtags() {
+    if (guestAccount) return;   // see utils/guestAccess.js
     const activeContent = showTranslated && translatedPost ? translatedPost : generatedPost;
     const { hashtags } = parsePost(activeContent);
     if (!hashtags.length) return;
@@ -693,6 +700,7 @@ export default function SocialMediaPostGenerator() {
   // platform once the post is marked published, and closed if that is refused
   // (the daily limit). Facebook lets no site fill in a post, so its text is copied.
   async function handlePublish(confirmed) {
+    if (guestAccount) return;   // see utils/guestAccess.js
     if (!selectedPostId || sharing) return;
     tap();
     const text = showTranslated && translatedPost ? translatedPost : generatedPost;
@@ -736,6 +744,7 @@ export default function SocialMediaPostGenerator() {
   }
 
   async function handleCopy() {
+    if (guestAccount) return;   // see utils/guestAccess.js
     try {
       const text = showTranslated && translatedPost ? translatedPost : generatedPost;
       await navigator.clipboard.writeText(text);
@@ -1134,7 +1143,9 @@ export default function SocialMediaPostGenerator() {
                             </div>
                             <button
                               type="button"
+                              style={guestAccount ? { display: 'none' } : undefined}
                               onClick={async () => {
+                                if (guestAccount) return;
                                 tap();
                                 try { await navigator.clipboard.writeText(post.content || ''); showToast(t('gen.toast.copied')); } catch { /* clipboard refused */ }
                               }}
@@ -1418,7 +1429,7 @@ export default function SocialMediaPostGenerator() {
                 ) : (
                   // Keyed on the words: a refined post or the other version
                   // arrives from a blur rather than snapping in.
-                  <div key={shown} className="ag-swap">
+                  <div key={shown} className="ag-swap" {...(guestAccount ? noCopyProps : {})}>
                     <PostFrame platform={activePlatform.id} authorName={authorName} subtitle={roleName} handle={handle}>
                       <PostContent animate content={shown} lang={showTranslated && translatedPost ? 'en' : 'hi'} />
                     </PostFrame>
@@ -1444,12 +1455,13 @@ export default function SocialMediaPostGenerator() {
                     <button
                       type="button"
                       onClick={handleCopyHashtags}
-                      className="rounded-[14px] border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-left transition hover:border-[#3f9fff]/50"
+                      disabled={guestAccount}
+                      className="rounded-[14px] border border-white/[0.08] bg-white/[0.035] px-4 py-3 text-left transition hover:border-[#3f9fff]/50 disabled:cursor-not-allowed disabled:hover:border-white/[0.08]"
                     >
                       <p className="text-[13px] text-[#9aa8cc]">{t('gen.hashtags')}</p>
                       <p className="mt-1 inline-flex items-center gap-1.5 text-[15px] font-bold" style={{ color: copiedHashtags ? '#22c55e' : '#6aa8ff' }}>
-                        {copiedHashtags ? <Check size={15} strokeWidth={2.5} /> : <Copy size={14} />}
-                        {copiedHashtags ? t('gen.copied') : t('common.copy')}
+                        {guestAccount ? <Lock size={14} /> : copiedHashtags ? <Check size={15} strokeWidth={2.5} /> : <Copy size={14} />}
+                        {guestAccount ? t('guest.locked.tiny') : copiedHashtags ? t('gen.copied') : t('common.copy')}
                       </p>
                     </button>
                   </div>
@@ -1520,8 +1532,9 @@ export default function SocialMediaPostGenerator() {
                     style={{ background: 'linear-gradient(170deg, #17204b 0%, #0e1435 50%, #0a0e27 100%)', boxShadow: '0 30px 70px rgba(2,6,20,0.5)' }}
                   >
                     <span className="pointer-events-none absolute -right-16 -top-20 h-56 w-56 rounded-full" style={{ background: `radial-gradient(circle, ${activePlatform.color}40 0%, transparent 70%)` }} />
-                    <p className="relative font-display text-[21px] font-bold text-white">{t('gen.post.ready')}</p>
-                    <p className="relative mt-1 text-[15px] text-[#9fb0d4]">{t('gen.post.readySub')}</p>
+                    <p className="relative font-display text-[21px] font-bold text-white">{guestAccount ? t('guest.locked.readyTitle') : t('gen.post.ready')}</p>
+                    <p className="relative mt-1 text-[15px] text-[#9fb0d4]">{guestAccount ? t('guest.locked.readySub') : t('gen.post.readySub')}</p>
+                    {guestAccount ? <GuestLock className="relative mt-5" /> : (<>
                     {selectedPostId && sendButton('mt-5 h-14 w-full rounded-[14px] text-[17px]')}
                     {shareMsg && <p role="status" className="relative mt-2.5 text-[13px] text-[#fbbf24]">{shareMsg}</p>}
                     <div className="relative mt-3 grid grid-cols-2 gap-2.5">
@@ -1558,13 +1571,14 @@ export default function SocialMediaPostGenerator() {
                       {/* Full width when it would otherwise sit alone in a row. */}
                       <SpeakButton tile className={selectedPostId && siteLang !== 'hi' ? '' : 'col-span-2'} content={shown} lang={showTranslated && translatedPost ? 'en' : 'hi'} />
                     </div>
+                    </>)}
                   </div>
                 )}
 
             {/* Change it in your own words: in the app's own blues now, and
                 the button always looks pressable. Pressed with nothing written,
                 it says what to write rather than sitting there disabled. */}
-            {ready && selectedPostId && !refinedAt && (
+            {ready && selectedPostId && !refinedAt && !guestAccount && (
               <div
                 className="rounded-[20px] border p-5 sm:p-6"
                 style={{ borderColor: 'rgba(110,140,255,0.4)', background: 'radial-gradient(90% 120% at 0% 0%, rgba(79,125,255,0.22) 0%, transparent 60%), linear-gradient(165deg, #151d48 0%, #0d1335 60%, #0a0e27 100%)' }}
@@ -1619,7 +1633,12 @@ export default function SocialMediaPostGenerator() {
 
             {/* Phones: the send button sits at the foot of the screen, in
                 reach, instead of below the stats and the actions. */}
-            {ready && selectedPostId && (
+            {ready && selectedPostId && guestAccount && (
+              <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-2.5 border-t border-white/10 bg-[#070b1c]/90 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md xl:hidden">
+                <GuestLock compact className="h-[52px] w-full justify-center text-[16px]" />
+              </div>
+            )}
+            {ready && selectedPostId && !guestAccount && (
               <div className="fixed inset-x-0 bottom-0 z-30 flex items-center gap-2.5 border-t border-white/10 bg-[#070b1c]/90 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md xl:hidden">
                 {sendButton('h-[52px] flex-1 rounded-[14px] text-[17px]')}
                 <button

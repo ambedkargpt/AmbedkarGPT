@@ -244,7 +244,7 @@ export default function WarRoomBanner() {
                     <span className="text-[14.5px] font-bold text-[#7ff0a8]">{c.replyReady}</span>
                     <span className="hidden text-[12.5px] text-[#7d89ad] sm:inline">· {c.seconds}</span>
                     <span className="ml-auto flex gap-1.5">
-                      {[['whatsapp', '#25d366'], ['twitter', '#e7e9ea'], ['facebook', '#1877f2'], ['reddit', '#ff4500']].map(([p, color]) => {
+                      {[['whatsapp', '#25d366'], ['facebook', '#1877f2'], ['twitter', '#e7e9ea'], ['reddit', '#ff4500']].map(([p, color]) => {
                         const Icon = PLATFORM_ICON[p];
                         return (
                           <span key={p} data-wr-platform className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0a1130] ring-1 ring-[#1e3260]" style={{ color }}>

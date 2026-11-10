@@ -20,11 +20,12 @@ const TITLE_MAX = 300;
 // the clipboard to paste. LinkedIn is listed as "not yet" — a platform missing
 // from the list reads as never coming.
 const DESTINATIONS = [
-  { id: 'reddit', labelKey: 'pub.reddit', live: true, accent: '#ff4500' },
-  { id: 'twitter', labelKey: 'pub.twitter', live: true, accent: '#1d9bf0', link: true },
+  // WhatsApp, Facebook, X, Reddit first, in the order posts are most shared.
   { id: 'whatsapp', labelKey: 'pub.whatsapp', live: true, accent: '#25d366', link: true },
-  { id: 'instagram', labelKey: 'pub.instagram', live: true, accent: '#e1306c', link: true, copy: true },
   { id: 'facebook', labelKey: 'pub.facebook', live: true, accent: '#1877f2', link: true, copy: true },
+  { id: 'twitter', labelKey: 'pub.twitter', live: true, accent: '#1d9bf0', link: true },
+  { id: 'reddit', labelKey: 'pub.reddit', live: true, accent: '#ff4500' },
+  { id: 'instagram', labelKey: 'pub.instagram', live: true, accent: '#e1306c', link: true, copy: true },
   { id: 'linkedin', labelKey: 'pub.linkedin', live: false, accent: '#0a66c2' },
 ];
 
@@ -55,9 +56,9 @@ function firstSentence(text = '') {
  */
 export default function PublishSheet({ post, initialTarget, onClose, onPublished }) {
   const { t } = useI18n();
-  // Opens on the platform the post was written for; Reddit otherwise.
+  // Opens on the platform the post was written for; WhatsApp, the first, otherwise.
   const [target, setTarget] = useState(
-    DESTINATIONS.some((d) => d.id === initialTarget && d.live) ? initialTarget : 'reddit',
+    DESTINATIONS.some((d) => d.id === initialTarget && d.live) ? initialTarget : 'whatsapp',
   );
   const [status, setStatus] = useState(null);      // reddit connection status
   const [loading, setLoading] = useState(true);

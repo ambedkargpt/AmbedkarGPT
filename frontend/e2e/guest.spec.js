@@ -59,6 +59,10 @@ async function api(page, { generate = 'ok' } = {}) {
       return json({ post: { id: 'p1', content: 'नई पोस्ट\nदूसरी पंक्ति\n\nपोस्ट का पाठ।', status: 'draft' } });
     }
     if (url.includes('questions/pending')) return json({ party: false, position: false, profile: false });
+    if (req.method() === 'GET' && /\/posts(\/?\?|\/?$)/.test(url)) {
+      return json([{ id: 'p1', user_id: user?.id || 'x', news_id: 'g1', content: 'नई पोस्ट\nदूसरी पंक्ति\n\nपोस्ट का पाठ।',
+        status: 'draft', created_at: now(), generation_meta: { profile_used: { target_platform: 'WhatsApp' } } }]);
+    }
     if (url.includes('daily-quota')) return json({ daily_used: 0, daily_remaining: 5, total_posts: 0 });
     if (url.includes('/news/tenants')) return json(TENANTS);
     if (url.includes('scope=state')) return json([]);
@@ -155,4 +159,29 @@ test('pages that need an account still send someone with no account away', async
   await expect(page).not.toHaveURL(/\/posts$/);
   await page.goto('/settings');
   await expect(page).not.toHaveURL(/\/settings$/);
+});
+
+
+test('a post written as a guest can be read but not copied, published or listened to', async ({ page }) => {
+  await api(page);
+  await page.goto('/signup');
+  await page.getByRole('button', { name: AS_CONGRESS }).click();
+  await page.getByText(INC_STORY.headline).first().click();
+  await page.getByRole('button', { name: /write my post|मेरी पोस्ट लिखें/i }).click();
+
+  await expect(page.getByText(/guest preview|गेस्ट प्रीव्यू/i).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /sign up free to use this post|इस्तेमाल करने के लिए मुफ़्त साइन अप/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /share on whatsapp|whatsapp पर भेजें/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^(copy|कॉपी करें)$/i })).toHaveCount(0);
+  await expect(page.getByTitle(/^(listen|सुनें)$/i)).toHaveCount(0);
+});
+
+test('in my posts, a guest gets a sign-up button instead of publish and copy', async ({ page }) => {
+  await api(page);
+  await page.goto('/signup');
+  await page.getByRole('button', { name: AS_CONGRESS }).click();
+  await expect(page).toHaveURL(/\/generate\/social-media$/);
+  await page.goto('/posts');
+  await expect(page.getByRole('button', { name: /sign up to copy and publish|कॉपी और पब्लिश के लिए साइन अप/i }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /^(publish|प्रकाशित करें)$/i })).toHaveCount(0);
 });
