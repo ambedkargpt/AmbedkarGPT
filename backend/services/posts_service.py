@@ -59,6 +59,10 @@ _RESEARCH_CACHE: dict[str, dict[str, ClaimFinding]] = {}
 POST_OUTPUT_LANGUAGE = "hi"
 # How many posts one user can generate from one story, in all.
 MAX_POSTS_PER_STORY = 5
+# How many posts a guest account ("Continue as guest") can generate in a day.
+# A guest needs no sign-up, so without this a script could spend model calls
+# without limit; the same as the daily publish limit a real account has.
+GUEST_POSTS_PER_DAY = 5
 
 
 def _apply_platform_length(profile: dict[str, Any]) -> None:
@@ -331,6 +335,7 @@ class PostsService:
         story_slot = None
         if not unrestricted:
             story_slot = self._next_story_slot(user_id, news_id)
+            self._check_guest_limit(user_id)
 
         tenant = article.get("tenant_slug") or "general"
         embedder, store, context_by_title = self._rag_stack(tenant)
@@ -454,6 +459,26 @@ class PostsService:
         except Exception:
             return False
         return bool((user or {}).get("is_test_account"))
+
+    def _check_guest_limit(self, user_id: str) -> None:
+        """A 429 when a guest account has written its posts for today."""
+        try:
+            user = db["users"].find_one({"_id": ObjectId(user_id)}, {"is_guest": 1})
+        except Exception:
+            return
+        if not (user or {}).get("is_guest"):
+            return
+        if self.repo.count_today(user_id) >= GUEST_POSTS_PER_DAY:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={
+                    "error": "guest_limit",
+                    "message": (
+                        f"A guest can write {GUEST_POSTS_PER_DAY} posts a day. "
+                        "Sign up free to write more."
+                    ),
+                },
+            )
 
     def _next_story_slot(self, user_id: str, news_id: str) -> int:
         """
