@@ -1,0 +1,648 @@
+{
+  "version": "2026-11-04",
+  "summary": "The videos win trust by naming the text's own words and setting two rules side by side, ideally as a ladder with the real numbers; they lose it by leaving the text (history, politics, other religions) without a source. The posts keep the first habit and drop the second: every claim is a verse, quoted exactly, with its reference, and every qualifier in the verse is kept.",
+  "findings": [
+    {
+      "id": "name_the_verse",
+      "finding": "Name the text's own address (chapter and verse) and say plainly what it prescribes. It is the single move that makes a viewer able to check; videos that paraphrase without a verse (history explainer, interview, Bengali polemic, the 42-second short) are the ones the analyses mark as least checkable.",
+      "seen_in": [
+        "gmGq3B6jGqA",
+        "YEcZXeC0F9U",
+        "myaXbAzq-MQ",
+        "bMTSzFIUbT4",
+        "ljPhxi5-140",
+        "QS75VNhCOm8"
+      ],
+      "for_x": "Every post names Manusmriti X.Y and quotes a short exact phrase."
+    },
+    {
+      "id": "side_by_side",
+      "finding": "Put two rules next to each other so the unfairness shows without commentary: the same offence, a different penalty by birth, as a ladder with the real numbers (the verse-by-verse video opens on 100, 150 and a beating for the lower classes against 50, 25 and 12 for a Brahmin). The strongest moment in the shortest critical video as well.",
+      "seen_in": [
+        "gmGq3B6jGqA",
+        "myaXbAzq-MQ",
+        "bMTSzFIUbT4",
+        "QS75VNhCOm8"
+      ],
+      "for_x": "Use the mildest and the harshest case the verses give; 8.268 against 8.270 is the model."
+    },
+    {
+      "id": "reverse_the_roles",
+      "finding": "Flip the roles in one line ('now reverse it') so the viewer feels the asymmetry instead of being told it.",
+      "seen_in": [
+        "gmGq3B6jGqA",
+        "y8D9SgbsBKg",
+        "YEcZXeC0F9U"
+      ],
+      "for_x": "Two lines and a turn: rule for one party, 'Now reverse the roles.', rule for the mirror case."
+    },
+    {
+      "id": "concrete_detail",
+      "finding": "Use the physical or numerical detail, not 'harsh punishments': the length of the nail, the oil in the ears, twelve against two hundred. The most common method of all.",
+      "seen_in": [
+        "gmGq3B6jGqA",
+        "myaXbAzq-MQ",
+        "ljPhxi5-140",
+        "bMTSzFIUbT4",
+        "y8D9SgbsBKg",
+        "YEcZXeC0F9U",
+        "QS75VNhCOm8"
+      ],
+      "for_x": "Copy the verse's own detail word for word; never add one."
+    },
+    {
+      "id": "stair_step",
+      "finding": "Escalate with a signpost ('and it does not stop there', 'even worse') so a list of rules feels like a climb.",
+      "seen_in": [
+        "gmGq3B6jGqA",
+        "ljPhxi5-140",
+        "myaXbAzq-MQ"
+      ],
+      "for_x": "Two or three consecutive verses, one line each, a count at the end."
+    },
+    {
+      "id": "not_me_the_book",
+      "finding": "Distance the speaker from the claim: it is the book saying it, not the speaker. The verse-by-verse video uses 'I am not saying this' only three times in thirty minutes, always at the sharpest line, and otherwise reports each rule as plain reading. Citing the believer's own authority with an exact location stops it being waved off as an outsider's attack.",
+      "seen_in": [
+        "YEcZXeC0F9U",
+        "myaXbAzq-MQ",
+        "y8D9SgbsBKg",
+        "QS75VNhCOm8"
+      ],
+      "for_x": "Lead with the exact words in quotation marks, then 'That is Manusmriti X.Y, not a paraphrase.'"
+    },
+    {
+      "id": "target_the_rule",
+      "finding": "Say what is being criticised: the rules and practices, not a faith or its people. The 42-second short does it in one sentence; the debate's best line does it as a definition; the interview condemns every text placed above the Constitution in the same breath to blunt 'only one religion'.",
+      "seen_in": [
+        "ZokcgYzBVuc",
+        "YEcZXeC0F9U",
+        "y8D9SgbsBKg"
+      ],
+      "for_x": "Say 'this verse' and 'this rule', never 'Hinduism' or 'Hindus'. An optional closer states the principle for every text."
+    },
+    {
+      "id": "close_on_a_value",
+      "finding": "End on a value or a question (humanity, equal dignity, the law versus the heart), not on a taunt or a call to subscribe. Most of the videos close on a moral statement.",
+      "seen_in": [
+        "ZokcgYzBVuc",
+        "myaXbAzq-MQ",
+        "y8D9SgbsBKg",
+        "gmGq3B6jGqA",
+        "bMTSzFIUbT4",
+        "ljPhxi5-140"
+      ],
+      "for_x": "One short closing question or one-line judgement, plainly an opinion."
+    },
+    {
+      "id": "start_from_one_scene",
+      "finding": "Begin from one concrete situation instead of a thesis: a night, a riverbank, a farmer wanting to marry off his daughter. It works when the scene is the rule's own; the analyses flag the invented details as a risk.",
+      "seen_in": [
+        "ljPhxi5-140",
+        "myaXbAzq-MQ"
+      ],
+      "for_x": "Open on the situation the verse itself legislates (a Sudra teaches a Brahmana his duty) and add nothing invented."
+    },
+    {
+      "id": "concede_then_object",
+      "finding": "The one counter-critique video wins its audience by granting the critics their strongest point and claiming to have read the text before it pivots. A critical post borrows only the credential: quoting the text exactly is how it shows it has read it.",
+      "seen_in": [
+        "bMTSzFIUbT4"
+      ],
+      "for_x": "No concession line; the exact quotation does the job."
+    },
+    {
+      "id": "history_and_authority",
+      "finding": "Most videos also lean on history, reformers, the Constitution and today's incidents; far fewer of their evidence items are verses (the report shows the exact mix). None of that is in the supplied book.",
+      "seen_in": [
+        "myaXbAzq-MQ",
+        "y8D9SgbsBKg",
+        "ljPhxi5-140",
+        "bMTSzFIUbT4",
+        "gmGq3B6jGqA",
+        "ZokcgYzBVuc"
+      ],
+      "for_x": "Left out unless a fact is supplied as approved context (sources/approved_context.json)."
+    },
+    {
+      "id": "plain_restatement",
+      "finding": "After each citation the verse-by-verse video restates the rule in one plain line ('that is...'), a takeaway a viewer can repeat. It is the step between a quotation and a verdict.",
+      "seen_in": [
+        "QS75VNhCOm8"
+      ],
+      "for_x": "After the quoted words, one short plain line saying who the rule applies to and what it allows or forbids, using only the verse's words."
+    },
+    {
+      "id": "harshest_last",
+      "finding": "Rules are grouped by theme and each group ends on its most extreme detail, announced by a calm marker ('interestingly', 'it even goes as far as writing'). The calm is part of the effect; the escalation formula in the short video does the same job.",
+      "seen_in": [
+        "QS75VNhCOm8",
+        "gmGq3B6jGqA"
+      ],
+      "for_x": "In a stack, order the verses from lightest to harshest and put the harshest detail last, with no adjective in front of it."
+    },
+    {
+      "id": "claim_then_verse",
+      "finding": "A defender's claim is put in plain words and answered with the single verse that contradicts it, with no insult to the person who makes it ('the text has no birth-based discrimination', answered with the verse that makes a freed Sudra still a servant by birth).",
+      "seen_in": [
+        "QS75VNhCOm8",
+        "YEcZXeC0F9U"
+      ],
+      "for_x": "The claim_vs_verse pattern: a common claim stated without quotation marks and attributed to nobody, then the exact verse that contradicts it."
+    },
+    {
+      "id": "state_the_scope_honestly",
+      "finding": "Visible concessions make the case harder to dismiss: who else a penalty covers, that other classes fare better than Sudras, that the text also honours women. The verse-by-verse video builds these in and the counter-critique video borrows the same credibility device.",
+      "seen_in": [
+        "QS75VNhCOm8",
+        "bMTSzFIUbT4"
+      ],
+      "for_x": "Say exactly who a rule applies to and keep every qualifier in the verse ('his Sudra (slave)', 'arrogantly'). A post that states a rule more broadly than the verse does is the easiest to dismiss."
+    },
+    {
+      "id": "show_the_edition",
+      "finding": "The strongest credibility move in the set: the speaker names the printed editions he read (including the defenders' own), says he cross-checked the harshest rules across them, and uses no outside commentary.",
+      "seen_in": [
+        "QS75VNhCOm8"
+      ],
+      "for_x": "The review sheet shows each verse's text and its page in the supplied PDF. If the translation is confirmed, posts can name it."
+    }
+  ],
+  "principles": [
+    "Let the text speak: name the verse, show its own words and details, then stop. The unfairness is in the verse.",
+    "Put two rules side by side, the mildest case against the harshest. Setting what the text says for one birth-class against another does the arguing.",
+    "Be concrete. A measured amount or a named punishment lands harder than 'harsh punishments'; use the verse's own detail and add none.",
+    "Say what the text says and prescribes. Never say what happened in practice, or for how long, unless a verse says so.",
+    "Criticise the rule, not any community or religion, and say nothing about people alive today.",
+    "Close on a value or a question, clearly your opinion; never on a taunt."
+  ],
+  "x_posts": {
+    "voice": "Plain, short, declarative sentences; line breaks for rhythm; no emoji; the verse supplies the shock, never an adjective.",
+    "structures": [
+      {
+        "id": "asymmetry",
+        "name": "Same act, different penalty",
+        "seen_in": [
+          "gmGq3B6jGqA",
+          "myaXbAzq-MQ",
+          "bMTSzFIUbT4"
+        ],
+        "use_when": "two verses deal with the same kind of act (an insult, a theft, a crime) but set a different penalty by birth-class",
+        "steps": [
+          "a 3-6 word opening that names the act and the unfairness (for example: Same insult. Different price.)",
+          "one line: the LIGHTEST penalty the verses give for this act (the smallest amount, or the mildest punishment), naming exactly who it applies to, with its verse reference",
+          "one line: the HARSHEST penalty the verses give for it, naming exactly who it applies to, with its verse reference. Choose the two cases that differ MOST; a post that shows only mild cases has no contrast",
+          "a closing question or one-line judgement, clearly the author's opinion"
+        ]
+      },
+      {
+        "id": "reverse_the_roles",
+        "name": "Now reverse the roles",
+        "seen_in": [
+          "gmGq3B6jGqA",
+          "y8D9SgbsBKg",
+          "YEcZXeC0F9U"
+        ],
+        "use_when": "a rule that is mild for one party and severe for the mirror-image case",
+        "steps": [
+          "state the rule for the favoured party in one line with its reference",
+          "say 'Now reverse the roles.' (or similar) and state the mirrored rule with its reference",
+          "a closing line that names what the contrast shows"
+        ]
+      },
+      {
+        "id": "verse_stack",
+        "name": "It does not stop there",
+        "seen_in": [
+          "gmGq3B6jGqA",
+          "ljPhxi5-140",
+          "myaXbAzq-MQ"
+        ],
+        "use_when": "two or three consecutive verses, each setting its own penalty for its own offence",
+        "steps": [
+          "an opening line naming what the rules cover in plain words (not a single offence unless every verse is about it)",
+          "the rules in order, one short line each: that verse's own offence, then its penalty in the verse's own words. Move between them with a signpost about RULES (for example: Another rule:), never one that makes the penalties sound like stages of one punishment",
+          "a closing line that counts the verses it cited (the count must be right)"
+        ]
+      },
+      {
+        "id": "quote_first",
+        "name": "Read it yourself",
+        "seen_in": [
+          "YEcZXeC0F9U",
+          "y8D9SgbsBKg",
+          "myaXbAzq-MQ"
+        ],
+        "use_when": "one verse whose exact words are striking",
+        "steps": [
+          "lead with the exact words in quotation marks",
+          "give the reference as the source, in a short line (for example: That is Manusmriti 8.417, not a paraphrase.)",
+          "one line saying who the rule applies to and what it allows or forbids"
+        ]
+      },
+      {
+        "id": "plain_rule",
+        "name": "One rule, stated plainly",
+        "seen_in": [
+          "ZokcgYzBVuc",
+          "ljPhxi5-140"
+        ],
+        "use_when": "a single verse that ranks, restricts or controls a group",
+        "steps": [
+          "an opening that frames what the rule governs (names, work, property, independence)",
+          "the rule in the verse's own terms, with its reference and a short exact quotation",
+          "a closing question that asks the reader to judge it"
+        ]
+      },
+      {
+        "id": "scene_hook",
+        "name": "Start from the situation",
+        "seen_in": [
+          "ljPhxi5-140",
+          "myaXbAzq-MQ"
+        ],
+        "use_when": "a verse that legislates a specific situation (who does what to whom)",
+        "steps": [
+          "one line stating the situation exactly as the verse sets it up, with no added detail (for example: A Sudra teaches a Brahmana his duty.)",
+          "the penalty or rule, with its reference and the verse's own words",
+          "a closing question"
+        ]
+      },
+      {
+        "id": "protected_and_punished",
+        "name": "Who is protected, who is punished",
+        "seen_in": [
+          "y8D9SgbsBKg",
+          "ZokcgYzBVuc"
+        ],
+        "use_when": "two verses, possibly far apart in the book, one that shields a group and one that punishes another",
+        "steps": [
+          "one line: what the first verse protects or allows, with its reference",
+          "one line: what the second verse inflicts, with its reference",
+          "a closing line that sets the two side by side without adding a claim"
+        ]
+      },
+      {
+        "id": "claim_vs_verse",
+        "name": "It is said... the text says",
+        "seen_in": [
+          "QS75VNhCOm8",
+          "YEcZXeC0F9U"
+        ],
+        "use_when": "a verse directly contradicts a common claim about the text (for example, that it does not rank people by birth, or that women were free)",
+        "steps": [
+          "one plain sentence stating the common claim, WITHOUT quotation marks and attributed to no group (for example: It is said the text does not rank people by birth.)",
+          "the verse that contradicts it: its reference and an exact quotation, with every qualifier kept",
+          "a short closing line: Read it yourself, or a question"
+        ]
+      }
+    ],
+    "thread": {
+      "shape": [
+        "part 1: the hook and the central contrast, no more than two verses",
+        "middle parts: one verse each, with its reference and exact detail",
+        "last part: the single judgement or question, and a note that every line cites the text"
+      ]
+    },
+    "hooks": [
+      {
+        "shape": "Same [act]. Different [price].",
+        "from": [
+          "ZokcgYzBVuc",
+          "gmGq3B6jGqA"
+        ]
+      },
+      {
+        "shape": "[A short plain fact]. [Its number or detail].",
+        "from": [
+          "myaXbAzq-MQ"
+        ]
+      },
+      {
+        "shape": "Read it yourself.",
+        "from": [
+          "YEcZXeC0F9U",
+          "y8D9SgbsBKg"
+        ]
+      },
+      {
+        "shape": "Even [thing] was ranked.",
+        "from": [
+          "ZokcgYzBVuc"
+        ]
+      },
+      {
+        "shape": "[One situation the verse sets up].",
+        "from": [
+          "ljPhxi5-140"
+        ]
+      },
+      {
+        "shape": "It is said [a common claim]. [Reference] says:",
+        "from": [
+          "QS75VNhCOm8"
+        ]
+      }
+    ],
+    "closers": [
+      "a short question (Who decides what a child is worth at birth?)",
+      "a one-line judgement marked as opinion (Not balanced justice.)",
+      "a count of the verses used (Three verses. One page.)",
+      "the principle for every text (A rule that ranks people by birth deserves to be read this closely, whatever book it is in.)",
+      "Read it yourself: Manusmriti X.Y."
+    ],
+    "example_posts": [
+      {
+        "pattern": "plain_rule",
+        "verses": [
+          "2.31"
+        ],
+        "text": "Even names were ranked.\n\nManusmriti 2.31: a Brahmana's name should denote \"something auspicious\"; a Sudra's should express \"something contemptible\".\n\nWho decides what a child is worth at birth?"
+      },
+      {
+        "pattern": "plain_rule",
+        "verses": [
+          "5.148"
+        ],
+        "text": "In childhood, under her father.\nIn youth, under her husband.\nIn old age, under her sons.\n\nManusmriti 5.148: \"a woman must never be independent.\"\n\nA rule, not an accident."
+      },
+      {
+        "pattern": "asymmetry",
+        "verses": [
+          "8.267",
+          "8.268"
+        ],
+        "text": "Defame a Brahmana, and a Sudra \"shall suffer corporal punishment\" (8.267).\nDefame a Sudra, and a Brahmana pays twelve panas (8.268).\n\nSame offence. Different price."
+      },
+      {
+        "pattern": "claim_vs_verse",
+        "verses": [
+          "8.414"
+        ],
+        "text": "It is said the text does not rank people by birth.\n\nManusmriti 8.414: \"A Sudra, though emancipated by his master, is not released from servitude; since that is innate in him, who can set him free from it?\"\n\nRead it yourself."
+      }
+    ]
+  },
+  "must": [
+    "Every fact comes from the supplied verses.",
+    "Name each verse you use as Manusmriti X.Y (or X.Y-Z for a range).",
+    "Put anything in quotation marks word for word from a verse."
+  ],
+  "must_not": [
+    "No facts, dates, people, laws or history from outside the verses (no Ambedkar, no Constitution, no courts, no other texts) unless they were supplied as approved context.",
+    "No statements about Hindus, Brahmins, or any community or religion as people, and nothing about politicians, parties or living people.",
+    "No numbers the verses do not give; no stronger words than the verses use; no claim about what was practised or for how long.",
+    "No emoji; no hashtags other than #Manusmriti."
+  ],
+  "objections_to_anticipate": [
+    {
+      "objection": "Criticising or burning the book is an attack on religion, and hurts feelings.",
+      "seen_in": [
+        "ZokcgYzBVuc",
+        "YEcZXeC0F9U"
+      ],
+      "stay_safe_by": "Say 'this verse' and 'this rule', never 'Hinduism'. No violence imagery. Define the target as the rule."
+    },
+    {
+      "objection": "Why only this text? Other religions have unfair rules too (whataboutery).",
+      "seen_in": [
+        "aYODcLwTOg0",
+        "bMTSzFIUbT4",
+        "y8D9SgbsBKg",
+        "YEcZXeC0F9U"
+      ],
+      "stay_safe_by": "Do not compare religions and do not take the bait. An optional closer states the principle for every text."
+    },
+    {
+      "objection": "Nobody follows it today; it has no legal force.",
+      "seen_in": [
+        "aYODcLwTOg0",
+        "bMTSzFIUbT4"
+      ],
+      "stay_safe_by": "Make no claim about today or about practice. The post says what the text prescribes."
+    },
+    {
+      "objection": "The book also contains fairer rules (it honours women, and so on).",
+      "seen_in": [
+        "aYODcLwTOg0",
+        "y8D9SgbsBKg"
+      ],
+      "stay_safe_by": "Say 'this verse says', never 'the book says'. Quote the verse exactly so a reader can open the neighbouring ones."
+    },
+    {
+      "objection": "Was it really practised? Is this just history?",
+      "seen_in": [
+        "ljPhxi5-140",
+        "myaXbAzq-MQ"
+      ],
+      "stay_safe_by": "Use 'prescribes' and 'says'. No 'was enforced', no 'for centuries'."
+    },
+    {
+      "objection": "The translation or the verse is not genuine (interpolation, no provenance).",
+      "seen_in": [
+        "YEcZXeC0F9U",
+        "bMTSzFIUbT4"
+      ],
+      "stay_safe_by": "Quote the translation exactly, give the verse number, and let a reader check it. Never paraphrase a number."
+    },
+    {
+      "objection": "Every scripture has flaws.",
+      "seen_in": [
+        "YEcZXeC0F9U"
+      ],
+      "stay_safe_by": "Keep to the verse in front of you; make no comparison."
+    },
+    {
+      "objection": "You are doing this because of your caste or your politics.",
+      "seen_in": [
+        "YEcZXeC0F9U",
+        "aYODcLwTOg0"
+      ],
+      "stay_safe_by": "No identity talk, no politicians, no parties. The post is the verse."
+    },
+    {
+      "objection": "The text has no birth-based discrimination; varna is by deeds, not birth.",
+      "seen_in": [
+        "QS75VNhCOm8"
+      ],
+      "stay_safe_by": "Answer with the exact verse that says otherwise (claim_vs_verse) and add no comment."
+    },
+    {
+      "objection": "Casteism came with the British and the Mughals, not the text.",
+      "seen_in": [
+        "QS75VNhCOm8"
+      ],
+      "stay_safe_by": "Say nothing about history; quote the verse. The post is about what the text says."
+    },
+    {
+      "objection": "Barring Sudras from learning is for their welfare; being born a Sudra is the fruit of past karma.",
+      "seen_in": [
+        "QS75VNhCOm8"
+      ],
+      "stay_safe_by": "Quote the rule and the reason the text itself gives, and stop."
+    },
+    {
+      "objection": "Verses were added later (interpolation).",
+      "seen_in": [
+        "QS75VNhCOm8",
+        "bMTSzFIUbT4"
+      ],
+      "stay_safe_by": "Say 'this verse in this translation'. Make no claim about when it was written or that it is original."
+    }
+  ],
+  "needs_approved_context": [
+    {
+      "method": "authority_appeal",
+      "why": "Ambedkar's burning of the text, reformers and saints are outside the supplied book."
+    },
+    {
+      "method": "constitution_vs_text",
+      "why": "Constitutional articles are outside the supplied book."
+    },
+    {
+      "method": "present_day_consequence",
+      "why": "Today's incidents and statistics are outside the supplied book."
+    },
+    {
+      "method": "association_with_modern_leaders",
+      "why": "What modern leaders said is outside the supplied book (and a risk: see do_not_copy)."
+    },
+    {
+      "method": "origin_history_narrative",
+      "why": "Vedic and later history is outside the supplied book."
+    },
+    {
+      "method": "contrast_with_other_text",
+      "why": "The Gita, the Buddha's verses and other law codes are outside the supplied book."
+    },
+    {
+      "method": "new:external_witness_testimony",
+      "why": "Travellers' accounts are outside the supplied book."
+    }
+  ],
+  "do_not_copy": [
+    {
+      "move": "Collective statements about a community, caste or class ('the savarna society', 'priests are vultures', 'a master plan')",
+      "why": "Unverifiable and it turns a critique of a text into an attack on people.",
+      "seen_in": [
+        "myaXbAzq-MQ",
+        "ljPhxi5-140",
+        "y8D9SgbsBKg"
+      ]
+    },
+    {
+      "move": "Reading a motive off a whole class as fact ('rules written to enslave', 'the only purpose of sati was property')",
+      "why": "A text's rule can be shown; a motive cannot.",
+      "seen_in": [
+        "myaXbAzq-MQ",
+        "ljPhxi5-140"
+      ]
+    },
+    {
+      "move": "Attacking another religion, or framing the critique inside a comparison of religions",
+      "why": "It changes the subject and loses the sceptical reader.",
+      "seen_in": [
+        "ljPhxi5-140",
+        "bMTSzFIUbT4",
+        "myaXbAzq-MQ"
+      ]
+    },
+    {
+      "move": "Whataboutery (answering a question about this text with another community's law)",
+      "why": "It concedes the point and starts a different fight.",
+      "seen_in": [
+        "bMTSzFIUbT4",
+        "aYODcLwTOg0",
+        "YEcZXeC0F9U"
+      ]
+    },
+    {
+      "move": "Abuse, contempt, or reading an opponent's motive off their caste",
+      "why": "Hands the other side the argument.",
+      "seen_in": [
+        "y8D9SgbsBKg",
+        "YEcZXeC0F9U"
+      ]
+    },
+    {
+      "move": "Verse numbers, amounts or attributions given from memory (Narada's fines credited to Manu, 'ten to twenty coins', molten lead credited to the wrong text)",
+      "why": "Several videos get these wrong; a single wrong number ends the argument.",
+      "seen_in": [
+        "myaXbAzq-MQ",
+        "gmGq3B6jGqA",
+        "ljPhxi5-140",
+        "bMTSzFIUbT4"
+      ]
+    },
+    {
+      "move": "Claims about what was done in practice, or for how long, with no source",
+      "why": "The book prescribes; whether it was applied is a historical claim.",
+      "seen_in": [
+        "ljPhxi5-140",
+        "myaXbAzq-MQ",
+        "ZokcgYzBVuc"
+      ]
+    },
+    {
+      "move": "Naming modern leaders and organisations as endorsers without a source",
+      "why": "An accusation, not evidence; and it is politics, not the text.",
+      "seen_in": [
+        "gmGq3B6jGqA",
+        "y8D9SgbsBKg"
+      ]
+    },
+    {
+      "move": "Nazi or Fascist parallels, and calls to burn or destroy the book",
+      "why": "Inflammatory and off-topic.",
+      "seen_in": [
+        "y8D9SgbsBKg",
+        "YEcZXeC0F9U",
+        "myaXbAzq-MQ"
+      ]
+    },
+    {
+      "move": "An invented character or scene presented as if it were a case",
+      "why": "If a scene is used it must be the verse's own, and labelled.",
+      "seen_in": [
+        "myaXbAzq-MQ",
+        "ljPhxi5-140"
+      ]
+    },
+    {
+      "move": "Forced-admission loops, thumbnail bait and 'subscribe' taunts",
+      "why": "Retention tricks that do not belong in a post.",
+      "seen_in": [
+        "YEcZXeC0F9U",
+        "ZokcgYzBVuc"
+      ]
+    },
+    {
+      "move": "Naming a caste group in the hook as reverse psychology",
+      "why": "It works on video; in a post it can read as singling out a community.",
+      "seen_in": [
+        "gmGq3B6jGqA"
+      ]
+    },
+    {
+      "move": "Sweeping lines about the whole book ('every page and every verse humiliates someone')",
+      "why": "False the moment a single counter-example is found.",
+      "seen_in": [
+        "QS75VNhCOm8"
+      ]
+    },
+    {
+      "move": "Mocking the person who holds the opposite view ('slap in the face' lines)",
+      "why": "Keep the contrast between the verse and the claim, not between you and a person.",
+      "seen_in": [
+        "QS75VNhCOm8"
+      ]
+    },
+    {
+      "move": "Tying a news incident to a verse by placement alone, or implying a publisher removed verses deliberately without evidence",
+      "why": "Correlation by editing, not evidence; and outside the supplied book.",
+      "seen_in": [
+        "QS75VNhCOm8"
+      ]
+    }
+  ]
+}

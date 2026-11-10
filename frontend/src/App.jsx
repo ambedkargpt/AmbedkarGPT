@@ -40,6 +40,7 @@ const BheemBot = lazy(() => import('./pages/BheemBot'));
 // Opened in a new tab from a BheemBot source pill; carries pdf.js, so it is its own chunk.
 const BookPage = lazy(() => import('./pages/BookPage'));
 const BhimRadio = lazy(() => import('./pages/BhimRadio'));
+const Manusmriti = lazy(() => import('./pages/Manusmriti'));
 // Admin only. The page itself checks with the API and shows nothing to others.
 const AdminErrors = lazy(() => import('./pages/AdminErrors'));
 const AdminErrorDetail = lazy(() => import('./pages/AdminErrorDetail'));
@@ -47,7 +48,7 @@ import ScrollProgress      from './components/ScrollProgress';
 import OpeningSplash       from './components/OpeningSplash';
 import LanguagePopup       from './components/LanguagePopup';
 import DashboardLayout from './layouts/DashboardLayout';
-import { DASHBOARD_ENABLED, HOME_ROUTE } from './data/features';
+import { DASHBOARD_ENABLED, HOME_ROUTE, MANUSMRITI_SECTION_ENABLED } from './data/features';
 import Spinner             from './components/Spinner';
 import { I18nProvider }    from './i18n/index.jsx';
 import TransitionCurtain   from './components/TransitionCurtain';
@@ -168,6 +169,7 @@ export default function App() {
             <Route path="/solutions" element={<Solutions />} />
             <Route path="/resources" element={<Resources />} />
             <Route path="/contact"   element={<Contact />} />
+            {MANUSMRITI_SECTION_ENABLED && <Route path="/manusmriti" element={<Manusmriti />} />}
             <Route path="/book/:volume/:page" element={<BookPage />} />
             <Route path="/login"     element={<Login />} />
             <Route path="/signup"    element={<Signup />} />
