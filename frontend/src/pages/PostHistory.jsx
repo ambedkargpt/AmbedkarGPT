@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 
 import SpeakButton from '../components/generate/SpeakButton';
+import GuestLock from '../components/onboarding/GuestLock';
+import { noCopyProps, useIsGuest } from '../utils/guestAccess';
 import PublishSheet from '../components/publish/PublishSheet';
 import Topbar from '../components/dashboard/Topbar';
 import PostContent from '../components/generate/PostContent';
@@ -95,6 +97,8 @@ function PlatformLabel({ id }) {
 
 function PostReader({ post, onClose, onCopy, copiedId }) {
   const { t, lang } = useI18n();
+  // A guest account reads its posts; copying, listening and translating are locked.
+  const guest = useIsGuest();
   const [translating, setTranslating] = useState(false);
   const [translated, setTranslated] = useState('');
   const [showTranslated, setShowTranslated] = useState(false);
@@ -143,6 +147,7 @@ function PostReader({ post, onClose, onCopy, copiedId }) {
           <StatusBadge status={post.status} />
           <span className="text-[13.5px] text-[#7d89ad]">{when}</span>
           <div className="ml-auto flex items-center gap-2">
+            {guest ? <GuestLock compact /> : (<>
             <SpeakButton content={content} lang={contentLang} />
             <button
               type="button"
@@ -161,6 +166,7 @@ function PostReader({ post, onClose, onCopy, copiedId }) {
               {copiedId === post.id ? <Check size={15} strokeWidth={2.6} className="text-[#4ade80]" /> : <Copy size={15} strokeWidth={2} />}
               {copiedId === post.id ? t('hist.copied') : t('hist.copy')}
             </button>
+            </>)}
             <button
               type="button"
               onClick={onClose}
@@ -171,7 +177,7 @@ function PostReader({ post, onClose, onCopy, copiedId }) {
             </button>
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-7 md:px-9">
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-7 md:px-9" {...(guest ? noCopyProps : {})}>
           <PostContent content={content} lang={contentLang} />
         </div>
       </div>
@@ -184,6 +190,7 @@ function PostReader({ post, onClose, onCopy, copiedId }) {
 
 function CardMenu({ post, translated, translating, onRead, onTranslate, onToggleVersion, onArchive, onCopy }) {
   const { t } = useI18n();
+  const guest = useIsGuest();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -220,10 +227,12 @@ function CardMenu({ post, translated, translating, onRead, onTranslate, onToggle
           <button type="button" role="menuitem" className={item} onClick={run(onRead)}>
             <Maximize2 size={16} className="text-[#9cc3ff]" /> {t('hist.read')}
           </button>
+          {!guest && (
           <button type="button" role="menuitem" className={item} onClick={run(onTranslate)} disabled={translating}>
             <Languages size={16} className="text-[#9cc3ff]" /> {translating ? t('hist.translating') : translated ? t('hist.original') : t('hist.translate')}
           </button>
-          {post.status === 'draft' && (
+          )}
+          {post.status === 'draft' && !guest && (
             <button type="button" role="menuitem" className={item} onClick={run(onCopy)}>
               <Copy size={16} className="text-[#9cc3ff]" /> {t('hist.copy')}
             </button>
@@ -249,6 +258,7 @@ function CardMenu({ post, translated, translating, onRead, onTranslate, onToggle
 
 function PostCard({ post, view, index, onOpen, onCopy, onPublish, onArchive, onToggleVersion, copiedId }) {
   const { t, lang } = useI18n();
+  const guest = useIsGuest();
   const [translating, setTranslating] = useState(false);
   const [translated, setTranslated] = useState('');
   const [showTranslated, setShowTranslated] = useState(false);
@@ -291,14 +301,16 @@ function PostCard({ post, view, index, onOpen, onCopy, onPublish, onArchive, onT
         className="min-w-0 flex-1 text-left"
         aria-label={t('hist.read')}
       >
-        <p className={`whitespace-pre-line text-[16px] leading-[1.65] text-[#d5def0] ${list ? 'line-clamp-2' : 'line-clamp-4'}`}>
+        <p className={`whitespace-pre-line text-[16px] leading-[1.65] text-[#d5def0] ${list ? 'line-clamp-2' : 'line-clamp-4'}`} {...(guest ? noCopyProps : {})}>
           {content}
         </p>
       </button>
 
       <div className={`flex items-center gap-2 border-t border-[#1a2c55] pt-3 ${list ? 'sm:border-t-0 sm:pt-0' : 'mt-auto'}`}>
         <span className="mr-auto font-count text-[13.5px] text-[#7d89ad]">{time}</span>
-        {post.status === 'draft' ? (
+        {guest ? (
+          <GuestLock compact />
+        ) : post.status === 'draft' ? (
           <button
             type="button"
             onClick={() => onPublish(post.id)}

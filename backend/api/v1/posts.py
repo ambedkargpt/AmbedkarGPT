@@ -15,6 +15,7 @@ from backend.schemas.posts import (
     PostsDashboardItem,
     PostUpdateRequest,
 )
+from backend.services.guest_service import refuse_guest
 from backend.services.posts_service import PostsService
 from backend.services.questions_service import QuestionsService
 
@@ -86,6 +87,7 @@ def translate_post(
     payload: PostTranslateRequest,
     current_user_id: str = Depends(get_current_user_id),
 ) -> PostTranslateResponse:
+    refuse_guest(current_user_id, "translate")
     return service.translate_post(
         post_id=post_id,
         current_user_id=current_user_id,
@@ -109,6 +111,7 @@ def regenerate_post(
     current_user_id: str = Depends(get_current_user_id),
 ) -> PostGenerateResponse:
     _require_onboarding(current_user_id)
+    refuse_guest(current_user_id, "edit")
     return service.regenerate_from_snapshot(
         source_post_id=post_id,
         current_user_id=current_user_id,
@@ -186,6 +189,9 @@ def update_post(post_id: str, payload: PostUpdateRequest, current_user_id: str =
     existing = service.get(post_id)
     if _owner_id(existing) != current_user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot update another user's post.")
+    # Publishing is marking the post published; a guest account cannot.
+    if payload.status == "published":
+        refuse_guest(current_user_id, "publish")
     return service.update(post_id, payload, current_user_id=current_user_id)
 
 
@@ -199,6 +205,7 @@ def publish_post_to_reddit(
     existing = service.get(post_id)
     if _owner_id(existing) != current_user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cannot publish another user's post.")
+    refuse_guest(current_user_id, "publish")
     publication = service.publish_to_reddit(
         post_id, current_user_id, title=payload.title, body=payload.body
     )
