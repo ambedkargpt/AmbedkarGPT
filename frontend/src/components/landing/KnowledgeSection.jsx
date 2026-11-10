@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Edit3, Headphones, Mic2, Video, Newspaper, Scale, ArrowRight, Check } from 'lucide-react';
 import SectionLabel from './SectionLabel';
+import ToolCardCarousel from './ToolCardCarousel';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import useSlidingPill, { pillStyle } from '../generate/useSlidingPill';
@@ -318,8 +319,13 @@ export default function KnowledgeSection() {
         </p>
       </div>
 
-      {/* Below lg: the services as plain stacked cards, no pinning. */}
-      <div className="mx-auto mt-6 grid max-w-7xl gap-4 px-6 md:mt-10 md:grid-cols-2 lg:hidden">
+      {/* Phones: compact tool cards in a carousel, the next one peeking in. */}
+      <div className="mt-6 md:hidden">
+        <ToolCardCarousel />
+      </div>
+
+      {/* Tablets: the services as plain cards, two across, no pinning. */}
+      <div className="mx-auto mt-10 hidden max-w-7xl gap-4 px-6 md:grid md:grid-cols-2 lg:hidden">
         {SERVICES.map((s) => (
           <div key={s.id} data-card className="flex rounded-2xl">
             <ServiceCard service={s} compact />
