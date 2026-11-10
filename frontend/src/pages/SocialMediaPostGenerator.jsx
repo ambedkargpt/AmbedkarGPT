@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { createPortal, flushSync } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { clearPendingQuestions } from '../hooks/usePendingQuestions';
+import { settingsTarget } from '../utils/onboardingTarget';
 import {
   ArrowLeft, Sparkles, Copy, Check, RefreshCw, ChevronDown, ChevronRight, X as XIcon,
   LayoutGrid, ArrowRight, MessageCircle, Repeat2, Heart, Share, AlertTriangle, Smartphone, PenLine,
@@ -118,7 +119,7 @@ export default function SocialMediaPostGenerator() {
     if (err?.response?.status !== 403 || detail?.code !== 'onboarding_required') return false;
     clearPendingQuestions();
     try { sessionStorage.setItem('auth_redirect', '/generate/social-media'); } catch { /* ignore */ }
-    navigate(detail.step === 'profile' ? '/profile-setup' : '/questionnaire', { replace: true });
+    navigate(settingsTarget(detail.step, '/generate/social-media'), { replace: true });
     return true;
   }
   const { currentUser, logout } = useAuth();

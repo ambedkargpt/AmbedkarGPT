@@ -851,6 +851,7 @@ export default {
   "onboard.stepProfile": "आपकी पार्टी और पद",
   "onboard.stepPreferences": "आपकी पोस्ट प्राथमिकताएँ",
   "onboard.backToDashboard": "डैशबोर्ड पर वापस",
+  "onboard.skipToNews": "अभी छोड़ें, सीधे ख़बरें देखें",
   "quest.skipDefaults": "छोड़िए, सुझाए गए जवाब लगाइए",
   "quest.skipping": "सेव हो रहा है…",
   "quest.skipDefaultsHint": "जिन सवालों के जवाब आपने नहीं दिए, उनमें सुझाया गया जवाब लग जाएगा। बाद में प्राथमिकताओं में बदल सकते हैं।",

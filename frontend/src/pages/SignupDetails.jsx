@@ -5,6 +5,7 @@ import { isValidPhoneNumber } from 'react-phone-number-input';
 import { useAuth } from '../context/AuthContext';
 import { useCurtain } from '../context/CurtainContext';
 import { clearPendingQuestions } from '../hooks/usePendingQuestions';
+import { skipOnboarding } from '../utils/onboardingSkip';
 import AuthLayout    from '../components/AuthLayout';
 import AnimatedInput from '../components/AnimatedInput';
 import PhoneField    from '../components/PhoneField';
@@ -448,6 +449,17 @@ export default function SignupDetails() {
             </div>
           </div>
         </form>
+
+        {/* Nothing is saved: the account is made already, and these details
+            are asked for again where they are needed (writing a post). */}
+        <button
+          type="button"
+          onClick={() => { skipOnboarding(currentUser?.id); curtainGo(HOME_ROUTE, { replace: true }); }}
+          className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#3a6bc4]/70 bg-[#3a6bc4]/10 px-5 text-[15px] font-semibold text-[#dbe6ff] transition hover:border-[#6b9bff] hover:bg-[#3a6bc4]/25 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#6b9bff]"
+        >
+          {t('onboard.skipToNews')}
+          <ArrowRight size={16} strokeWidth={2.2} aria-hidden="true" />
+        </button>
       </div>
     </AuthLayout>
   );

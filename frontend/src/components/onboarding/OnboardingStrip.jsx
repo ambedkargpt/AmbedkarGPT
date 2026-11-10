@@ -3,6 +3,7 @@ import { UserCog, ArrowRight } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
 import usePendingQuestions, { onboardingStep } from '../../hooks/usePendingQuestions';
+import { settingsTarget } from '../../utils/onboardingTarget';
 import { useI18n } from '../../i18n/index.jsx';
 
 /**
@@ -26,7 +27,7 @@ export default function OnboardingStrip() {
   const step = checked ? onboardingStep(pending) : null;
   if (!step) return null;
 
-  const to = step === 'profile' ? '/profile-setup' : '/questionnaire';
+  const to = settingsTarget(step);
   return (
     <div
       role="status"

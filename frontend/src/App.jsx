@@ -27,7 +27,6 @@ const Otp = lazy(() => import('./pages/Otp'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const Questionnaire = lazy(() => import('./pages/Questionnaire'));
-const ProfileSetup = lazy(() => import('./pages/ProfileSetup'));
 const SignupDetails = lazy(() => import('./pages/SignupDetails'));
 const ServiceSelection = lazy(() => import('./pages/ServiceSelection'));
 const SocialMediaPostGenerator = lazy(() => import('./pages/SocialMediaPostGenerator'));
@@ -54,6 +53,7 @@ import { I18nProvider }    from './i18n/index.jsx';
 import TransitionCurtain   from './components/TransitionCurtain';
 import ErrorBoundary       from './components/ErrorBoundary';
 import OnboardingGate       from './components/onboarding/OnboardingGate';
+import { settingsTarget }   from './utils/onboardingTarget';
 import RouteTitle          from './components/seo/RouteTitle';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -192,7 +192,7 @@ export default function App() {
               <ProtectedRoute><SignupDetails /></ProtectedRoute>
             } />
             <Route path="/profile-setup" element={
-              <ProtectedRoute><ProfileSetup /></ProtectedRoute>
+              <ProtectedRoute><Navigate to={settingsTarget('profile')} replace /></ProtectedRoute>
             } />
             <Route path="/questionnaire" element={
               <ProtectedRoute><Questionnaire /></ProtectedRoute>

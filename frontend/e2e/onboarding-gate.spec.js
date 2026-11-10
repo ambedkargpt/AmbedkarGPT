@@ -39,7 +39,62 @@ test('a new account with no party is told, not redirected, and cannot generate',
   await expect(page).toHaveURL(/\/generate\/social-media$/);
   await expect(page.getByRole('heading', { name: /set up your profile first|पहले अपनी प्रोफ़ाइल/i })).toBeVisible();
   await page.getByRole('link', { name: /set up profile|प्रोफ़ाइल सेट/i }).click();
-  await expect(page).toHaveURL(/\/profile-setup$/);
+  // Settings, not the old onboarding form, and it remembers where to go back to.
+  await expect(page).toHaveURL(/\/settings\?tab=profile&next=%2Fgenerate%2Fsocial-media$/);
+});
+
+// "Skip for now": a new account can read the news without setting anything up.
+// Writing a post still needs the profile, and the server still refuses it.
+const SKIP = /skip for now, go to the news|अभी छोड़ें, सीधे ख़बरें देखें/i;
+const GATE = /set up your profile first|पहले अपनी प्रोफ़ाइल/i;
+
+test('the gate can be skipped, and stays open on the next visit', async ({ page }) => {
+  await signedIn(page, {}, { party: false, position: false, profile: true });
+  await page.goto('/generate/social-media');
+  await expect(page.getByRole('heading', { name: GATE })).toBeVisible();
+
+  await page.getByRole('button', { name: SKIP }).click();
+  await expect(page.getByRole('heading', { name: GATE })).toHaveCount(0);
+
+  await page.reload();
+  await expect(page).toHaveURL(/\/generate\/social-media$/);
+  await expect(page.getByRole('heading', { name: GATE })).toHaveCount(0);
+});
+
+test('sign-up details can be skipped straight to the news', async ({ page }) => {
+  await signedIn(page, { full_name: '' }, { party: false, position: false, profile: true });
+  await page.goto('/signup/details');
+  await page.getByRole('button', { name: SKIP }).click();
+  await expect(page).toHaveURL(/\/generate\/social-media$/);
+  await expect(page.getByRole('heading', { name: GATE })).toHaveCount(0);
+});
+
+test('the old profile form is gone: its address opens Settings', async ({ page }) => {
+  await signedIn(page, {}, { party: false, position: false, profile: true });
+  await page.goto('/profile-setup');
+  await expect(page).toHaveURL(/\/settings\?tab=profile/);
+});
+
+test('saving a complete profile on Settings returns to the news; a foreign address is ignored', async ({ page }) => {
+  const user = { id: 'e2e', username: 'e2e', email: 'e2e@example.com', full_name: 'E2E User', political_party: INC, party_position: 'national_vice_president' };
+  await signedIn(page, user, { party: false, position: false, profile: false });
+  // The account's own update: answer with the user, as the server does.
+  await page.route('**/api/v1/auth/me', (route) => (route.request().method() === 'PATCH'
+    ? route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ...user, full_name: 'Renamed' }) })
+    : route.fallback()));
+
+  // Sent here by a refused post: it carries where to go back to.
+  await page.goto('/settings?tab=profile&next=%2Fgenerate%2Fsocial-media');
+  await page.getByLabel(/full name|पूरा नाम/i).fill('Renamed');
+  await page.getByRole('button', { name: /save changes|बदलाव सेव करें/i }).click();
+  await expect(page).toHaveURL(/\/generate\/social-media$/);
+
+  // An address that leaves the app is not followed: the reader stays in Settings.
+  await page.goto('/settings?tab=profile&next=https%3A%2F%2Fexample.com');
+  await page.getByLabel(/full name|पूरा नाम/i).fill('Renamed again');
+  await page.getByRole('button', { name: /save changes|बदलाव सेव करें/i }).click();
+  await expect(page.getByText(/saved|सेव हो गया|सहेज/i).first()).toBeVisible();
+  await expect(page).toHaveURL(/\/settings/);
 });
 
 test('the sidebar offers no dashboard, preferences or unbuilt pages', async ({ page }) => {
