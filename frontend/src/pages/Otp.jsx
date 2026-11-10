@@ -1,10 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth, friendlyError } from '../context/AuthContext';
 import { resendOtp as resendOtpApi } from '../api/auth';
 import { useCurtain } from '../context/CurtainContext';
 import AuthLayout    from '../components/AuthLayout';
 import PrimaryButton from '../components/PrimaryButton';
+import AuthSwitchLink from '../components/AuthSwitchLink';
 import { Info } from 'lucide-react';
 import { useI18n } from '../i18n/index.jsx';
 
@@ -86,18 +87,18 @@ function ResendTimer({ onResend, type }) {
   }, [seconds]);
   const label = t(type === 'phone' ? 'auth.callAgain' : 'auth.resend');
   return (
-    <p className="text-center text-sm" style={{ color: '#8b94b8' }}>
-      {t(type === 'phone' ? 'auth.didntGetCall' : 'auth.didntReceive')}{' '}
-      {seconds > 0 ? (
-        <span style={{ color: '#6b7db3' }}>{t('auth.tryAgainIn', { seconds })}</span>
-      ) : (
+    <div className="space-y-3 text-center">
+      <p className="text-[15px]" style={{ color: '#a9b6d8' }}>
+        {t(type === 'phone' ? 'auth.didntGetCall' : 'auth.didntReceive')}{' '}
+        {seconds > 0 && <span style={{ color: '#c5cde8' }}>{t('auth.tryAgainIn', { seconds })}</span>}
+      </p>
+      {seconds <= 0 && (
         <button type="button" onClick={() => { setSeconds(30); onResend(); }}
-          className="underline underline-offset-2 hover:opacity-80 transition-opacity font-medium"
-          style={{ color: '#6b8aff' }}>
+          className="flex h-12 w-full items-center justify-center rounded-xl border border-[#3a6bc4]/70 bg-[#3a6bc4]/10 px-5 text-[15px] font-semibold text-[#dbe6ff] transition hover:border-[#6b9bff] hover:bg-[#3a6bc4]/25 hover:text-white">
           {label}
         </button>
       )}
-    </p>
+    </div>
   );
 }
 
@@ -207,12 +208,7 @@ export default function Otp() {
 
         <ResendTimer onResend={handleResend} type={type} />
 
-        <p className="text-center text-sm" style={{ color: '#8b94b8' }}>
-          Wrong {type === 'email' ? 'email' : 'number'}?{' '}
-          <Link to={backTo} className="underline underline-offset-2 hover:opacity-80 font-medium" style={{ color: '#6b8aff' }}>
-            {t('auth.goBack')}
-          </Link>
-        </p>
+        <AuthSwitchLink to={backTo} prompt={`Wrong ${type === 'email' ? 'email' : 'number'}?`} label={t('auth.goBack')} />
       </div>
     </AuthLayout>
   );

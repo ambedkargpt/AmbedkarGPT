@@ -8,6 +8,7 @@ import AnimatedInput from '../components/AnimatedInput';
 import PasswordInput from '../components/PasswordInput';
 import PhoneField    from '../components/PhoneField';
 import PrimaryButton from '../components/PrimaryButton';
+import AuthSwitchLink from '../components/AuthSwitchLink';
 import GoogleButton  from '../components/GoogleButton';
 import { useI18n } from '../i18n/index.jsx';
 
@@ -141,13 +142,13 @@ export default function Login() {
         </div>
 
         {/* Email / Phone toggle */}
-        <div className="flex rounded-xl p-1" style={{ backgroundColor: '#0a1128', border: '1px solid #1e3260' }}>
+        <div className="flex rounded-xl p-1.5" style={{ backgroundColor: '#0a1128', border: '1px solid #2c4a8a' }}>
           {['email', 'phone'].map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => switchMode(m)}
-              className="flex-1 rounded-lg py-2 text-sm font-medium transition-all duration-200"
+              className="flex-1 rounded-lg py-3 text-[15px] font-semibold transition-all duration-200"
               style={{
                 backgroundColor: mode === m ? '#1a2a5e' : 'transparent',
                 color: mode === m ? '#ffffff' : '#8b94b8',
@@ -190,7 +191,7 @@ export default function Login() {
                 error={errors.password}
               />
               <div className="flex justify-end">
-                <Link to="/forgot-password" className="text-xs underline underline-offset-2 hover:opacity-80 transition-opacity" style={{ color: '#6b8aff' }}>
+                <Link to="/forgot-password" className="inline-flex min-h-10 items-center text-[14.5px] font-semibold underline underline-offset-4 transition-opacity hover:opacity-80" style={{ color: '#8fb0ff' }}>
                   {t('auth.forgotPassword')}
                 </Link>
               </div>
@@ -198,7 +199,7 @@ export default function Login() {
           )}
 
           {mode === 'phone' && (
-            <p className="text-xs" style={{ color: '#8b94b8' }}>
+            <p className="text-[14px]" style={{ color: '#a9b6d8' }}>
               {t('auth.otpToNumber')}
             </p>
           )}
@@ -210,7 +211,7 @@ export default function Login() {
 
         <div className="flex items-center gap-3">
           <div className="flex-1 h-px" style={{ backgroundColor: '#2a3566' }} />
-          <span className="text-xs" style={{ color: '#8b94b8' }}>{t('auth.or')}</span>
+          <span className="text-[14px] font-medium" style={{ color: '#a9b6d8' }}>{t('auth.or')}</span>
           <div className="flex-1 h-px" style={{ backgroundColor: '#2a3566' }} />
         </div>
 
@@ -220,12 +221,7 @@ export default function Login() {
           disabled={loading}
         />
 
-        <p className="text-center text-sm" style={{ color: '#8b94b8' }}>
-          {t('auth.noAccount')}{' '}
-          <Link to="/signup" className="underline underline-offset-2 hover:opacity-80 transition-opacity font-medium" style={{ color: '#6b8aff' }}>
-            {t('auth.signUp')}
-          </Link>
-        </p>
+        <AuthSwitchLink to="/signup" prompt={t('auth.noAccount')} label={t('auth.signUp')} />
 
         {TEST_PASSWORD && (
           <div className="rounded-xl border px-3 py-2.5" style={{ borderColor: '#2a3566', backgroundColor: 'rgba(10,17,48,0.6)' }}>

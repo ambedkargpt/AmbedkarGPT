@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  AtSign, Check, ChevronDown, Languages, Loader2, Lock, Settings as SettingsIcon, UserRound, Mic2,
+  AtSign, Check, ChevronDown, Languages, Loader2, Lock, Settings as SettingsIcon, UserRound,
 } from 'lucide-react';
 
 import Topbar from '../components/dashboard/Topbar';
@@ -14,19 +14,19 @@ import { ROLE_GROUPS, groupForId, labelForId, roleLabel, rolesInGroup } from '..
 import { INDIAN_STATES, CITIES_BY_STATE } from '../utils/indianStatesCities';
 import { partyLabel, levelLabel } from '../utils/displayLabel';
 import { safeNext } from '../utils/onboardingTarget';
-import Preferences from './Preferences';
 
 // Only an account that signed up by email lacks a phone; the phone field and
 // its number library are loaded for that case alone.
 const PhoneField = lazy(() => import('../components/PhoneField'));
 
 /**
- * Settings: one page with four tabs, in the order people look for things.
+ * Settings: one page with two tabs, in the order people look for things.
  *
- *   Profile    - who you are, where you are, your party and role
- *   Your voice - the party and style questions every post is written from
- *   Accounts   - Reddit and anything that publishes for you
- *   Language   - the site's language, which is also the posts'
+ *   Profile  - who you are, where you are, your party and role
+ *   Language - the site's language, which is also the posts'
+ *
+ * There is no "Your voice" tab: the party and style questions are no longer
+ * asked, each takes the default for the party and role on the server.
  *
  * Replaces the separate profile and preferences pages, which were two screens
  * for what people think of as one. /preferences and the sidebar's profile link
@@ -38,7 +38,6 @@ const PhoneField = lazy(() => import('../components/PhoneField'));
 
 const TABS = [
   { id: 'profile',  Icon: UserRound },
-  { id: 'voice',    Icon: Mic2 },
   { id: 'language', Icon: Languages },
 ];
 
@@ -498,8 +497,8 @@ export default function Settings() {
   // panel clears the address bar's query after Reddit's round trip, and that
   // must not throw the reader back to the first tab.
   const [tab, setTab] = useState(TABS.some((x) => x.id === asked) ? asked : 'profile');
-  // A link inside the page (e.g. "choose your role" under Your voice) changes
-  // ?tab= while this screen stays mounted; follow it.
+  // A link inside the page changes ?tab= while this screen stays mounted;
+  // follow it. An unknown tab (an old ?tab=voice link) opens Profile.
   const [seenAsked, setSeenAsked] = useState(asked);
   if (asked !== seenAsked) {
     setSeenAsked(asked);
@@ -570,11 +569,6 @@ export default function Settings() {
           className="set-panel-in pb-10"
         >
           {tab === 'profile' && <ProfileTab />}
-          {tab === 'voice' && (
-            <Section id="set-voice" title={t('set.tab.voice')} sub={t('set.voiceSub')} first>
-              <Preferences embedded />
-            </Section>
-          )}
           {tab === 'language' && <LanguageTab />}
         </div>
       </main>

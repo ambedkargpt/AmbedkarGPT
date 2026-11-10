@@ -1,15 +1,15 @@
 import { Navigate, useLocation } from 'react-router-dom';
 
 /**
- * /preferences is a tab of Settings now. Old links land on "Your voice"; the
- * return from Reddit's sign-in (which carries ?reddit=...) lands on Accounts
- * with its query intact, so the "connected as u/..." message still shows.
+ * /preferences is a tab of Settings now. Old links land on Profile, and so does
+ * the return from Reddit's sign-in (which carries ?reddit=...): there is no
+ * Accounts or "Your voice" tab any more.
  */
 export default function PreferencesRedirect() {
   const { search } = useLocation();
   const params = new URLSearchParams(search);
-  // The Accounts tab is gone; everything lands on "Your voice".
+  // The Accounts and "Your voice" tabs are gone; everything lands on Profile.
   params.delete('reddit');
-  params.set('tab', 'voice');
+  params.set('tab', 'profile');
   return <Navigate to={`/settings?${params.toString()}`} replace />;
 }
