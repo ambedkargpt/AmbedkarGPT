@@ -9,6 +9,7 @@ from backend.schemas.auth import (
     ForgotPasswordRequest,
     ForgotPasswordResponse,
     GoogleLoginRequest,
+    GuestLoginRequest,
     LoginRequest,
     LogoutRequest,
     MessageResponse,
@@ -119,6 +120,14 @@ def resend_otp(payload: ResendOtpRequest, request: Request) -> ResendOtpResponse
 @router.post("/google-login", response_model=AuthResponse, responses={400: {"model": ErrorResponse}, 401: {"model": ErrorResponse}})
 def google_login(payload: GoogleLoginRequest) -> AuthResponse:
     return service.google_login(payload.access_token, payload.political_party)
+
+
+@router.post("/guest", response_model=AuthResponse, responses={429: {"model": ErrorResponse}})
+def guest_login(payload: GuestLoginRequest, request: Request) -> AuthResponse:
+    """"Continue as guest": a ready-made account for one party, no sign-up."""
+    ip = request.client.host if request.client else "unknown"
+    _check_rate_limit(ip, "guest")
+    return service.guest_login(payload.party, payload.device_id, ip)
 
 
 @router.post("/refresh", response_model=AuthResponse, responses={401: {"model": ErrorResponse}})

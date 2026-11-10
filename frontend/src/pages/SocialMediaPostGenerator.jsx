@@ -478,6 +478,9 @@ export default function SocialMediaPostGenerator() {
   // Reading the news needs no account; writing a post does. Someone reading as
   // a guest is sent to sign up, and comes back to the news afterwards.
   const isGuest = !currentUser?.id;
+  // A guest account ("Continue as guest · Congress / Samajwadi") is a real
+  // account with a party and role set: it writes posts like any other.
+  const guestAccount = Boolean(currentUser?.is_guest);
   function signUpToWrite() {
     try { sessionStorage.setItem('auth_redirect', '/generate/social-media'); } catch { /* ignore */ }
     navigate('/signup');
@@ -526,7 +529,9 @@ export default function SocialMediaPostGenerator() {
       if (sendToOnboarding(err)) return;
       if (err?.response?.status === 429) {
         const detail = err.response.data?.detail;
-        const msg = detail?.message ?? "You've reached your 5 posts/day limit. Come back tomorrow!";
+        const msg = detail?.error === 'guest_limit'
+          ? t('guest.limitReached')
+          : (detail?.message ?? "You've reached your 5 posts/day limit. Come back tomorrow!");
         setGeneratedPost(msg);
         setPostFailed(true);
         // Refresh quota so the UI reflects the limit
@@ -755,10 +760,10 @@ export default function SocialMediaPostGenerator() {
     return lang === 'hi' ? ({ 'Madhya Pradesh': 'मध्य प्रदेश', 'Uttar Pradesh': 'उत्तर प्रदेश' }[r] ?? r) : r;
   }
   const welcomeLogo = partyLogo(currentUser?.political_party);
-  const welcomeName = currentUser
+  const welcomeName = currentUser && !guestAccount
     ? (currentUser.full_name || currentUser.username || '').split(/[\s_]/)[0]
     : t('guest.name');
-  const welcomeLead = currentUser ? t('dash.welcomeBack') : t('guest.welcome');
+  const welcomeLead = currentUser && !guestAccount ? t('dash.welcomeBack') : t('guest.welcome');
   const roleName = labelForId(currentUser?.party_position || '', currentUser?.political_party || '', lang);
 
 
@@ -770,7 +775,15 @@ export default function SocialMediaPostGenerator() {
   // so it is not shown (and the same for SP's workers and INC's news).
   const ownAndOpposition = (a) => !selectedParty || a.tenantSlug === selectedParty || a.tenantSlug === 'bjp';
   const nationalNews = nationalArticles.filter((a) => a.tenantSlug !== 'general' && ownAndOpposition(a));
-  const stateNews = visibleStateArticles.filter(ownAndOpposition);
+  // SP has no state-unit channel yet. For now an SP reader's state row also
+  // carries the party's own news (Akhilesh's channel), as Uttar Pradesh news,
+  // so it is not empty of their own party. It stays in the national row too.
+  const spAsState = selectedParty === 'samajwadi' && ['all', 'uttar pradesh'].includes(String(selectedState).toLowerCase())
+    ? nationalArticles.filter((a) => a.tenantSlug === 'samajwadi').map((a) => ({ ...a, scope: 'state', region: a.region || 'Uttar Pradesh' }))
+    : [];
+  const stateNews = [...visibleStateArticles, ...spAsState].filter(ownAndOpposition);
+  // Every story once, for counts and related stories (an SP story can be in both rows).
+  const allNews = [...new Map([...nationalNews, ...stateNews].map((a) => [a.id, a])).values()];
   const overviewNational = byParty(byChip(nationalNews), selectedParty);
   const overviewState = byParty(byChip(stateNews), selectedParty);
   const partiesShown = PARTY_ORDER.filter((slug) => nationalNews.some((a) => a.tenantSlug === slug)
@@ -803,7 +816,7 @@ export default function SocialMediaPostGenerator() {
     const pm = partyMeta(selectedParty);
     const top = byParty(nationalNews, selectedParty)[0];
     const today = new Date(); today.setHours(0, 0, 0, 0);
-    const freshToday = [...nationalNews, ...stateNews].filter((a) => Date.parse(a.date) >= today.getTime()).length;
+    const freshToday = allNews.filter((a) => Date.parse(a.date) >= today.getTime()).length;
     const stats = [
       { Icon: Landmark, n: nationalNews.length, label: t('gen.feed.statNational'), c: '#6aa8ff' },
       { Icon: MapPin, n: stateNews.length, label: t('gen.feed.statState'), c: '#8fb0ff' },
@@ -938,9 +951,7 @@ export default function SocialMediaPostGenerator() {
         {chips.map(({ id }) => {
           const on = partyFilter === id;
           const meta = partyMeta(id);
-          const n = id === 'all'
-            ? nationalNews.length + stateNews.length
-            : nationalNews.filter((a) => a.tenantSlug === id).length + stateNews.filter((a) => a.tenantSlug === id).length;
+          const n = id === 'all' ? allNews.length : allNews.filter((a) => a.tenantSlug === id).length;
           const c = id === 'all' ? '#8FA8FF' : meta.color;
           return (
             <button
@@ -989,9 +1000,9 @@ export default function SocialMediaPostGenerator() {
         mobileOpen={menuOpen}
         onMobileClose={() => setMenuOpen(false)}
         user={{
-          name: currentUser?.full_name || currentUser?.username || '—',
+          name: guestAccount ? t('guest.name') : (currentUser?.full_name || currentUser?.username || '—'),
           sub: roleName || currentUser?.email || '',
-          initial: (currentUser?.full_name || currentUser?.username || 'A')[0].toUpperCase(),
+          initial: (guestAccount ? 'G' : (currentUser?.full_name || currentUser?.username || 'A')[0]).toUpperCase(),
         }}
         active="generate"
         onSelect={(id) => { if (id === 'dashboard') navigate('/dashboard'); }}
@@ -1006,6 +1017,7 @@ export default function SocialMediaPostGenerator() {
       >
 
         {isGuest && <GuestStrip />}
+        {guestAccount && <GuestStrip partyName={selectedParty ? partyShort(selectedParty, lang) : t('guest.name')} />}
 
         {/* On a story or a post: back on the left, the account (language,
             notifications, profile, log out) on the right. The feed carries
@@ -1179,7 +1191,7 @@ export default function SocialMediaPostGenerator() {
               onToggleArticle={() => setArticleOpen((o) => !o)}
               related={(() => {
                 // Same topic first, then the same party's latest.
-                const pool = [...nationalNews, ...stateNews].filter((a) => a.id !== selectedArticle.id);
+                const pool = allNews.filter((a) => a.id !== selectedArticle.id);
                 const same = pool.filter((a) => a.category && a.category === selectedArticle.category);
                 const party = byParty(pool.filter((a) => a.tenantSlug === selectedArticle.tenantSlug && !same.includes(a)), selectedParty);
                 return [...same, ...party].slice(0, 3);

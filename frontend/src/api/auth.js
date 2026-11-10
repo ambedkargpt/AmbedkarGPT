@@ -107,6 +107,36 @@ export async function loginWithGoogle(googleAccessToken, politicalParty) {
   return data;
 }
 
+// ── Continue as guest ─────────────────────────────────────────────────────────
+// A ready-made account for one party ('congress' | 'samajwadi'). The browser
+// keeps a random device id, so the same device and party get the same guest
+// account back rather than a new one on every visit.
+const GUEST_DEVICE_KEY = 'ambedkargpt_guest_device';
+
+function guestDeviceId() {
+  try {
+    let id = localStorage.getItem(GUEST_DEVICE_KEY);
+    if (!id) {
+      id = (crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/[^A-Za-z0-9_-]/g, '');
+      localStorage.setItem(GUEST_DEVICE_KEY, id);
+    }
+    return id;
+  } catch {
+    // Storage blocked: a fresh id each time. The server still limits how many
+    // guest accounts one network can make in a day.
+    return `${Date.now()}${Math.random().toString(36).slice(2)}`.replace(/[^A-Za-z0-9_-]/g, '');
+  }
+}
+
+export async function guestLogin(party) {
+  const { data } = await axios.post(`${BASE_URL}/auth/guest`, { party, device_id: guestDeviceId() });
+  if (data.tokens) {
+    saveTokens(data.tokens);
+    saveUser(data.user);
+  }
+  return data;
+}
+
 // ── Resend OTP ────────────────────────────────────────────────────────────────
 export async function resendOtp({ target, channel, purpose }) {
   const { data } = await axios.post(`${BASE_URL}/auth/resend-otp`, { target, channel, purpose });

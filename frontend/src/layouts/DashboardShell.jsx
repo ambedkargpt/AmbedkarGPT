@@ -35,7 +35,7 @@ const ACTIVE_BY_PATH = {
 
 export default function DashboardShell({ children, background, active: activeProp }) {
   const { logout, currentUser } = useAuth();
-  const { lang } = useI18n();
+  const { t, lang } = useI18n();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -79,7 +79,7 @@ export default function DashboardShell({ children, background, active: activePro
         <Sidebar
           wide
           user={{
-            name: currentUser?.full_name || currentUser?.username || '—',
+            name: currentUser?.is_guest ? t('guest.name') : (currentUser?.full_name || currentUser?.username || '—'),
             sub: labelForId(currentUser?.party_position || '', currentUser?.political_party || '', lang) || currentUser?.email || '',
             initial: (currentUser?.full_name || currentUser?.username || 'A')[0].toUpperCase(),
           }}

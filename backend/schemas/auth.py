@@ -79,6 +79,14 @@ class GoogleLoginRequest(BaseModel):
     political_party: Optional[str] = None
 
 
+class GuestLoginRequest(BaseModel):
+    # Which party the guest writes for. Only the two the guest buttons offer.
+    party: Literal["congress", "samajwadi"]
+    # A random id the browser keeps, so the same device and party get the
+    # same guest account back instead of a new one on every visit.
+    device_id: str = Field(min_length=8, max_length=64, pattern=r"^[A-Za-z0-9_-]+$")
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str
 
@@ -102,6 +110,8 @@ class UserPublic(BaseModel):
     is_phone_verified: bool
     auth_providers: list[str]
     created_at: datetime
+    # A guest account ("Continue as guest"): the app shows it as a guest.
+    is_guest: bool = False
 
 
 class UpdateProfileRequest(BaseModel):

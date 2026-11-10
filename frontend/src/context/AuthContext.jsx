@@ -132,6 +132,16 @@ export function AuthProvider({ children }) {
     return data;
   }
 
+  // ── Continue as guest ──────────────────────────────────────────────────────
+  async function loginAsGuest(party) {
+    const data = await authApi.guestLogin(party);
+    if (data?.user) {
+      setCurrentUser(data.user);
+      trackEvent('login', { method: 'guest', party });
+    }
+    return data;
+  }
+
   async function updateProfile(fields) {
     const user = await authApi.updateProfile(fields);
     if (user) setCurrentUser(user);
@@ -153,6 +163,7 @@ export function AuthProvider({ children }) {
       verifyOtp,
       loginWithEmail,
       loginWithGoogle,
+      loginAsGuest,
       updateProfile,
       logout,
     }}>

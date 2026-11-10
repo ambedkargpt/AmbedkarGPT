@@ -286,6 +286,16 @@ class AuthService:
         session.is_new_user = is_new_user
         return session
 
+    def guest_login(self, party: str, device_id: str, ip: str) -> AuthResponse:
+        """Sign in as a guest of this party (see services/guest_service.py)."""
+        from backend.repositories.profile_answers_repo import ProfileAnswersRepository
+        from backend.services.guest_service import GuestService
+
+        user = GuestService(self.users_repo.collection, ProfileAnswersRepository()).find_or_create(
+            party, device_id, ip
+        )
+        return self._issue_session(user)
+
     def refresh(self, refresh_token: str) -> AuthResponse:
         session_doc = self.sessions_repo.find_active_by_refresh(refresh_token)
         if not session_doc:
@@ -454,6 +464,7 @@ class AuthService:
             is_phone_verified=bool(user.get("is_phone_verified")),
             auth_providers=user.get("auth_providers", []),
             created_at=user["created_at"],
+            is_guest=bool(user.get("is_guest")),
         )
 
     def _build_auth_response(
