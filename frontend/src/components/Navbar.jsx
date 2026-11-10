@@ -176,7 +176,13 @@ export default function Navbar() {
         </Link>
 
         {/* ── Desktop nav ──────────────────────── */}
-        <nav className="hidden items-center gap-7 font-count text-[13px] font-medium tracking-[0.1em] lg:flex">
+        {/* The full row starts at xl (1280px), with the menu button below it.
+            From lg (1024px) the six English labels did not fit: they broke
+            onto two lines up to about 1366px and pushed Log In and Get Started
+            off the screen below about 1200px, and a seventh item (the
+            Manusmriti trial) made it worse. Labels never wrap; the spacing is
+            tight until 2xl, where there is room for the old gap-7. */}
+        <nav className="hidden items-center gap-0.5 font-count text-[13px] font-medium tracking-[0.1em] xl:flex 2xl:gap-7 [&>button]:whitespace-nowrap [&>button]:px-2.5 2xl:[&>button]:px-3">
           {navItems.map((item) => {
             const isActive = current === item.sectionId;
             return (
@@ -209,7 +215,7 @@ export default function Navbar() {
             onClick={() => setMenuOpen((o) => !o)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
-            className="order-last flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/80 transition hover:border-white/30 hover:text-white sm:h-9 sm:w-9 lg:hidden"
+            className="order-last flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-white/80 transition hover:border-white/30 hover:text-white sm:h-9 sm:w-9 xl:hidden"
           >
             {menuOpen
               ? <X    size={16} strokeWidth={1.8} />
@@ -237,7 +243,7 @@ export default function Navbar() {
       {/* ── Mobile dropdown menu ─────────────── */}
       {menuOpen && (
         <div
-          className="absolute inset-x-0 top-full z-10 max-h-[calc(100dvh-72px)] overflow-y-auto border-b border-[#1a2c55]/50 bg-[#050814] lg:hidden"
+          className="absolute inset-x-0 top-full z-10 max-h-[calc(100dvh-72px)] overflow-y-auto border-b border-[#1a2c55]/50 bg-[#050814] xl:hidden"
           style={{ animation: 'nav-dropdown 160ms ease-out both' }}
         >
           <nav className="mx-auto w-full max-w-[1440px] px-4 py-2">
