@@ -1,7 +1,7 @@
 {
  "version": 2,
- "generated": "2026-11-09T21:09:46+00:00",
- "translation": null,
+ "generated": "2026-11-10T10:40:10+00:00",
+ "translation": "Georg Bühler, The Laws of Manu (Sacred Books of the East, vol. 25, 1886)",
  "topics": [
   {
    "id": "punishment_by_caste",
@@ -100,7 +100,7 @@
     "8.268"
    ],
    "pattern": "asymmetry",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "d212d9a6",
@@ -117,7 +117,7 @@
     "8.268"
    ],
    "pattern": "reverse_the_roles",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "86f4f568",
@@ -133,7 +133,7 @@
     "8.270"
    ],
    "pattern": "scene_hook",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "ba46f48c",
@@ -150,7 +150,7 @@
     "8.272"
    ],
    "pattern": "scene_hook",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "a7ccad9a",
@@ -166,7 +166,7 @@
     "8.279"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "fdcb695a",
@@ -182,7 +182,7 @@
     "8.281"
    ],
    "pattern": "scene_hook",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "75b82021",
@@ -198,7 +198,7 @@
     "1.91"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "eee29421",
@@ -214,7 +214,7 @@
     "8.413"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "1e1f3e4d",
@@ -230,7 +230,7 @@
     "8.414"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "7541132f",
@@ -249,7 +249,7 @@
     "8.413"
    ],
    "pattern": "thread",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "cb9b092a",
@@ -268,7 +268,7 @@
     "10.123"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "2844da43",
@@ -284,7 +284,7 @@
     "2.32"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "4fcd1115",
@@ -300,7 +300,7 @@
     "8.21"
    ],
    "pattern": "scene_hook",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "69b46b8d",
@@ -316,7 +316,7 @@
     "1.100"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "2696e86c",
@@ -332,7 +332,7 @@
     "8.379"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "ea08389c",
@@ -349,7 +349,7 @@
     "8.380"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "f7f617cf",
@@ -365,7 +365,7 @@
     "5.148"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "738c8eb9",
@@ -381,7 +381,7 @@
     "9.2"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "a3a3e953",
@@ -397,7 +397,7 @@
     "5.154"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "08a5a33a",
@@ -413,7 +413,7 @@
     "5.155"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "2ed259a5",
@@ -429,7 +429,7 @@
     "9.17"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "ca6b6b2e",
@@ -445,7 +445,7 @@
     "9.18"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "69963717",
@@ -461,7 +461,7 @@
     "10.1"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "aee674c5",
@@ -477,7 +477,7 @@
     "4.80"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "b3be4297",
@@ -493,7 +493,7 @@
     "4.99"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "34fc8108",
@@ -509,7 +509,7 @@
     "10.129"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "77c24974",
@@ -525,7 +525,7 @@
     "8.417"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "90edf483",
@@ -541,7 +541,7 @@
     "8.416"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "0136b454",
@@ -557,7 +557,7 @@
     "8.37"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "5b622fde",
@@ -575,7 +575,7 @@
     "10.54"
    ],
    "pattern": "verse_stack",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "fdea1306",
@@ -592,7 +592,7 @@
     "10.55"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "fe3185eb",
@@ -608,7 +608,7 @@
     "8.113"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "17385058",
@@ -625,7 +625,7 @@
     "8.88"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "1229d89b",
@@ -642,7 +642,7 @@
     "9.151"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "id": "fecc30b3",
@@ -658,41 +658,41 @@
     "9.155"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   },
   {
-   "id": "f0e48457",
+   "id": "43d31b79",
    "topic": "penance_for_killing",
    "headline": "A life priced by class",
-   "says": "These are penances a Brahmana performs for killing. For a Kshatriya, if he does it “unintentionally”, he gives “one thousand cows and a bull” (11.127). For “a virtuous Vaisya” he performs the penance for a year, or gives “one hundred cows and one (bull)” (11.129). For a Sudra it is “six months”, or “ten white cows and one bull to a Brahmana” (11.130).",
-   "critique": "Line the three verses up. A Kshatriya's life is answered with a thousand cows and a bull, a Vaisya's with a hundred cows and a bull, a Sudra's with ten cows and a bull, or with six months of penance. The act is the same, a Brahmana taking a life, and the price falls tenfold with each step down. Whatever a life is worth, the text sets its value by class. And in the Sudra's case the verse says the cows go to a Brahmana, not to the family of the person killed.",
+   "says": "These are penances a Brahmana performs for killing. For a Kshatriya, if he does it “unintentionally”, he gives “one thousand cows and a bull” (11.128). For “a virtuous Vaisya” he performs the penance for a year, or gives “one hundred cows and one (bull)” (11.130). For a Sudra it is “six months”, or “ten white cows and one bull to a Brahmana” (11.131).",
+   "critique": "Line the three verses up. A Kshatriya's life is answered with a thousand cows and a bull, a Vaisya's with a hundred cows and a bull, a Sudra's with ten cows and a bull, or with six months of penance. In each, a Brahmana has taken a life; the verses add only “unintentionally” for the Kshatriya and “virtuous” for the Vaisya, and the price falls tenfold with each step down. Whatever a life is worth, the text sets its value by class. And in the Sudra's case the verse says the cows go to a Brahmana, not to the family of the person killed.",
    "fair_note": null,
    "parts": [
-    "The penance for slaying a Sudra.\n\nManusmriti 11.130: \"He who has slain a Sudra, shall perform that whole penance during six months, or he may also give ten white cows and one bull to a Brahmana.\"\n\nTen cows and a bull as penance for a human life?"
+    "The penance for slaying a Sudra.\n\nManusmriti 11.131: \"He who has slain a Sudra, shall perform that whole penance during six months, or he may also give ten white cows and one bull to a Brahmana.\"\n\nTen cows and a bull as penance for a human life?"
    ],
    "verses": [
-    "11.127",
-    "11.129",
-    "11.130"
+    "11.128",
+    "11.130",
+    "11.131"
    ],
    "pattern": "plain_rule",
-   "reviewed": false
+   "reviewed": true
   },
   {
-   "id": "3b405cc3",
+   "id": "b3109c24",
    "topic": "penance_for_killing",
    "headline": "The same penance for a crow as for a Sudra",
    "says": "For killing “a cat, an ichneumon, a blue jay, a frog, a dog, an iguana, an owl, or a crow”, the verse prescribes “the penance for the murder of a Sudra.”",
    "critique": "The verse does not say the penances are similar; it says the penance for killing these animals is the one for the murder of a Sudra. It can be read either way, as raising the animals or lowering the man, and on either reading a human life is being measured against a cat or a crow. A text that sets the killing of a Sudra beside the killing of a frog has shown how little it counts that life for.",
    "fair_note": null,
    "parts": [
-    "\"Having killed a cat, an ichneumon, a blue jay, a frog, a dog, an iguana, an owl, or a crow, he shall perform the penance for the murder of a Sudra;\"\n\nThat is Manusmriti 11.131.\n\nThe same penance for a crow as for a Sudra's life."
+    "\"Having killed a cat, an ichneumon, a blue jay, a frog, a dog, an iguana, an owl, or a crow, he shall perform the penance for the murder of a Sudra;\"\n\nThat is Manusmriti 11.132.\n\nThe same penance for a crow as for a Sudra's life."
    ],
    "verses": [
-    "11.131"
+    "11.132"
    ],
    "pattern": "quote_first",
-   "reviewed": false
+   "reviewed": true
   }
  ],
  "verses": {
@@ -906,25 +906,25 @@
    "chapter": 10,
    "verse": 129
   },
-  "11.127": {
+  "11.128": {
    "text": "But if a Brahmana unintentionally kills a Kshatriya, he shall give, in order to purify himself, one thousand cows and a bull;",
    "chapter": 11,
-   "verse": 127
-  },
-  "11.129": {
-   "text": "A Brahmana who has slain a virtuous Vaisya, shall perform the same penance during one year, or he may give one hundred cows and one (bull).",
-   "chapter": 11,
-   "verse": 129
+   "verse": 128
   },
   "11.130": {
-   "text": "He who has slain a Sudra, shall perform that whole penance during six months, or he may also give ten white cows and one bull to a Brahmana.",
+   "text": "A Brahmana who has slain a virtuous Vaisya, shall perform the same penance during one year, or he may give one hundred cows and one (bull).",
    "chapter": 11,
    "verse": 130
   },
   "11.131": {
-   "text": "Having killed a cat, an ichneumon, a blue jay, a frog, a dog, an iguana, an owl, or a crow, he shall perform the penance for the murder of a Sudra;",
+   "text": "He who has slain a Sudra, shall perform that whole penance during six months, or he may also give ten white cows and one bull to a Brahmana.",
    "chapter": 11,
    "verse": 131
+  },
+  "11.132": {
+   "text": "Having killed a cat, an ichneumon, a blue jay, a frog, a dog, an iguana, an owl, or a crow, he shall perform the penance for the murder of a Sudra;",
+   "chapter": 11,
+   "verse": 132
   }
  }
 }

@@ -1,5 +1,5 @@
 {
- "translation": null,
+ "translation": "Georg Bühler, The Laws of Manu (Sacred Books of the East, vol. 25, 1886)",
  "topics": [
   {
    "id": "punishment_by_caste",
@@ -88,7 +88,7 @@
    ],
    "pattern": "asymmetry",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "punishment_by_caste",
@@ -104,7 +104,7 @@
    ],
    "pattern": "reverse_the_roles",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "punishment_by_caste",
@@ -119,7 +119,7 @@
    ],
    "pattern": "scene_hook",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "punishment_by_caste",
@@ -136,7 +136,7 @@
    ],
    "pattern": "scene_hook",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "punishment_by_caste",
@@ -151,7 +151,7 @@
    ],
    "pattern": "quote_first",
    "source": "generated 20261109-204107-single #1",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "punishment_by_caste",
@@ -166,7 +166,7 @@
    ],
    "pattern": "scene_hook",
    "source": "generated 20261109-204107-single #2",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "rules_for_sudras",
@@ -181,7 +181,7 @@
    ],
    "pattern": "plain_rule",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "rules_for_sudras",
@@ -196,7 +196,7 @@
    ],
    "pattern": "plain_rule",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "rules_for_sudras",
@@ -211,7 +211,7 @@
    ],
    "pattern": "quote_first",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "rules_for_sudras",
@@ -229,7 +229,7 @@
    ],
    "pattern": "thread",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "rules_for_sudras",
@@ -248,7 +248,7 @@
    ],
    "pattern": "plain_rule",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "rules_for_sudras",
@@ -263,7 +263,7 @@
    ],
    "pattern": "quote_first",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "rules_for_sudras",
@@ -278,7 +278,7 @@
    ],
    "pattern": "scene_hook",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "brahmana_above_the_law",
@@ -293,7 +293,7 @@
    ],
    "pattern": "quote_first",
    "source": "generated 20261109-204106-single #1",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "brahmana_above_the_law",
@@ -308,7 +308,7 @@
    ],
    "pattern": "plain_rule",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "brahmana_above_the_law",
@@ -325,7 +325,7 @@
    ],
    "pattern": "quote_first",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "women_and_independence",
@@ -340,7 +340,7 @@
    ],
    "pattern": "plain_rule",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "women_and_independence",
@@ -355,7 +355,7 @@
    ],
    "pattern": "plain_rule",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "women_and_independence",
@@ -370,7 +370,7 @@
    ],
    "pattern": "quote_first",
    "source": "generated 20261109-204120-single #1",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "women_and_independence",
@@ -385,7 +385,7 @@
    ],
    "pattern": "plain_rule",
    "source": "generated 20261109-204120-single #2",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "women_and_independence",
@@ -400,7 +400,7 @@
    ],
    "pattern": "quote_first",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "women_and_independence",
@@ -415,7 +415,7 @@
    ],
    "pattern": "plain_rule",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "learning_and_the_veda",
@@ -430,7 +430,7 @@
    ],
    "pattern": "plain_rule",
    "source": "generated 20261109-204043-single #1",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "learning_and_the_veda",
@@ -446,7 +446,7 @@
    ],
    "pattern": "quote_first",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "learning_and_the_veda",
@@ -461,7 +461,7 @@
    ],
    "pattern": "plain_rule",
    "source": "generated 20261109-204043-single #3",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "wealth_and_property",
@@ -476,7 +476,7 @@
    ],
    "pattern": "quote_first",
    "source": "curated on 4 Nov (generated or hand-edited), fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "wealth_and_property",
@@ -491,7 +491,7 @@
    ],
    "pattern": "quote_first",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "wealth_and_property",
@@ -506,7 +506,7 @@
    ],
    "pattern": "quote_first",
    "source": "generated 20261109-204042-single #1",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "wealth_and_property",
@@ -522,7 +522,7 @@
    ],
    "pattern": "quote_first",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "kandalas_and_svapakas",
@@ -539,7 +539,7 @@
    ],
    "pattern": "verse_stack",
    "source": "generated 20261109-204027-single #1",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "kandalas_and_svapakas",
@@ -555,7 +555,7 @@
    ],
    "pattern": "plain_rule",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "courts_and_oaths",
@@ -570,7 +570,7 @@
    ],
    "pattern": "plain_rule",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "courts_and_oaths",
@@ -586,7 +586,7 @@
    ],
    "pattern": "plain_rule",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "inheritance",
@@ -603,7 +603,7 @@
    ],
    "pattern": "plain_rule",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "inheritance",
@@ -618,24 +618,24 @@
    ],
    "pattern": "quote_first",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "penance_for_killing",
    "headline": "A life priced by class",
-   "says": "These are penances a Brahmana performs for killing. For a Kshatriya, if he does it “unintentionally”, he gives “one thousand cows and a bull” (11.127). For “a virtuous Vaisya” he performs the penance for a year, or gives “one hundred cows and one (bull)” (11.129). For a Sudra it is “six months”, or “ten white cows and one bull to a Brahmana” (11.130).",
-   "critique": "Line the three verses up. A Kshatriya's life is answered with a thousand cows and a bull, a Vaisya's with a hundred cows and a bull, a Sudra's with ten cows and a bull, or with six months of penance. The act is the same, a Brahmana taking a life, and the price falls tenfold with each step down. Whatever a life is worth, the text sets its value by class. And in the Sudra's case the verse says the cows go to a Brahmana, not to the family of the person killed.",
+   "says": "These are penances a Brahmana performs for killing. For a Kshatriya, if he does it “unintentionally”, he gives “one thousand cows and a bull” (11.128). For “a virtuous Vaisya” he performs the penance for a year, or gives “one hundred cows and one (bull)” (11.130). For a Sudra it is “six months”, or “ten white cows and one bull to a Brahmana” (11.131).",
+   "critique": "Line the three verses up. A Kshatriya's life is answered with a thousand cows and a bull, a Vaisya's with a hundred cows and a bull, a Sudra's with ten cows and a bull, or with six months of penance. In each, a Brahmana has taken a life; the verses add only “unintentionally” for the Kshatriya and “virtuous” for the Vaisya, and the price falls tenfold with each step down. Whatever a life is worth, the text sets its value by class. And in the Sudra's case the verse says the cows go to a Brahmana, not to the family of the person killed.",
    "parts": [
-    "The penance for slaying a Sudra.\n\nManusmriti 11.130: \"He who has slain a Sudra, shall perform that whole penance during six months, or he may also give ten white cows and one bull to a Brahmana.\"\n\nTen cows and a bull as penance for a human life?"
+    "The penance for slaying a Sudra.\n\nManusmriti 11.131: \"He who has slain a Sudra, shall perform that whole penance during six months, or he may also give ten white cows and one bull to a Brahmana.\"\n\nTen cows and a bull as penance for a human life?"
    ],
    "verses": [
-    "11.127",
-    "11.129",
-    "11.130"
+    "11.128",
+    "11.130",
+    "11.131"
    ],
    "pattern": "plain_rule",
    "source": "generated 20261109-204033-single #3",
-   "reviewed": false
+   "reviewed": true
   },
   {
    "topic": "penance_for_killing",
@@ -643,14 +643,14 @@
    "says": "For killing “a cat, an ichneumon, a blue jay, a frog, a dog, an iguana, an owl, or a crow”, the verse prescribes “the penance for the murder of a Sudra.”",
    "critique": "The verse does not say the penances are similar; it says the penance for killing these animals is the one for the murder of a Sudra. It can be read either way, as raising the animals or lowering the man, and on either reading a human life is being measured against a cat or a crow. A text that sets the killing of a Sudra beside the killing of a frog has shown how little it counts that life for.",
    "parts": [
-    "\"Having killed a cat, an ichneumon, a blue jay, a frog, a dog, an iguana, an owl, or a crow, he shall perform the penance for the murder of a Sudra;\"\n\nThat is Manusmriti 11.131.\n\nThe same penance for a crow as for a Sudra's life."
+    "\"Having killed a cat, an ichneumon, a blue jay, a frog, a dog, an iguana, an owl, or a crow, he shall perform the penance for the murder of a Sudra;\"\n\nThat is Manusmriti 11.132.\n\nThe same penance for a crow as for a Sudra's life."
    ],
    "verses": [
-    "11.131"
+    "11.132"
    ],
    "pattern": "quote_first",
    "source": "hand-written, then fact-checked",
-   "reviewed": false
+   "reviewed": true
   }
  ]
 }

@@ -115,7 +115,7 @@ who "he" is, was cited too. Treat a single "approved" as a good sign, not a proo
 
 | I want to… | do this |
 |---|---|
-| use another book or translation | `tools/ingest_book.py <pdf>`. It splits on verse numbers and reports gaps; chapter counts are compared with `EXPECTED_COUNTS` (this PDF ends chapter 11 at 11.265, documented there). Tests that compare example posts with the real text re-check them. |
+| use another book or translation | `tools/ingest_book.py <pdf>`. It splits on verse numbers and reports gaps; chapter counts are compared with `EXPECTED_COUNTS` (2,685 verses). Verse numbers follow the standard numbering (Bühler's translation and the usual Sanskrit editions): the supplied PDF labels one verse `11.51a`, so its later chapter-11 labels are one lower than every other edition's, and the tool corrects that (a verse labelled with a letter is its own verse). Tests that compare example posts with the real text re-check them. |
 | change how posts sound | edit `analysis/playbook.json` (structures, hooks, closers, `must`, `must_not`) and run `tools/render_playbook.py`. `generate.load_playbook()` merges it over a built-in default and prints its version. |
 | change what is forbidden | `verify.py`: `BLOCKED_PATTERNS`, `STRONG_WORDS`, `OUTSIDE_FACTS`, `PATTERN_MIN_VERSES`. Each has a test in `backend/tests/test_manusmriti_trial_verify.py`. |
 | allow an outside fact (Ambedkar's burning of the text, a constitutional article) | put it, as one sentence, in `sources/approved_context.json` (a JSON list of strings). Only facts listed there pass the outside-fact check, and the playbook's `needs_approved_context` says which of the videos' methods this enables. |
@@ -215,7 +215,7 @@ translation and put its name in `picks.json` (`"translation"`; the page shows it
   and "Sudra"); that is the right direction to err in, but it makes `needs_review` common.
 * The videos' strongest moves (Ambedkar, the Constitution, today's incidents) are outside the book and so
   off by default (§4, outside facts).
-* The Manusmriti PDF has no translator; Bühler's translation is likely but not confirmed.
+* The Manusmriti PDF names no translator. Its English is Georg Bühler's 1886 translation (Sacred Books of the East, vol. 25): about 40 verses from eight chapters were compared with a published transcription of it (sixteen of them in full, the rest by their opening words), and all agreed. The PDF strips the diacritics (Sudra for Śūdra) and numbers chapter 11 one lower from 11.51a on (see §4).
 
 ## 9. Tests
 

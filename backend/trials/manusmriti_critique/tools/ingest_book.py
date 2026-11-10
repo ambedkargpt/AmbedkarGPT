@@ -33,15 +33,18 @@ HEADING_SIZE = 13.0            # "Chapter 8" headings are 14 pt; verses are 12 p
 VERSES_FILE = config.SOURCES_DIR / "manusmriti_verses.json"
 REPORT_FILE = config.SOURCES_DIR / "ingest_report.json"
 
-# Verses per chapter in the standard numbering (12 chapters). A supplied edition that differs is not
-# wrong, but the difference is shown so it can be looked at. Chapter 11 is 265 here although some
-# numberings give 266: in the supplied PDF the chapter ends at 11.265 (the Sanskrit line above it
-# carries the same number, and chapter 12 starts on the next page), so 2,684 verses in all.
-EXPECTED_COUNTS = {1: 119, 2: 249, 3: 286, 4: 260, 5: 169, 6: 97, 7: 226, 8: 420, 9: 336, 10: 131, 11: 265, 12: 126}
+# Verses per chapter in the standard numbering (12 chapters, 2,685 verses: Bühler's translation and the usual
+# Sanskrit editions agree). A supplied edition that differs is not wrong, but the difference is shown so it can be
+# looked at.
+EXPECTED_COUNTS = {1: 119, 2: 249, 3: 286, 4: 260, 5: 169, 6: 97, 7: 226, 8: 420, 9: 336, 10: 131, 11: 266, 12: 126}
 
 # The full stop after the number is optional because the supplied PDF drops it in places ("1.39 (Horse-faced)").
 # That is safe: a number is only accepted when it is the next one in sequence (see parse()).
-VERSE_MARK = re.compile(r"(?:(?<=\s)|^)(\d{1,2})\.(\d{1,3})\.?(?=\s)")
+# A letter after the number marks a verse the PDF calls "11.51a" (with the note "Sanskrit missing" in the Sanskrit
+# slot): it is a verse of its own, which the standard numbering counts as 11.52, so the PDF's labels after it are
+# one lower than every other edition's. parse() gives such a verse its own entry and raises the labels after it.
+VERSE_MARK = re.compile(r"(?:(?<=\s)|^)(\d{1,2})\.(\d{1,3})([a-z])?\.?(?=\s)")
+SANSKRIT_NOTE = re.compile(r"^Sanskrit missing\s+\d{1,2}\.\d{1,3}[a-z]\.?\s*")
 CHAPTER_MARK = re.compile(r"^\s*Chapter\s+(\d{1,2})\s*$")
 
 
@@ -89,27 +92,43 @@ def parse(pages: List[Tuple[int, List[str], List[int]]]) -> Tuple[List[Dict], Li
 
     problems: List[str] = []
     verses: List[Dict] = []
-    chapter, verse = 1, 1                      # the next number we expect
+    chapter, verse = 1, 1                      # the next number we expect (as the PDF labels it)
     marks = list(VERSE_MARK.finditer(text))
-    accepted = []                              # (match, chapter, verse)
+    accepted = []                              # (match, chapter, number in the standard numbering)
     skipped_numbers = 0
+    shift: Dict[int, int] = {}                 # lettered verses ("11.51a") seen so far in each chapter
+    last_lettered = None                       # the PDF prints such a label twice ("11.51a Sanskrit missing 11.51a.")
     for m in marks:
-        c, v = int(m.group(1)), int(m.group(2))
+        c, v, letter = int(m.group(1)), int(m.group(2)), m.group(3)
+        if letter:
+            if (c, v, letter) == last_lettered:
+                continue                       # its second printing: the same verse
+            if letter == "a" and c == chapter and v == verse - 1:
+                shift[c] = shift.get(c, 0) + 1
+                accepted.append((m, c, v + shift[c]))
+                last_lettered = (c, v, letter)
+                problems.append(f"note: {c}.{v}{letter} is a verse of its own; it is {c}.{v + shift[c]} in the standard numbering, "
+                                f"so the labels after it in chapter {c} were raised by one")
+            else:
+                skipped_numbers += 1
+            continue
         if (c, v) == (chapter, verse):
-            accepted.append((m, c, v))
+            accepted.append((m, c, v + shift.get(c, 0)))
             verse += 1
         elif c == chapter + 1 and v == 1:      # a new chapter begins
             accepted.append((m, c, v))
             chapter, verse = c, 2
         elif c == chapter and v > verse and v - verse <= 3:
             problems.append(f"gap: expected {chapter}.{verse} but found {c}.{v} (verses {verse}-{v - 1} missing from the text)")
-            accepted.append((m, c, v))
+            accepted.append((m, c, v + shift.get(c, 0)))
             verse = v + 1
         else:
             skipped_numbers += 1               # a number-like string inside a sentence, e.g. a cross-reference
+            continue
+        last_lettered = None
     for i, (m, c, v) in enumerate(accepted):
         end = accepted[i + 1][0].start() if i + 1 < len(accepted) else len(text)
-        body = re.sub(r"\s+", " ", text[m.end():end]).strip()
+        body = SANSKRIT_NOTE.sub("", re.sub(r"\s+", " ", text[m.end():end]).strip())
         verses.append({"id": f"{c}.{v}", "chapter": c, "verse": v, "page": page_at(m.start()), "text": body})
     if skipped_numbers:
         problems.append(f"{skipped_numbers} number-like strings were not at the expected position and were left inside the verse text")
