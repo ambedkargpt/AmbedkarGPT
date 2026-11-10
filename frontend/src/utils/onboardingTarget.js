@@ -4,13 +4,14 @@ import { HOME_ROUTE } from '../data/features';
  * Where an account that is missing its profile is sent: the Settings page,
  * not a separate onboarding form.
  *
- * `step` is what usePendingQuestions / the server named: 'profile' (party and
- * role) lands on the Profile tab, anything else on "Your voice". `next` is
- * where to go once the profile is complete, so someone who tried to write a
- * post is put back on the news instead of being left in Settings.
+ * Always the Profile tab: it is where party and role are set, and the
+ * preference questions are no longer asked. `step` (what the server or
+ * usePendingQuestions named) is kept so callers do not change. `next` is where
+ * to go once the profile is complete, so someone who tried to write a post is
+ * put back on the news instead of being left in Settings.
  */
 export function settingsTarget(step, next = HOME_ROUTE) {
-  const params = new URLSearchParams({ tab: step === 'profile' ? 'profile' : 'voice' });
+  const params = new URLSearchParams({ tab: 'profile' });
   if (next) params.set('next', next);
   return `/settings?${params.toString()}`;
 }
