@@ -61,7 +61,7 @@ const NAMES = { whatsapp: 'WhatsApp', reddit: 'Reddit', facebook: 'Facebook', tw
 
 // The share of the longest post each platform is written to, for the bars.
 const PLATFORMS = [
-  ['whatsapp', '#25d366', 1], ['reddit', '#ff4500', 0.9], ['facebook', '#1877f2', 0.65], ['twitter', '#e7e9ea', 0.18],
+  ['whatsapp', '#25d366', 1], ['facebook', '#1877f2', 0.65], ['twitter', '#e7e9ea', 0.18], ['reddit', '#ff4500', 0.9],
 ];
 
 function Visual({ index, c, seen }) {
