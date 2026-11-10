@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AtSign, Check, ChevronDown, Languages, Loader2, Lock, Settings as SettingsIcon, UserRound, Mic2,
 } from 'lucide-react';
@@ -13,6 +13,7 @@ import { ALL_POLITICAL_PARTIES, POLITICAL_PARTIES } from '../utils/politicalPart
 import { ROLE_GROUPS, groupForId, labelForId, roleLabel, rolesInGroup } from '../utils/partyRoles';
 import { INDIAN_STATES, CITIES_BY_STATE } from '../utils/indianStatesCities';
 import { partyLabel, levelLabel } from '../utils/displayLabel';
+import { safeNext } from '../utils/onboardingTarget';
 import Preferences from './Preferences';
 
 // Only an account that signed up by email lacks a phone; the phone field and
@@ -29,8 +30,10 @@ const PhoneField = lazy(() => import('../components/PhoneField'));
  *
  * Replaces the separate profile and preferences pages, which were two screens
  * for what people think of as one. /preferences and the sidebar's profile link
- * both arrive here. The onboarding form at /profile-setup stays as it is: a new
- * account is walked through it once and never sees it again.
+ * both arrive here, and so does an account that tried to write a post without
+ * a party: /profile-setup (the old onboarding form) is not used any more and
+ * redirects to the Profile tab. `?next=/path` says where to go once the profile
+ * is complete, so that person lands back on the news.
  */
 
 const TABS = [
@@ -124,6 +127,8 @@ function initialProfile(u) {
 function ProfileTab() {
   const { t, lang } = useI18n();
   const { currentUser, updateProfile } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [base, setBase] = useState(() => initialProfile(currentUser));
   const [form, setForm] = useState(base);
@@ -196,6 +201,12 @@ function ProfileTab() {
       setBase(form);
       setEditParty(false);
       setSavedAt(Date.now());
+      // Sent here to finish the profile before writing a post: once it can be
+      // written as somebody, go back to where they were.
+      const next = safeNext(searchParams.get('next'));
+      if (next && form.party && (form.position || !partyHasQuestions(form.party))) {
+        navigate(next, { replace: true });
+      }
     } catch (err) {
       const detail = String(err?.response?.data?.detail || err?.message || '').toLowerCase();
       if (detail.includes('username') && detail.includes('taken')) setErrors({ username: t('set.err.taken') });

@@ -848,6 +848,7 @@ export default {
   "onboard.stepProfile": "Your party and position",
   "onboard.stepPreferences": "Your post preferences",
   "onboard.backToDashboard": "Back to dashboard",
+  "onboard.skipToNews": "Skip for now, go to the news",
   "quest.skipDefaults": "Skip, use recommended answers",
   "quest.skipping": "Saving…",
   "quest.skipDefaultsHint": "Every question you have not answered gets its recommended answer. You can change them later in Preferences.",

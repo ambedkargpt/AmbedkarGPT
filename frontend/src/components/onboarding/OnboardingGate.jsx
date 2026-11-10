@@ -1,8 +1,11 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Lock, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 
 import { useAuth } from '../../context/AuthContext';
 import usePendingQuestions, { onboardingStep } from '../../hooks/usePendingQuestions';
+import { onboardingSkipped, skipOnboarding } from '../../utils/onboardingSkip';
+import { settingsTarget } from '../../utils/onboardingTarget';
 import { useI18n } from '../../i18n/index.jsx';
 
 /**
@@ -13,18 +16,23 @@ import { useI18n } from '../../i18n/index.jsx';
  * refuses the request anyway (403 onboarding_required) - so instead of letting
  * someone pick a story and then fail, the page says what is missing first.
  * Everything else in the app stays open.
+ *
+ * "Skip for now" (here, or on the sign-up and profile screens) opens the news
+ * anyway: reading needs no party. Writing a post still does, and the
+ * generator sends them to the profile screen when they try.
  */
 export default function OnboardingGate({ children }) {
   const { t } = useI18n();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { pending, checked } = usePendingQuestions(currentUser?.id);
+  const [skipped, setSkipped] = useState(() => onboardingSkipped(currentUser?.id));
   const step = checked ? onboardingStep(pending) : null;
-  if (!step) return children;
+  if (!step || skipped || onboardingSkipped(currentUser?.id)) return children;
 
   const steps = [
-    { key: 'profile', label: t('onboard.stepProfile'), done: step !== 'profile', to: '/profile-setup' },
-    { key: 'preferences', label: t('onboard.stepPreferences'), done: false, to: '/questionnaire' },
+    { key: 'profile', label: t('onboard.stepProfile'), done: step !== 'profile', to: settingsTarget('profile') },
+    { key: 'preferences', label: t('onboard.stepPreferences'), done: false, to: settingsTarget('preferences') },
   ];
   const next = steps.find((s) => !s.done);
 
@@ -66,6 +74,13 @@ export default function OnboardingGate({ children }) {
           {t(next.key === 'profile' ? 'onboard.setUpProfile' : 'onboard.answerPreferences')}
           <ArrowRight size={15} strokeWidth={2.2} />
         </Link>
+        <button
+          type="button"
+          onClick={() => { skipOnboarding(currentUser?.id); setSkipped(true); }}
+          className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#1e3260]/80 px-5 py-3 text-[14px] font-medium text-[#c5cde8] transition hover:border-[#3a6bc4]/70 hover:text-white"
+        >
+          {t('onboard.skipToNews')}
+        </button>
         <button
           type="button"
           onClick={() => navigate('/dashboard')}
