@@ -8,6 +8,7 @@ import AnimatedInput from '../components/AnimatedInput';
 import PasswordInput from '../components/PasswordInput';
 import PhoneField    from '../components/PhoneField';
 import PrimaryButton from '../components/PrimaryButton';
+import AuthSwitchLink from '../components/AuthSwitchLink';
 import GoogleButton  from '../components/GoogleButton';
 import LegalModal    from '../components/LegalModal';
 import { useI18n } from '../i18n/index.jsx';
@@ -133,7 +134,7 @@ export default function Signup() {
           />
           {/* Google skips the checkbox below, so the agreement is stated
               where that path starts instead. */}
-          <p className="-mt-1 text-center text-[11.5px] leading-relaxed" style={{ color: '#5a6e9a' }}>
+          <p className="-mt-1 text-center text-[13.5px] leading-relaxed" style={{ color: '#9fb0d6' }}>
             {t('auth.googleTerms')}{' '}
             <button type="button" onClick={() => setModal('privacy')} className="underline underline-offset-2 hover:opacity-80" style={{ color: '#6b8aff' }}>
               {t('landing.privacy')}
@@ -146,18 +147,18 @@ export default function Signup() {
 
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px" style={{ backgroundColor: '#2a3566' }} />
-            <span className="text-xs" style={{ color: '#8b94b8' }}>{t('auth.or')}</span>
+            <span className="text-[14px] font-medium" style={{ color: '#a9b6d8' }}>{t('auth.or')}</span>
             <div className="flex-1 h-px" style={{ backgroundColor: '#2a3566' }} />
           </div>
 
           {/* Email / Phone toggle */}
-          <div className="flex rounded-xl p-1" style={{ backgroundColor: '#0a1128', border: '1px solid #1e3260' }}>
+          <div className="flex rounded-xl p-1.5" style={{ backgroundColor: '#0a1128', border: '1px solid #2c4a8a' }}>
             {['email', 'phone'].map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => switchMode(m)}
-                className="flex-1 rounded-lg py-2 text-sm font-medium transition-all duration-200"
+                className="flex-1 rounded-lg py-3 text-[15px] font-semibold transition-all duration-200"
                 style={{
                   backgroundColor: mode === m ? '#1a2a5e' : 'transparent',
                   color: mode === m ? '#ffffff' : '#8b94b8',
@@ -206,9 +207,9 @@ export default function Signup() {
               type="checkbox"
               checked={termsAccepted}
               onChange={(e) => { setTermsAccepted(e.target.checked); setErrors((p) => ({ ...p, terms: '' })); }}
-              className="mt-0.5 w-4 h-4 rounded accent-blue-500 cursor-pointer shrink-0"
+              className="mt-0.5 h-5 w-5 rounded accent-blue-500 cursor-pointer shrink-0"
             />
-            <span className="text-xs leading-relaxed" style={{ color: '#8b94b8' }}>
+            <span className="text-[14px] leading-relaxed" style={{ color: '#b4c2e2' }}>
               {t('auth.signupTerms')}{' '}
               <button type="button" onClick={() => setModal('privacy')} className="underline underline-offset-2 hover:opacity-80 transition-opacity" style={{ color: '#6b8aff' }}>
                 {t('landing.privacy')}
@@ -226,12 +227,7 @@ export default function Signup() {
           </PrimaryButton>
         </form>
 
-        <p className="text-center text-sm" style={{ color: '#8b94b8' }}>
-          {t('auth.alreadyAccount')}{' '}
-          <Link to="/login" className="underline underline-offset-2 hover:opacity-80 transition-opacity font-medium" style={{ color: '#6b8aff' }}>
-            {t('auth.login')}
-          </Link>
-        </p>
+        <AuthSwitchLink to="/login" prompt={t('auth.alreadyAccount')} label={t('auth.login')} />
       </div>
       {modal && <LegalModal type={modal} onClose={() => setModal(null)} />}
     </AuthLayout>

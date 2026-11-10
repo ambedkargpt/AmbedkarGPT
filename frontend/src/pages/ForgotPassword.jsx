@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { friendlyError } from '../context/AuthContext';
 import AuthLayout    from '../components/AuthLayout';
 import AnimatedInput from '../components/AnimatedInput';
 import PrimaryButton from '../components/PrimaryButton';
+import AuthSwitchLink from '../components/AuthSwitchLink';
 import GoogleButton  from '../components/GoogleButton';
 import { useAuth }   from '../context/AuthContext';
 import { useCurtain } from '../context/CurtainContext';
@@ -116,12 +117,7 @@ export default function ForgotPassword() {
           </form>
         )}
 
-        <p className="text-center text-sm" style={{ color: '#8b94b8' }}>
-          {t('auth.rememberPwd')}{' '}
-          <Link to="/login" className="underline underline-offset-2 hover:opacity-80 transition-opacity font-medium" style={{ color: '#6b8aff' }}>
-            {t('auth.backToLogin')}
-          </Link>
-        </p>
+        <AuthSwitchLink to="/login" prompt={t('auth.rememberPwd')} label={t('auth.backToLogin')} />
       </div>
     </AuthLayout>
   );
