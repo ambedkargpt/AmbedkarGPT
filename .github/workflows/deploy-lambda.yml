@@ -86,7 +86,15 @@ jobs:
       - name: Build Lambda image
         run: |
           IMAGE_URI="${{ secrets.ECR_REGISTRY }}/ambedkargpt-api"
-          docker build \
+          # One platform and no attestations: newer Docker on the runners
+          # pushes an image index with provenance/SBOM manifests by default,
+          # and Lambda refuses it ("image manifest ... media type ... is not
+          # supported"). This is what made the 12 Nov deploy fail.
+          docker buildx build \
+            --platform linux/amd64 \
+            --provenance=false \
+            --sbom=false \
+            --load \
             -f Dockerfile.lambda \
             -t "${IMAGE_URI}:latest" \
             -t "${IMAGE_URI}:${{ github.sha }}" \
