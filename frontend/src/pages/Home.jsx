@@ -3,6 +3,7 @@ import 'lenis/dist/lenis.css';
 
 import MainLayout from '../layouts/MainLayout';
 import useScrollAnimations from '../hooks/useScrollAnimations';
+import usePauseOffscreenAnimations from '../hooks/usePauseOffscreenAnimations';
 
 import LandingBackground   from '../components/landing/LandingBackground';
 import HeroSection         from '../components/landing/HeroSection';
@@ -20,6 +21,8 @@ export default function Home({ splashDone = true }) {
   // set up and torn down together: see hooks/useScrollAnimations.
   const rootRef = useRef(null);
   useScrollAnimations(rootRef);
+  // Decorative animations rest while they are more than a screen away.
+  usePauseOffscreenAnimations(rootRef);
 
   // support deep-linking to a section after navigating from another route
   useEffect(() => {

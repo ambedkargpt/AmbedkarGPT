@@ -1478,3 +1478,12 @@ html { scroll-behavior: smooth; }
   [data-card] { transition: none; }
   [data-card]:hover { transform: none; }
 }
+
+/* Set by hooks/usePauseOffscreenAnimations on a decorative element that is
+   more than a screen away, so its endless animation rests until it is near
+   again. It resumes from where it stopped. Never set on anything in view. */
+.anim-offscreen,
+.anim-offscreen::before,
+.anim-offscreen::after {
+  animation-play-state: paused !important;
+}
