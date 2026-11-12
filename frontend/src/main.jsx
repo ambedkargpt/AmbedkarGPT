@@ -17,6 +17,7 @@ import { DEFAULT_LANGUAGE } from './i18n/index.jsx'
 import { purgeLegacySession } from './api/sessionStore.js'
 import { startErrorReporting } from './utils/errorReporter.js'
 import { sendVisitBeacon } from './analytics/visitBeacon.js'
+import { prefetchRoutes } from './utils/prefetchRoutes.js'
 
 // Send browser errors to the admin Errors page (production builds only).
 startErrorReporting()
@@ -29,6 +30,9 @@ purgeLegacySession()
 
 // One visit per tab, for the twice-daily activity report.
 sendVisitBeacon()
+
+// Fetch the next pages' code while idle, so opening them does not wait.
+prefetchRoutes()
 
 // Stamp lang before first render so the Devanagari font rules fire immediately.
 // Falls back to the default rather than leaving it unset: the interface is
