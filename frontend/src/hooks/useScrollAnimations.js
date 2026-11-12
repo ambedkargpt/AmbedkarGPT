@@ -109,8 +109,14 @@ export default function useScrollAnimations(rootRef) {
         });
       });
 
+      // The three effects below follow the scroll frame by frame (scrub). On a
+      // phone the page is scrolled by the browser itself, not by Lenis, so
+      // these arrive a frame late and the page looks choppy. A phone skips
+      // them and keeps everything in its normal place; desktop is unchanged.
+      const scrubbed = !coarse;
+
       // ── Background glow layers drift slower than the page.
-      root.querySelectorAll('[data-parallax]').forEach((layer) => {
+      if (scrubbed) root.querySelectorAll('[data-parallax]').forEach((layer) => {
         const speed = Number(layer.dataset.parallax) || 0.12;
         gsap.to(layer, {
           y: () => ScrollTrigger.maxScroll(window) * speed,
@@ -122,7 +128,7 @@ export default function useScrollAnimations(rootRef) {
       // ── The hero image eases back as the hero scrolls away (scrubbed).
       const media = root.querySelector('[data-hero-media]');
       const hero = root.querySelector('#home');
-      if (media && hero) {
+      if (scrubbed && media && hero) {
         gsap.to(media, {
           scale: 0.92, opacity: 0.8, ease: 'none', transformOrigin: '50% 30%',
           scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true },
@@ -131,7 +137,7 @@ export default function useScrollAnimations(rootRef) {
 
       // ── Sheets: a rounded panel rises over the section before it, growing
       //    to full size as it comes up (scrubbed).
-      root.querySelectorAll('[data-sheet]').forEach((sheet) => {
+      if (scrubbed) root.querySelectorAll('[data-sheet]').forEach((sheet) => {
         gsap.fromTo(sheet, { scale: 0.94, y: 60 }, {
           scale: 1, y: 0, ease: 'none', transformOrigin: '50% 0%',
           scrollTrigger: { trigger: sheet, start: 'top bottom', end: 'top 25%', scrub: true },
