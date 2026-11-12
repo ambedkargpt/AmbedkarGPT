@@ -23,6 +23,7 @@ from backend.schemas.auth import (
     VerifyOtpRequest,
 )
 from backend.schemas.common import ErrorResponse
+from backend.services.activity_service import record_session
 from backend.services.auth_service import AuthService
 
 
@@ -75,13 +76,17 @@ def verify_otp(payload: VerifyOtpRequest, request: Request) -> AuthResponse:
         otp_code=payload.otp_code.strip(),
         purpose=payload.purpose,
     )
+    # A verified sign-up code ends a sign-up; a login code, a login.
+    record_session("signup" if payload.purpose == "signup_verify" else "login", request, result)
     return result
 
 
 @router.post("/login", response_model=AuthResponse, responses={401: {"model": ErrorResponse}})
 def login(payload: LoginRequest, request: Request) -> AuthResponse:
     _check_rate_limit(request.client.host if request.client else "unknown", "login")
-    return service.login(identifier=payload.identifier.strip(), password=payload.password)
+    result = service.login(identifier=payload.identifier.strip(), password=payload.password)
+    record_session("login", request, result)
+    return result
 
 
 @router.post("/forgot-password", response_model=ForgotPasswordResponse, responses={400: {"model": ErrorResponse}, 404: {"model": ErrorResponse}})
@@ -118,8 +123,10 @@ def resend_otp(payload: ResendOtpRequest, request: Request) -> ResendOtpResponse
 
 
 @router.post("/google-login", response_model=AuthResponse, responses={400: {"model": ErrorResponse}, 401: {"model": ErrorResponse}})
-def google_login(payload: GoogleLoginRequest) -> AuthResponse:
-    return service.google_login(payload.access_token, payload.political_party)
+def google_login(payload: GoogleLoginRequest, request: Request) -> AuthResponse:
+    result = service.google_login(payload.access_token, payload.political_party)
+    record_session("login", request, result)   # a new Google account counts as a sign-up
+    return result
 
 
 @router.post("/guest", response_model=AuthResponse, responses={429: {"model": ErrorResponse}})
@@ -127,7 +134,9 @@ def guest_login(payload: GuestLoginRequest, request: Request) -> AuthResponse:
     """"Continue as guest": a ready-made account for one party, no sign-up."""
     ip = request.client.host if request.client else "unknown"
     _check_rate_limit(ip, "guest")
-    return service.guest_login(payload.party, payload.device_id, ip)
+    result = service.guest_login(payload.party, payload.device_id, ip)
+    record_session("guest_login", request, result)
+    return result
 
 
 @router.post("/refresh", response_model=AuthResponse, responses={401: {"model": ErrorResponse}})

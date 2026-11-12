@@ -13,10 +13,12 @@ from backend.api.v1.news import router as news_router
 from backend.api.v1.posts import router as posts_router
 from backend.api.v1.profile import router as profile_router
 from backend.api.v1.questions import router as questions_router
+from backend.api.v1.reports import router as reports_router
+from backend.api.v1.track import router as track_router
 from backend.core.http import register_http_layer
 from backend.core.request_context import track_requests
 from backend.core.config import settings
-from backend.db.indexes import ensure_auth_indexes, ensure_phase2_indexes, ensure_phase3_indexes
+from backend.db.indexes import ensure_activity_indexes, ensure_auth_indexes, ensure_phase2_indexes, ensure_phase3_indexes
 from backend.services.error_tracker import install_error_tracking
 from backend.services.error_tracker import is_active as is_error_monitor_active
 
@@ -64,6 +66,7 @@ def _run_startup_once() -> None:
             ensure_auth_indexes()
             ensure_phase2_indexes()
             ensure_phase3_indexes()
+            ensure_activity_indexes()
         except Exception as exc:
             # Tolerated, so a request is not failed by an unreachable database -
             # but not latched: the flag stays unset and the next request tries
@@ -102,6 +105,8 @@ app.include_router(chat_router, prefix="/api/v1")
 app.include_router(contact_router, prefix="/api/v1")
 app.include_router(integrations_router, prefix="/api/v1")
 app.include_router(monitoring_router, prefix="/api/v1")
+app.include_router(track_router, prefix="/api/v1")
+app.include_router(reports_router, prefix="/api/v1")
 
 # Trial: the Manusmriti section. The route exists only while TRIAL_MANUSMRITI_CRITIQUE is on (read once at
 # start-up, like the setting above). Remove the trial by deleting backend/trials and these four lines.

@@ -99,6 +99,19 @@ def ensure_phase2_indexes() -> None:
     )
 
 
+def ensure_activity_indexes() -> None:
+    """The report's event log, deleted by Mongo after 90 days, and its place cache."""
+    from backend.services.activity_service import ACTIVITY_RETENTION_DAYS
+
+    activity = db["activity"]
+    _safe_create_index(activity, [("created_at", ASCENDING)],
+                       expireAfterSeconds=ACTIVITY_RETENTION_DAYS * 86400, name="ttl_activity_created")
+    _safe_create_index(activity, [("type", ASCENDING), ("created_at", DESCENDING)], name="idx_activity_type_created")
+    _safe_create_index(db["ip_geo"], [("ip", ASCENDING)], unique=True, name="uq_ip_geo_ip")
+    # Places go stale as addresses are reassigned: looked up again after 30 days.
+    _safe_create_index(db["ip_geo"], [("at", ASCENDING)], expireAfterSeconds=30 * 86400, name="ttl_ip_geo_at")
+
+
 def ensure_phase3_indexes() -> None:
     posts = db["posts"]
     _safe_create_index(posts, [("user_id", ASCENDING), ("created_at", DESCENDING)], name="idx_posts_user_created")
