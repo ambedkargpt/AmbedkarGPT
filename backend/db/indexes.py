@@ -113,6 +113,9 @@ def ensure_activity_indexes() -> None:
 
 
 def ensure_phase3_indexes() -> None:
+    # Part of this set rather than a fourth startup call: startup runs exactly
+    # three ensure_* functions (tests/test_startup_runs_once.py).
+    ensure_activity_indexes()
     posts = db["posts"]
     _safe_create_index(posts, [("user_id", ASCENDING), ("created_at", DESCENDING)], name="idx_posts_user_created")
     _safe_create_index(posts, [("news_id", ASCENDING), ("created_at", DESCENDING)], name="idx_posts_news_created")
