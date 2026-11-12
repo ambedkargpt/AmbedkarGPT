@@ -45,11 +45,11 @@ const CONTENT = {
     },
     privacy: {
       title: 'Privacy Policy',
-      updated: 'Last updated: April 2026',
+      updated: 'Last updated: November 2026',
       sections: [
         {
           heading: '1. Information We Collect',
-          body: 'We collect information you provide when creating an account (email, phone number), interaction data within the platform (queries, session activity), and technical data such as device type, browser, and IP address.',
+          body: 'We collect information you provide when creating an account (email, phone number), interaction data within the platform (queries, session activity, the posts you write), and technical data such as device type, browser, and IP address. When you visit, sign up, log in or continue as a guest, we record the IP address, the page and the link that brought you, and work out an approximate city and state from the IP address.',
         },
         {
           heading: '2. How We Use Your Information',
@@ -57,11 +57,11 @@ const CONTENT = {
         },
         {
           heading: '3. Data Sharing',
-          body: 'We do not sell your personal data. We may share data with trusted service providers (e.g., Firebase, cloud infrastructure) strictly for platform operation. We comply with applicable data protection laws.',
+          body: 'We do not sell your personal data. We may share data with trusted service providers (e.g., Firebase, cloud infrastructure, an IP location service that turns an IP address into an approximate city and state) strictly for platform operation. We comply with applicable data protection laws.',
         },
         {
           heading: '4. Data Retention',
-          body: 'We retain your account data for as long as your account is active. You may request deletion of your data at any time by contacting us. Some data may be retained as required by law.',
+          body: 'We retain your account data for as long as your account is active. Records of visits and sign-ins, with their IP addresses, are deleted automatically after 90 days. You may request deletion of your data at any time by contacting us. Some data may be retained as required by law.',
         },
         {
           heading: '5. Security',

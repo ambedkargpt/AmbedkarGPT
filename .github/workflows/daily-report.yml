@@ -1,0 +1,47 @@
+# The twice-daily activity report: 6 pm and midnight, India time.
+#
+# Calls POST /api/v1/reports/send on the live API, which gathers the window
+# (sign-ups, logins, guest logins, posts, visits with places) and emails it
+# (backend/services/report_service.py). India is UTC+5:30, so:
+#   12:30 UTC = 18:00 IST,  18:30 UTC = 00:00 IST.
+# GitHub may start a scheduled run some minutes late; the report still covers
+# the window that just ended.
+#
+# Needs: secret REPORT_TOKEN (the same value as REPORT_TOKEN on the API Lambda)
+# and variable LAMBDA_FUNCTION_URL (the API's base address).
+name: Daily Report
+
+on:
+  schedule:
+    - cron: "30 12 * * *"
+    - cron: "30 18 * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Count only, send no email"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Send the report
+        env:
+          API: ${{ vars.LAMBDA_FUNCTION_URL }}
+          TOKEN: ${{ secrets.REPORT_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+        run: |
+          if [ -z "$API" ] || [ -z "$TOKEN" ]; then
+            echo "::error::LAMBDA_FUNCTION_URL (variable) or REPORT_TOKEN (secret) is not set."
+            exit 1
+          fi
+          curl -fsS --retry 3 --retry-delay 20 --max-time 90 -X POST \
+            -H "X-Report-Token: $TOKEN" \
+            "${API%/}/api/v1/reports/send?dry_run=$DRY_RUN" | tee report.json
+          echo
+          python3 -c "import json; d=json.load(open('report.json')); print('sent to', len(d.get('sent_to', [])), 'recipient(s):', {k: d[k] for k in ('slot','signups','logins','guest_logins','posts','visits')})"

@@ -16,6 +16,7 @@ import { getSiteLanguage } from './utils/siteLanguage.js'
 import { DEFAULT_LANGUAGE } from './i18n/index.jsx'
 import { purgeLegacySession } from './api/sessionStore.js'
 import { startErrorReporting } from './utils/errorReporter.js'
+import { sendVisitBeacon } from './analytics/visitBeacon.js'
 
 // Send browser errors to the admin Errors page (production builds only).
 startErrorReporting()
@@ -25,6 +26,9 @@ startErrorReporting()
 // localStorage that nothing reads and nothing clears, which would leave them
 // signed in across tab closes forever. Clear them once, here.
 purgeLegacySession()
+
+// One visit per tab, for the twice-daily activity report.
+sendVisitBeacon()
 
 // Stamp lang before first render so the Devanagari font rules fire immediately.
 // Falls back to the default rather than leaving it unset: the interface is
