@@ -31,7 +31,6 @@ function UseCaseCard({ icon: Icon, id }) {
               "radial-gradient(ellipse at 50% 60%, rgba(63,159,255,0.22) 0%, rgba(63,159,255,0.10) 40%, transparent 72%)",
           }}
         />
-        <div className="pointer-events-none absolute -top-16 -right-16 h-40 w-40 rounded-full bg-[#3f9fff]/15 blur-3xl" />
 
         {/* On a phone card the title gets the room: smaller icon and type, and
             a long word wraps instead of running out of the card. */}
@@ -72,10 +71,6 @@ export default function UseCasesGrid() {
   const { t } = useI18n();
   return (
     <section id="bheem" className="relative py-8 md:py-10">
-      <div className="pointer-events-none absolute inset-x-0 -top-28 -bottom-28">
-        <div className="hidden md:block absolute left-1/2 top-0 h-[480px] w-[800px] -translate-x-1/2 rounded-full bg-[#3f78ff]/8 blur-[150px]" />
-        <div className="hidden md:block absolute left-1/2 bottom-0 h-[300px] w-[600px] -translate-x-1/2 rounded-full bg-[#2d55c0]/7 blur-[130px]" />
-      </div>
 
       <div className="relative mx-auto max-w-7xl px-6">
         <SectionLabel>{t('uc.label')}</SectionLabel>

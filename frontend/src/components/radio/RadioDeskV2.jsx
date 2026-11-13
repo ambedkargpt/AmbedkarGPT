@@ -135,7 +135,12 @@ export default function RadioDeskV2({
           <span className="hidden font-count text-[20px] font-semibold tabular-nums text-white sm:inline">
             {clockLabel} <span className="text-[12px] text-[#8b94b8]">IST</span>
           </span>
-          <ShareMenu headline={headline} className="bhim-share radio-v2-share" />
+          {/* Styled here: its old .bhim-share rules went with the tape layout. */}
+          <ShareMenu
+            headline={headline}
+            align="right"
+            className="inline-flex h-10 items-center gap-2 rounded-full border border-[#2a3566] bg-[#0d1333] px-4 text-[14px] font-semibold text-[#c7d1eb] transition hover:border-[#1d7afc] hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1d7afc]"
+          />
           <LanguageSwitcher />
         </div>
       </header>

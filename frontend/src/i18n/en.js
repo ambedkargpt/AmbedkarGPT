@@ -704,6 +704,7 @@ export default {
   "radioStrip.body": "today’s bulletin is on air — news, history and the movement, in Hindi.",
   "radioStrip.cta": "Log in to listen",
   "radioStrip.ctaOpen": "Listen now",
+  "radioStrip.stop": "Stop radio",
   "radioStrip.aria": "Bhim Radio live announcement",
   "radioStrip.dismiss": "Dismiss radio announcement",
   "ach.title": "Achievements & Insights",

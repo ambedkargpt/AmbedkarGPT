@@ -5,7 +5,6 @@ import MainLayout from '../layouts/MainLayout';
 import useScrollAnimations from '../hooks/useScrollAnimations';
 import usePauseOffscreenAnimations from '../hooks/usePauseOffscreenAnimations';
 
-import LandingBackground   from '../components/landing/LandingBackground';
 import HeroSection         from '../components/landing/HeroSection';
 import KnowledgeSection    from '../components/landing/KnowledgeSection';
 import UseCasesGrid        from '../components/landing/UseCasesGrid';
@@ -39,9 +38,6 @@ export default function Home({ splashDone = true }) {
   return (
     <MainLayout>
       <div ref={rootRef}>
-      {/* Full-page animated background — absolute so it grows with page height */}
-      <LandingBackground />
-
       <HeroSection splashDone={splashDone} />
 
 

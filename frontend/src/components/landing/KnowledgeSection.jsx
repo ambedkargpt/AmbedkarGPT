@@ -297,10 +297,6 @@ export default function KnowledgeSection() {
   const { t } = useI18n();
   return (
     <section id="services" className="relative py-8 md:py-10">
-      <div className="pointer-events-none absolute inset-x-0 -top-28 -bottom-28">
-        <div className="hidden md:block absolute left-[20%] top-[30%] h-[480px] w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2d7dfb]/9 blur-[140px]" />
-        <div className="hidden md:block absolute right-[10%] bottom-[20%] h-[380px] w-[380px] rounded-full bg-[#1a5fff]/7 blur-[120px]" />
-      </div>
 
       <div className="relative mx-auto max-w-7xl px-6">
         <SectionLabel>{t('landing.ourServices')}</SectionLabel>

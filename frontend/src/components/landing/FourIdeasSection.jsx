@@ -87,9 +87,6 @@ export default function FourIdeasSection() {
   const { t } = useI18n();
   return (
     <section className="relative pt-6 pb-10 sm:pb-20 md:pt-8 md:pb-28">
-      <div className="pointer-events-none absolute inset-x-0 -top-20 -bottom-20">
-        <div className="hidden md:block absolute left-1/2 top-1/2 h-[400px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2d3fa0]/10 blur-[140px]" />
-      </div>
 
       <div className="relative mx-auto max-w-7xl px-6">
         <div className="flex flex-col items-center text-center">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { X, Play } from 'lucide-react';
+import { X, Play, Pause } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useRadio } from '../context/RadioContext';
@@ -26,7 +26,7 @@ export default function RadioLiveStrip({ className = '', onHide }) {
   const { t } = useI18n();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const { primeStation, track, configured, play } = useRadio();
+  const { primeStation, track, configured, play, pause, playing } = useRadio();
   const [visible, setVisible] = useState(true);
 
   const show = visible && !currentUser;
@@ -38,9 +38,19 @@ export default function RadioLiveStrip({ className = '', onHide }) {
   }
 
   function goListen() {
+    // A toggle: while the radio is playing, the same button stops it. A
+    // mis-tap that started it is undone right where it happened.
+    if (playing) {
+      pause();
+      return;
+    }
     if (!RADIO_REQUIRES_LOGIN) {
-      // Start the sound with the same press, then show the station.
-      play();
+      // On a phone the button only opens the station; the sound starts from
+      // the big play button there. People tapped it by mistake while
+      // scrolling and then could not find how to stop it. From md the same
+      // press still starts the sound, then shows the station.
+      const phone = window.matchMedia?.('(max-width: 767px)').matches;
+      if (!phone) play();
       navigate('/bhimradio');
       return;
     }
@@ -92,10 +102,13 @@ export default function RadioLiveStrip({ className = '', onHide }) {
         <button
           type="button"
           onClick={goListen}
+          aria-pressed={playing}
           className="onair-cta order-3 ml-auto inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-[#ffc72c] px-4 text-[13px] font-extrabold text-[#3a0a0d] transition hover:bg-[#ffd75e] focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#a50e16] md:order-4 md:ml-0 md:h-8"
         >
-          <Play size={13} strokeWidth={0} fill="currentColor" />
-          {t(RADIO_REQUIRES_LOGIN ? 'radioStrip.cta' : 'radioStrip.ctaOpen')}
+          {playing
+            ? <Pause size={13} strokeWidth={0} fill="currentColor" />
+            : <Play size={13} strokeWidth={0} fill="currentColor" />}
+          {playing ? t('radioStrip.stop') : t(RADIO_REQUIRES_LOGIN ? 'radioStrip.cta' : 'radioStrip.ctaOpen')}
         </button>
 
         <button

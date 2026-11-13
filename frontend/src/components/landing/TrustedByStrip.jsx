@@ -6,9 +6,6 @@ import digitalIndiaLogo from '../../assets/images/digital-india-logo.webp';
 export default function TrustedByStrip() {
   return (
     <section className="relative py-4 pb-6 md:py-6 md:pb-8">
-      <div className="pointer-events-none absolute inset-x-0 -top-16 -bottom-16">
-        <div className="hidden md:block absolute left-1/2 top-1/2 h-56 w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#2d7dfb]/10 blur-[120px]" />
-      </div>
 
       <div className="relative mx-auto max-w-7xl px-6">
         <div className="flex flex-col items-center gap-10 md:flex-row md:justify-evenly">
