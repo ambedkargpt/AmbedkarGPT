@@ -100,17 +100,19 @@ export default function RadioDeskV2({
           to="/"
           onClick={onBack}
           aria-label={t('radio.backHome')}
-          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-xl border border-[#3a4a85] bg-[#0d1333] px-3 text-[14px] font-semibold sm:h-11 sm:px-4 sm:text-[15px] text-white transition hover:border-[#1d7afc] hover:bg-[#13205a]"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-[#3a4a85] bg-[#0d1333] text-[14px] font-semibold text-white transition hover:border-[#1d7afc] hover:bg-[#13205a] sm:h-11 sm:w-auto sm:px-4 sm:text-[15px]"
         >
           <Home size={18} strokeWidth={2} />
-          {t('radio.home')}
+          {/* On a phone only the icon, so the title fits beside it. */}
+          <span className="hidden sm:inline">{t('radio.home')}</span>
         </Link>
         <span className="hidden sm:inline-flex"><AgMark size={38} color="#8FA8FF" decorative /></span>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1 sm:flex-none">
           <h1 className="font-display text-[clamp(22px,2.2vw+14px,30px)] font-extrabold leading-tight text-white">{t('radio.title')}</h1>
           <div className="radio-v2-program"><ProgramLine /></div>
         </div>
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+        {/* Phone: a row of its own, on the same left edge as the Home button. */}
+        <div className="flex w-full flex-wrap items-center gap-2 sm:ml-auto sm:w-auto sm:justify-end sm:gap-3">
           <span className="hidden h-11 items-center gap-2.5 rounded-full border border-[#2a3566] bg-[#0d1333] pl-1.5 pr-4 md:inline-flex">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1d7afc] font-hindi text-[13px] font-bold text-white">
               {t('radio.anchorName').slice(0, 2)}
@@ -314,7 +316,6 @@ export default function RadioDeskV2({
       <style>{`
         .radio-v2-program p:first-child { font-size: 16px !important; line-height: 1.3 !important; }
         .radio-v2-program p:last-child { font-size: 14px !important; }
-        .radio-v2-share { border-radius: 12px; height: 40px; font-size: 13px !important; letter-spacing: 0 !important; text-transform: none !important; }
         .radio-eq-bar { animation: radio-eq 0.9s ease-in-out infinite alternate; transform-origin: bottom; }
         @keyframes radio-eq { from { transform: scaleY(0.35); } to { transform: scaleY(1); } }
         @media (prefers-reduced-motion: reduce) { .radio-eq-bar { animation: none; } }
