@@ -1487,3 +1487,27 @@ html { scroll-behavior: smooth; }
 .anim-offscreen::after {
   animation-play-state: paused !important;
 }
+
+/* ── Phones only: lighter scrolling ────────────────────────────────────────
+   Touch screens (no hover, finger as the pointer). Nothing here applies to a
+   laptop or desktop.
+   - A blend mode on a full-screen layer makes the phone blend the whole
+     screen again on every scroll frame, so the grain and the aurora are
+     drawn normally instead. The grain is a touch fainter to look the same.
+   - The navbar's backdrop blur re-blurs the page under it on every scroll
+     frame, so the bar is nearly solid instead. */
+@media (hover: none) and (pointer: coarse) {
+  .grain-overlay,
+  .dash-grain {
+    mix-blend-mode: normal;
+    opacity: 0.02;
+  }
+  .lbg-aurora {
+    mix-blend-mode: normal;
+  }
+  .nav-glass {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: rgba(6, 10, 24, 0.94);
+  }
+}

@@ -158,7 +158,7 @@ export default function Navbar() {
       // backdrop-filter on the header stops the menu (its child) from
       // painting its own background in Chromium, and the page showed through.
       className={`fixed inset-x-0 top-0 z-40 border-b border-[#1a2c55]/40 shadow-[0_8px_32px_rgba(0,0,0,0.35)] ${
-        menuOpen ? 'bg-[#060a18]' : 'bg-[rgba(6,10,24,0.55)] backdrop-blur-xl'
+        menuOpen ? 'bg-[#060a18]' : 'nav-glass bg-[rgba(6,10,24,0.55)] backdrop-blur-xl'
       }`}
     >
       <div className="mx-auto flex h-[72px] w-full max-w-[1440px] items-center justify-between gap-2 px-4 sm:px-6 md:h-[80px] md:gap-3 md:px-10">

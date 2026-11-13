@@ -116,8 +116,15 @@ export default function WarRoomBanner() {
           {/* Ground: a war-room grid, a red and a blue pool for the two sides,
               and a slow scan line. Decorative only. */}
           <div aria-hidden="true" className="wr-grid absolute inset-0 opacity-60" />
-          <div aria-hidden="true" className="absolute -left-40 -top-40 h-[520px] w-[520px] rounded-full bg-[#1a5fff]/20 blur-[120px]" />
-          <div aria-hidden="true" className="absolute -bottom-48 -right-32 h-[520px] w-[520px] rounded-full bg-[#e5484d]/14 blur-[130px]" />
+          <div aria-hidden="true" className="absolute -left-40 -top-40 hidden h-[520px] w-[520px] rounded-full bg-[#1a5fff]/20 blur-[120px] md:block" />
+          <div aria-hidden="true" className="absolute -bottom-48 -right-32 hidden h-[520px] w-[520px] rounded-full bg-[#e5484d]/14 blur-[130px] md:block" />
+          {/* Phone: the same two pools drawn as plain gradients. A 520px
+              element under a 120px blur is heavy for a phone to scroll past. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 md:hidden"
+            style={{ background: 'radial-gradient(380px circle at 100px 100px, rgba(26,95,255,0.2), transparent 100%), radial-gradient(380px circle at calc(100% - 132px) calc(100% - 68px), rgba(229,72,77,0.14), transparent 100%)' }}
+          />
           <div aria-hidden="true" className="wr-scan absolute inset-x-0 top-0 h-24" />
 
           <div className="relative grid gap-10 p-6 sm:p-10 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:p-14">
