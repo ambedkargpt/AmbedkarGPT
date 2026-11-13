@@ -35,10 +35,6 @@ export default function DalitCorpusSection() {
           outlined type. Hidden on phones, where it would sit under the text
           rather than behind it. */}
       <span className="bg-word top-16 hidden sm:block" aria-hidden="true">CORPUS</span>
-      <div className="pointer-events-none absolute inset-x-0 -top-28 -bottom-28">
-        <div className="hidden md:block absolute left-[10%] top-[20%] h-[420px] w-[420px] rounded-full bg-[#2d7dfb]/9 blur-[130px]" />
-        <div className="hidden md:block absolute right-[5%] bottom-[10%] h-[360px] w-[360px] rounded-full bg-[#1a3fa0]/7 blur-[130px]" />
-      </div>
 
       <div className="relative mx-auto max-w-7xl px-6">
         <div className="flex justify-center">
@@ -62,10 +58,6 @@ export default function DalitCorpusSection() {
           <div
             className="pointer-events-none absolute inset-0 z-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
             style={{ background: 'radial-gradient(320px circle at var(--mx,50%) var(--my,50%), #3f9fff26, transparent 65%)' }}
-          />
-          <div
-            className="pointer-events-none absolute -top-16 -right-16 z-0 h-40 w-40 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100"
-            style={{ background: '#3f9fff26' }}
           />
 
           <div className="relative z-10 grid md:grid-cols-[1.4fr_0.6fr]">

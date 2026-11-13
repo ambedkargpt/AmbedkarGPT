@@ -38,3 +38,24 @@ test('beacon Listen here starts it on the landing page', async ({ page }) => {
   await expect.poll(() => playing(page), { timeout: 15000 }).toBe(true);
   await expect(page).toHaveURL(/\/$/);
 });
+test('on a phone the strip only opens the station, it does not start the sound', async ({ page }) => {
+  // People tapped it by mistake while scrolling and could not find how to stop it.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.locator('.radio-live-strip').getByRole('button', { name: /listen now|अभी सुनिए/i }).click();
+  await expect(page).toHaveURL(/\/bhimradio/);
+  await page.waitForTimeout(3000);
+  expect(await playing(page)).toBe(false);
+});
+test('while the radio plays, the same strip button stops it', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/');
+  await page.mouse.move(700, 500); await page.mouse.wheel(0, 1400);
+  await page.getByRole('button', { name: /listen right here|यहीं सुनिए/i }).click({ timeout: 15000 });
+  await expect.poll(() => playing(page), { timeout: 15000 }).toBe(true);
+  const stop = page.locator('.radio-live-strip').getByRole('button', { name: /stop radio|रेडियो रोकें/i });
+  await stop.click();
+  await expect.poll(() => playing(page), { timeout: 5000 }).toBe(false);
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.locator('.radio-live-strip').getByRole('button', { name: /listen now|अभी सुनिए/i })).toBeVisible();
+});

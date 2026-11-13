@@ -105,11 +105,6 @@ export default function MissionStatement({
 
   return (
     <section className="relative py-12 md:py-16">
-      {/* Ambient glow — bleeds into adjacent sections */}
-      <div className="pointer-events-none absolute inset-x-0 -top-28 -bottom-28">
-        <div className="hidden md:block absolute right-[15%] top-1/2 h-[400px] w-[500px] -translate-y-1/2 rounded-full bg-[#2d55c0]/8 blur-[140px]" />
-        <div className="hidden md:block absolute left-[5%] top-1/3 h-[320px] w-[400px] rounded-full bg-[#1a3fa0]/7 blur-[130px]" />
-      </div>
 
       <div className="mx-auto grid max-w-[1180px] items-start gap-7 sm:gap-12 px-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] md:gap-14">
         {imageFirst ? (

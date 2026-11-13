@@ -92,9 +92,9 @@ export default function RadioNowPlayingBar() {
         <button
           type="button"
           onClick={pause}
-          className="flex h-8 shrink-0 items-center gap-1.5 rounded-full border border-[#2a3a6a] bg-[#101a3c] px-3 text-[11px] font-bold text-[#8fb3ff] transition hover:bg-[#16204a] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3f9fff]"
+          className="flex h-11 shrink-0 items-center gap-2 rounded-full border border-[#ef4444]/50 bg-[#ef4444]/15 px-4 text-[14px] font-bold text-[#ffb4b4] transition hover:bg-[#ef4444]/25 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3f9fff]"
         >
-          <X size={12} strokeWidth={2.6} />
+          <X size={16} strokeWidth={2.6} />
           {t('nowPlaying.tuneOut')}
         </button>
       </div>

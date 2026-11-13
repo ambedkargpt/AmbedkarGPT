@@ -143,11 +143,6 @@ export default function ContactSection() {
     <section id="contact" className="relative overflow-hidden py-8 md:py-10">
       {/* Closing word of the page, behind the manifesto. */}
       <span className="bg-word top-24 hidden sm:block" aria-hidden="true">MOVEMENT</span>
-      {/* Ambient glow — extends upward to blend with TeamSection above */}
-      <div className="pointer-events-none absolute inset-x-0 -top-28 -bottom-0">
-        <div className="hidden md:block absolute left-1/2 top-0 h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-[#3f78ff]/9 blur-[150px]" />
-        <div className="hidden md:block absolute left-[20%] top-[40%] h-[320px] w-[400px] rounded-full bg-[#1a3fa0]/7 blur-[130px]" />
-      </div>
 
       <div className="relative mx-auto max-w-7xl px-6">
         {/* ══════════ Top: Work With Us CTA strip ══════════ */}
@@ -218,11 +213,6 @@ export default function ContactSection() {
             onSubmit={handleSubmit}
             className="relative flex h-full flex-col rounded-2xl border border-[#1e3260]/60 bg-[#070f24] p-6 md:p-8"
           >
-            {/* Glows contained so they don't bleed outside the form card */}
-            <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-2xl">
-              <div className="absolute -top-24 -right-24 h-56 w-56 rounded-full bg-[#3f9fff]/10 blur-3xl" />
-              <div className="absolute -bottom-24 -left-24 h-48 w-48 rounded-full bg-[#7b5cff]/8 blur-3xl" />
-            </div>
 
             <div className="grid flex-1 gap-4 md:grid-cols-2">
               <Field label={t('landing.contactName')} name="name" value={form.name} onChange={update}

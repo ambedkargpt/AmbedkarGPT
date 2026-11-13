@@ -707,6 +707,7 @@ export default {
   "radioStrip.body": "आज का बुलेटिन ऑन एयर है — ख़बरें, इतिहास और आंदोलन।",
   "radioStrip.cta": "सुनने के लिए लॉग इन कीजिए",
   "radioStrip.ctaOpen": "अभी सुनिए",
+  "radioStrip.stop": "रेडियो रोकें",
   "radioStrip.aria": "भीम रेडियो लाइव सूचना",
   "radioStrip.dismiss": "रेडियो सूचना बंद करें",
   "ach.title": "उपलब्धियाँ और जानकारी",

@@ -72,13 +72,8 @@ export default function HeroSection({ splashDone = true }) {
   return (
     <section id="home" ref={sectionRef} className="relative pt-0 md:pt-2">
 
-      {/* Glows + squiggle */}
+      {/* Squiggle */}
       <div className="pointer-events-none absolute inset-x-0 top-0 -bottom-32">
-        <div className="absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(circle_at_50%_0%,rgba(41,108,255,0.16),transparent_55%)]" />
-        <div className="hidden md:block absolute -left-24 -top-16 h-[460px] w-[460px] rounded-full bg-[#2d7dfb]/22 blur-[130px]" />
-        <div className="hidden md:block absolute -right-24 top-0 h-[460px] w-[460px] rounded-full bg-[#1d66de]/22 blur-[120px]" />
-        <div className="hidden md:block absolute left-1/2 top-[58%] h-[520px] w-[720px] -translate-x-1/2 rounded-full bg-[#1e4fb5]/20 blur-[120px]" />
-        <div className="hidden md:block absolute bottom-0 left-1/2 h-[260px] w-[800px] -translate-x-1/2 rounded-full bg-[#1a3fa0]/15 blur-[120px]" />
         <div
           className="absolute inset-0 bg-cover bg-center opacity-15"
           style={{ backgroundImage: `url(${squiggleSrc})` }}
