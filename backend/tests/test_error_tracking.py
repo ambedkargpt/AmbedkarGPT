@@ -19,6 +19,9 @@ REQUEST_ID = "550e8400-e29b-41d4-a716-446655440000"
 def collection(monkeypatch):
     """Tracking switched on, saving into an in-memory collection."""
     fake = mongomock.MongoClient().db.error_logs
+    # Jobs an earlier test queued in the background finish into its own store,
+    # not into this one.
+    monitor_queue.wait_until_done(5)
     monkeypatch.setenv("ERROR_TRACKING_ENABLED", "true")
     monkeypatch.setattr(error_tracker, "_repo", ErrorLogsRepository(collection=fake))
     # Run background jobs straight away, so a test can check the result.
@@ -105,7 +108,11 @@ def test_mongodb_errors_are_not_saved(collection):
     exc = ServerSelectionTimeoutError("no servers")
     record = logging.LogRecord("backend.http", logging.ERROR, __file__, 1, "db down", None, (type(exc), exc, None))
     error_tracker.ErrorMonitorHandler().emit(record)
-    assert collection.count_documents({}) == 0
+    # This record, not "nothing at all": another thread (an app started by an
+    # earlier test) can log an unrelated error into the store at the same time,
+    # which made this test fail now and then in CI.
+    assert collection.count_documents({"log_message": "db down"}) == 0
+    assert collection.count_documents({"error_type": "ServerSelectionTimeoutError"}) == 0
 
 
 def test_personal_data_is_masked_but_request_ids_are_kept():
