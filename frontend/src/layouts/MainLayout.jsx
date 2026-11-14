@@ -4,6 +4,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import RadioLiveStrip from '../components/RadioLiveStrip';
 import NewsTicker from '../components/NewsTicker';
+import { NEWS_TICKER_ENABLED } from '../data/features';
 import RadioBeacon from '../components/radio/RadioBeacon';
 
 // Tailwind needs these spellings present in the source to emit the classes,
@@ -20,7 +21,7 @@ export default function MainLayout({ children, bare = false, noNav = false }) {
   const { pathname, hash } = useLocation();
   // Not on the landing page: a visitor being told what the product is should
   // not be reading today's politics crawl past the pitch.
-  const showTicker = pathname !== '/';
+  const showTicker = NEWS_TICKER_ENABLED && pathname !== '/';
   const showStrips = !bare;
 
   // Scroll to #section after a route change. Nothing did this, so a link from

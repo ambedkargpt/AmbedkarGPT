@@ -15,7 +15,8 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem('skip-splash', '1'));
 });
 
-test.describe('news ticker', () => {
+// The crawl is switched off (NEWS_TICKER_ENABLED in data/features.js); these come back with it.
+test.describe.skip('news ticker', () => {
   test('carries the headline the station is on, and moves it', async ({ page }) => {
     await page.goto('/about');
 
