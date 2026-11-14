@@ -76,3 +76,20 @@ export function pageNumbers(page, pages) {
 export function sectionQuery(topic, page) {
   return { ...(topic !== ALL && { topic }), ...(page > 1 && { page: String(page) }) };
 }
+
+/**
+ * The post in the reader's language: under Hindi, its Hindi (headline, says, critique, fair_note, parts) where
+ * the server has a current translation (`post.hi`), and the English otherwise. `inHindi` says which it is, so
+ * the card sets the right font and lang, and Copy and Post on X send the words on screen.
+ */
+export function localize(post, lang) {
+  const hi = lang === 'hi' ? post.hi : null;
+  if (!hi) return { ...post, inHindi: false };
+  return { ...post, ...hi, parts: hi.parts?.length ? hi.parts : post.parts, inHindi: true };
+}
+
+/** A verse's text in the reader's language: its Hindi (`text_hi`) under Hindi when there is one. */
+export function verseText(verse, lang) {
+  if (!verse) return { text: '', inHindi: false };
+  return lang === 'hi' && verse.text_hi ? { text: verse.text_hi, inHindi: true } : { text: verse.text, inHindi: false };
+}

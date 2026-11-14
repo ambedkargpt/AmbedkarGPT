@@ -23,15 +23,46 @@ EMPTY: Dict = {"version": 1, "generated": None, "translation": None, "topics": [
 _cache: Dict = {"stamp": None, "data": EMPTY}
 
 
+def with_hindi(data: Dict, hindi: Dict) -> Dict:
+    """
+    posts.json with the Hindi from posts_hi.json (tools/translate_hi.py) laid over it: a post gets "hi" (its
+    headline, says, critique, fair_note and parts in Hindi) and a verse gets "text_hi". Only where the Hindi was
+    made from the English as it is now: a post edited and republished since keeps its English alone until it is
+    translated again, rather than showing a translation of what it used to say.
+    """
+    from .tools.translate_hi import fingerprint, post_source
+
+    hi_posts, hi_verses = hindi.get("posts") or {}, hindi.get("verses") or {}
+    posts = []
+    for post in data.get("posts") or []:
+        entry = hi_posts.get(post.get("id"))
+        if entry and entry.get("source") == fingerprint(post_source(post)):
+            post = {**post, "hi": {k: v for k, v in entry.items() if k != "source"}}
+        posts.append(post)
+    verses = {}
+    for vid, verse in (data.get("verses") or {}).items():
+        entry = hi_verses.get(vid)
+        if entry and entry.get("source") == fingerprint(verse.get("text")):
+            verse = {**verse, "text_hi": entry["text"]}
+        verses[vid] = verse
+    return {**data, "posts": posts, "verses": verses}
+
+
 def load_published() -> Dict:
-    """posts.json, read again only when the file changes. A missing file is an empty section, not an error."""
-    path = config.PUBLISHED_DIR / "posts.json"
+    """
+    posts.json with its Hindi, read again only when either file changes. A missing posts.json is an empty
+    section, not an error; a missing posts_hi.json is the section in English.
+    """
+    path, hi_path = config.PUBLISHED_DIR / "posts.json", config.PUBLISHED_DIR / "posts_hi.json"
     try:
-        stamp = path.stat().st_mtime_ns
+        stamp = (path.stat().st_mtime_ns, hi_path.stat().st_mtime_ns if hi_path.exists() else None)
     except FileNotFoundError:
         return EMPTY
     if _cache["stamp"] != stamp:
-        _cache.update(stamp=stamp, data=json.loads(path.read_text(encoding="utf-8")))
+        data = json.loads(path.read_text(encoding="utf-8"))
+        if hi_path.exists():
+            data = with_hindi(data, json.loads(hi_path.read_text(encoding="utf-8")))
+        _cache.update(stamp=stamp, data=data)
     return _cache["data"]
 
 

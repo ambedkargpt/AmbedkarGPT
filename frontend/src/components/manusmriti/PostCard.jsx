@@ -1,16 +1,17 @@
 import { useState } from 'react';
 import { Check, ChevronDown, Copy, ExternalLink } from 'lucide-react';
 import GlassCard from '../ui/GlassCard';
-import { copyText, isThread, xComposeUrl } from '../../data/manusmriti';
+import { copyText, isThread, localize, verseText, xComposeUrl } from '../../data/manusmriti';
 import { useI18n } from '../../i18n/index.jsx';
 
 // The same button the BhimBot page uses for Copy, so the two screens feel like one product.
 const actionBtn =
   'inline-flex min-h-11 items-center gap-2 rounded-xl border border-[#1e3260]/70 bg-[#0a1428]/80 px-4 text-[14.5px] font-semibold text-[#c7d6ee] transition hover:border-[#3a6bc4]/70 hover:text-white';
 
-// The entry's words are English whatever the interface language is, so they are set in the Latin font and
-// marked lang="en": under the Hindi interface the page's own font stack would render them in Mangal.
+// English words are set in the Latin font and marked lang="en": under the Hindi interface the page's own font
+// stack would render them in Mangal. Hindi words get the page's Devanagari font and lang="hi".
 const latin = { fontFamily: 'var(--font-sans)' };
+const script = (inHindi) => (inHindi ? { lang: 'hi' } : { lang: 'en', style: latin });
 
 // How many verses a card shows before offering the rest. The first three carry the argument; a longer run
 // (a range the entry cites to name who a rule is about) would push the critique off the screen.
@@ -40,8 +41,11 @@ function CopyButton({ post }) {
  * what the text says from what the writer makes of it. A note on the other side, where the verse itself
  * offers one, follows. The short post for X, which the entry is also written as, is behind a tap.
  */
-export default function PostCard({ post, topicTitle, verses }) {
+export default function PostCard({ post: source, topicTitle, verses }) {
   const { t, lang } = useI18n();
+  // Hindi under the Hindi interface where a translation exists; the English otherwise.
+  const post = localize(source, lang);
+  const words = script(post.inHindi);
   const [showPost, setShowPost] = useState(false);
   const [allVerses, setAllVerses] = useState(false);
   const thread = isThread(post);
@@ -66,15 +70,20 @@ export default function PostCard({ post, topicTitle, verses }) {
 
       {/* Each part below is drawn only if the entry has it, so data from before the commentary was added (a cached
           answer during a deploy) shows the verses and the post instead of empty labels. */}
-      {post.headline && <h2 lang="en" style={latin} className="text-[22px] font-semibold leading-snug text-white md:text-[24px]">{post.headline}</h2>}
+      {post.headline && <h2 {...words} className="text-[22px] font-semibold leading-snug text-white md:text-[24px]">{post.headline}</h2>}
 
-      <div lang="en" style={latin} className="space-y-3">
-        {shown.map((id) => (
-          <blockquote key={id} className="rounded-xl border-l-[3px] border-[#3f6bd4] bg-white/[0.04] px-4 py-3.5">
-            <p className="text-[16px] leading-7 text-[#e3ebfb]">{verses[id]?.text}</p>
-            <footer className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-[#8aa4d6]">Manusmriti {id}</footer>
-          </blockquote>
-        ))}
+      <div className="space-y-3">
+        {shown.map((id) => {
+          const verse = verseText(verses[id], lang);
+          return (
+            <blockquote key={id} className="rounded-xl border-l-[3px] border-[#3f6bd4] bg-white/[0.04] px-4 py-3.5">
+              <p {...script(verse.inHindi)} className="text-[16px] leading-7 text-[#e3ebfb]">{verse.text}</p>
+              <footer className={`mt-2 text-xs font-semibold text-[#8aa4d6] ${verse.inHindi ? '' : 'uppercase tracking-[0.1em]'}`}>
+                {t('msm.verseRef', { id })}
+              </footer>
+            </blockquote>
+          );
+        })}
         {hidden > 0 && (
           <button type="button" onClick={() => setAllVerses(true)} className="text-[14px] font-medium text-[#64b5ff] transition hover:text-white">
             {hidden === 1 ? t('msm.moreVerse') : t('msm.moreVerses', { n: hidden })}
@@ -83,14 +92,14 @@ export default function PostCard({ post, topicTitle, verses }) {
       </div>
 
       {post.says && (
-        <section lang="en" style={latin}>
+        <section {...words}>
           <h3 className={`${label} text-[#8aa4d6]`}>{t('msm.says')}</h3>
           <p className="mt-1.5 text-[16px] leading-7 text-[#d7e1f5]">{post.says}</p>
         </section>
       )}
 
       {post.critique && (
-        <section lang="en" style={latin} className="rounded-xl border border-[#f08a5d]/30 bg-[#f08a5d]/[0.07] p-4 md:p-5">
+        <section {...words} className="rounded-xl border border-[#f08a5d]/30 bg-[#f08a5d]/[0.07] p-4 md:p-5">
           <h3 className={`${label} flex items-center gap-2 text-[#f4a77c]`}>
             {t('msm.critique')}
             <span className="rounded-full border border-[#f08a5d]/40 px-2 py-0.5 text-[10.5px] font-medium normal-case tracking-normal">{t('msm.opinion')}</span>
@@ -100,7 +109,7 @@ export default function PostCard({ post, topicTitle, verses }) {
       )}
 
       {post.fair_note && (
-        <p lang="en" style={latin} className="border-l-2 border-[#3a4a6e] pl-3 text-[14.5px] leading-6 text-[#a9bbdd]">
+        <p {...words} className="border-l-2 border-[#3a4a6e] pl-3 text-[14.5px] leading-6 text-[#a9bbdd]">
           <span className="font-semibold text-[#c7d6ee]">{t('msm.fair')}</span> {post.fair_note}
         </p>
       )}
@@ -126,7 +135,7 @@ export default function PostCard({ post, topicTitle, verses }) {
         </div>
 
         {showPost && (
-          <div lang="en" style={latin} className="space-y-3 rounded-xl border border-white/10 bg-[#070d1c] p-4">
+          <div {...words} className="space-y-3 rounded-xl border border-white/10 bg-[#070d1c] p-4">
             {post.parts.map((part, i) => (
               <p key={i} className="whitespace-pre-line text-[15.5px] leading-7 text-[#e3ebfb]">{part}</p>
             ))}
