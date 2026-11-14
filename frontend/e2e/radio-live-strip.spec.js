@@ -20,7 +20,9 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => sessionStorage.setItem('skip-splash', '1'));
 });
 
-test.describe('radio live strip', () => {
+// The strip is switched off (SHOW_RADIO_STRIP in layouts/MainLayout.jsx).
+// Turn these back on with it.
+test.describe.skip('radio live strip', () => {
   test('a signed-out visitor sees it, with a way into the player', async ({ page }) => {
     await page.goto('/');
 
