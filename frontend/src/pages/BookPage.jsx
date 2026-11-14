@@ -22,7 +22,7 @@ import workerSrc from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
 
 const BOOKS_BASE = (import.meta.env.VITE_BOOKS_BASE_URL || '/books').replace(/\/$/, '');
-const VOLUMES = { 1: 'Volume1.pdf', 2: 'Volume2.pdf' };   // whitelist: no arbitrary paths
+const VOLUMES = { 1: 'Volume1.pdf', 2: 'Volume2.pdf', 3: 'Volume3.pdf' };   // whitelist: no arbitrary paths
 const SERIES = "Dr. Babasaheb Ambedkar: Writings and Speeches";
 
 export default function BookPage() {
@@ -89,7 +89,9 @@ export default function BookPage() {
       .getPage(pdfPage)
       .then((p) => {
         if (cancelled) return;
-        const width = Math.min(canvas.parentElement.clientWidth, 900);
+        // A width of 0 (the page measured before it was laid out) would scale the page to nothing
+        // and leave a blank canvas that reports "ready"; fall back to the window instead.
+        const width = Math.min(canvas.parentElement.clientWidth || window.innerWidth - 32 || 600, 900);
         const base = p.getViewport({ scale: 1 });
         const viewport = p.getViewport({ scale: width / base.width });
         const dpr = window.devicePixelRatio || 1;

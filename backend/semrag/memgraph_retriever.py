@@ -12,58 +12,134 @@ from __future__ import annotations
 import logging
 import os
 import re
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
-# Default Memgraph Cloud credentials from environment
-DEFAULT_MEMGRAPH_URI = os.getenv("MEMGRAPH_URI") or os.getenv("NEO4J_URI") or ""
-DEFAULT_MEMGRAPH_USER = os.getenv("MEMGRAPH_USERNAME") or os.getenv("NEO4J_USERNAME") or ""
-DEFAULT_MEMGRAPH_PASSWORD = os.getenv("MEMGRAPH_PASSWORD") or os.getenv("NEO4J_PASSWORD") or ""
+# The book passages and their page references come only from Memgraph. Without a working
+# connection BheemBot answers from its older transcript search and shows no book references,
+# so the connection is configured, bounded and observable (see memgraph_status).
+#
+# Settings are read when the connection is made, not when this module is imported: a .env
+# loaded after the import, or a Lambda environment variable, is still seen. NEO4J_* names are
+# accepted as aliases because Ambedkar-SemRAG itself uses them.
+CONNECT_TIMEOUT_S = 8     # per attempt; two attempts at most, well inside Lambda's 60 s
+RETRY_COOLDOWN_S = 60     # after a failure, requests skip Memgraph instead of each waiting on it
 
 _DRIVER = None
+_RETRY_AFTER = 0.0        # time.monotonic() before which a failed connection is not retried
+_LAST_ERROR = ""          # short fixed phrase, safe to show on the health endpoint
+_WARNED_UNCONFIGURED = False
+
+
+def _setting(*names: str) -> str:
+    for name in names:
+        value = (os.getenv(name) or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _connection_settings() -> Tuple[str, str, str]:
+    return (
+        _setting("MEMGRAPH_URI", "NEO4J_URI"),
+        _setting("MEMGRAPH_USERNAME", "NEO4J_USERNAME"),
+        _setting("MEMGRAPH_PASSWORD", "NEO4J_PASSWORD"),
+    )
+
+
+def _close_quietly(driver) -> None:
+    try:
+        driver.close()
+    except Exception:
+        pass
 
 
 def get_memgraph_driver(uri: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None):
-    """Obtain or reuse a thread-safe driver for Memgraph Cloud."""
-    global _DRIVER
+    """Obtain or reuse a thread-safe driver for Memgraph Cloud; None when it cannot be reached."""
+    global _DRIVER, _RETRY_AFTER, _LAST_ERROR, _WARNED_UNCONFIGURED
     if _DRIVER is not None:
         return _DRIVER
 
-    from neo4j import GraphDatabase
-
-    target_uri = uri or DEFAULT_MEMGRAPH_URI
-    target_user = user or DEFAULT_MEMGRAPH_USER
-    target_pwd = password or DEFAULT_MEMGRAPH_PASSWORD
+    cfg_uri, cfg_user, cfg_pwd = _connection_settings()
+    target_uri = uri or cfg_uri
+    target_user = user or cfg_user
+    target_pwd = password or cfg_pwd
 
     if not target_uri:
-        logger.warning("Memgraph URI not configured (set MEMGRAPH_URI in environment)")
+        _LAST_ERROR = "MEMGRAPH_URI is not set"
+        if not _WARNED_UNCONFIGURED:
+            _WARNED_UNCONFIGURED = True
+            logger.error(
+                "Memgraph is not configured (MEMGRAPH_URI is empty): answers will have no book "
+                "references. Set MEMGRAPH_URI, MEMGRAPH_USERNAME and MEMGRAPH_PASSWORD in the "
+                "environment (backend/.env locally, the function's environment variables on Lambda)."
+            )
+        return None
+
+    if time.monotonic() < _RETRY_AFTER:
+        return None  # failed a moment ago; do not make every request wait on it again
+
+    try:
+        from neo4j import GraphDatabase
+    except ImportError:
+        _LAST_ERROR = "the neo4j package is not installed"
+        logger.error("Memgraph unavailable: the neo4j package is not installed")
         return None
 
     auth = (target_user, target_pwd) if (target_user or target_pwd) else None
 
-    # Try standard URI first, fallback to self-signed cert handling if needed on macOS
-    try:
-        driver = GraphDatabase.driver(target_uri, auth=auth)
-        driver.verify_connectivity()
-        _DRIVER = driver
-        return _DRIVER
-    except Exception as exc:
-        logger.info("Direct SSL connection to Memgraph failed, trying bolt+ssc:// fallback: %s", exc)
-        fallback_uri = target_uri
-        if "bolt+s://" in target_uri:
-            fallback_uri = target_uri.replace("bolt+s://", "bolt+ssc://")
-        elif "neo4j+s://" in target_uri:
-            fallback_uri = target_uri.replace("neo4j+s://", "neo4j+ssc://")
+    # Memgraph Cloud presents a self-signed certificate on some hosts: try the verified
+    # scheme first, then the same address accepting a self-signed certificate.
+    attempts = [target_uri]
+    if "bolt+s://" in target_uri:
+        attempts.append(target_uri.replace("bolt+s://", "bolt+ssc://"))
+    elif "neo4j+s://" in target_uri:
+        attempts.append(target_uri.replace("neo4j+s://", "neo4j+ssc://"))
 
+    last_exc: Optional[Exception] = None
+    for attempt_uri in attempts:
+        driver = None
         try:
-            driver = GraphDatabase.driver(fallback_uri, auth=auth)
+            driver = GraphDatabase.driver(attempt_uri, auth=auth, connection_timeout=CONNECT_TIMEOUT_S)
             driver.verify_connectivity()
             _DRIVER = driver
+            _LAST_ERROR = ""
             return _DRIVER
-        except Exception as fallback_exc:
-            logger.warning("Failed to connect to Memgraph instance: %s", fallback_exc)
-            return None
+        except Exception as exc:
+            last_exc = exc
+            if driver is not None:
+                _close_quietly(driver)
+            logger.info("Memgraph connection attempt failed (%s): %s", attempt_uri.split("://")[0], exc)
+
+    _RETRY_AFTER = time.monotonic() + RETRY_COOLDOWN_S
+    _LAST_ERROR = "could not connect, or the credentials were rejected"
+    logger.error(
+        "Failed to connect to Memgraph (%s); answers will have no book references. Not retrying for %ds.",
+        type(last_exc).__name__, RETRY_COOLDOWN_S,
+    )
+    return None
+
+
+def memgraph_status() -> Dict[str, Any]:
+    """Whether book references are available - booleans and a short reason only.
+
+    Never includes the address, the username or the error text, because it backs an
+    unauthenticated health endpoint. It reuses the outcome of the last attempt (and the
+    cooldown above), so polling it cannot hammer the database.
+    """
+    uri, user, pwd = _connection_settings()
+    if not uri:
+        return {"configured": False, "credentials_set": False, "connected": False,
+                "reason": "MEMGRAPH_URI is not set"}
+    connected = get_memgraph_driver() is not None
+    return {
+        "configured": True,
+        "credentials_set": bool(user and pwd),
+        "connected": connected,
+        "reason": "" if connected else (_LAST_ERROR or "not connected"),
+    }
 
 
 STOP_WORDS = {
@@ -231,6 +307,12 @@ def query_semrag(
         }
 
 
+_NO_CLOSE_PASSAGE = (
+    "(No passage in Dr. Ambedkar's Writings and Speeches is close enough to this question. "
+    "Say that the collection does not address it directly; do not answer from memory.)"
+)
+
+
 def retrieve_semrag_context(query: str, top_k: int = 5) -> Tuple[str, List[Dict[str, str]]]:
     """
     High-level entry point for BheemBot.
@@ -242,19 +324,32 @@ def retrieve_semrag_context(query: str, top_k: int = 5) -> Tuple[str, List[Dict[
     Knowledge-graph triples are not passed to the model: they are internal, sometimes noisy,
     and invite answers that talk about "the knowledge graph" instead of Dr. Ambedkar's words.
     """
+    from backend.semrag import local_retriever
     from backend.semrag.presentation import book_link, clean_passage, excerpt, pill_label, reference
 
-    try:
-        data = query_semrag(query, top_chunks=top_k)
-    except Exception as exc:
-        logger.warning("SemRAG retrieval encountered error: %s", exc)
-        return "", []
-
-    chunks = [c for c in data.get("chunks", []) if clean_passage(c.get("text") or "")]
-    communities = data.get("communities", [])
-
-    if not chunks:
-        return "", []
+    # Primary: search by meaning over the passages shipped with the backend - no database, so a
+    # lapsed Memgraph trial no longer takes the book references with it.
+    found = local_retriever.search(query, top_k=top_k)
+    communities: List[Dict[str, Any]] = []
+    if found is not None:
+        chunks = [c for c in found if clean_passage(c.get("text") or "")]
+        if not chunks:
+            # It searched and nothing was close. Say so, rather than returning "" - an empty
+            # context sends chat.py to the older transcript search, whose material is not
+            # Dr. Ambedkar's writings.
+            return _NO_CLOSE_PASSAGE, []
+    else:
+        # The search could not run (bundle missing, embedding call failed): try Memgraph, if
+        # it is configured and reachable.
+        try:
+            data = query_semrag(query, top_chunks=top_k)
+        except Exception as exc:
+            logger.warning("SemRAG retrieval encountered error: %s", exc)
+            return "", []
+        chunks = [c for c in data.get("chunks", []) if clean_passage(c.get("text") or "")]
+        communities = data.get("communities", [])
+        if not chunks:
+            return "", []
 
     # Numbered so the model can report, on a hidden last line, which material it used; the
     # number is never shown to a reader (see presentation.split_sources_line).

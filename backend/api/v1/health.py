@@ -60,6 +60,27 @@ def liveness() -> dict:
     return {"status": "ok"}
 
 
+@router.get("/semrag")
+def semrag_status() -> JSONResponse:
+    """Can BheemBot find the book passages? Counts and short reasons - no address or credentials.
+
+    Passages come from files shipped with the backend, so the normal answer is 200 with the
+    number loaded. Only if those files are missing or damaged does it fall back to Memgraph and
+    report that instead (503 if neither works, so a monitor can alert: without passages BheemBot
+    still answers, but shows no book references and nothing else says so). Separate from /ready:
+    a missing passage bundle should not take the whole API out of rotation.
+    """
+    from backend.semrag import local_retriever
+    from backend.semrag.memgraph_retriever import memgraph_status
+
+    bundle = local_retriever.load_bundle()
+    if bundle is not None:
+        return JSONResponse(status_code=200, content={"passages": len(bundle.ids), "volumes": sorted(set(bundle.volumes.tolist())), "source": "bundle"})
+    status = memgraph_status()
+    content = {"passages": 0, "source": "memgraph" if status["connected"] else "none", "memgraph": status}
+    return JSONResponse(status_code=200 if status["connected"] else 503, content=content)
+
+
 @router.get("/ready")
 def readiness() -> JSONResponse:
     """
