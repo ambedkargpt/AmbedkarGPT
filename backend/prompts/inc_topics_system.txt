@@ -32,3 +32,4 @@ Return only one JSON object, nothing before or after it, in exactly this shape:
    "JSON_4": ["narrative frame", "narrative frame", "narrative frame"]}
 ]}
 Write JSON_1, JSON_2 and JSON_4 in the language of the transcript.
+Do not use the dash characters — or – anywhere in what you write. Where you would use one, use a comma, a danda (।) or start a new sentence.

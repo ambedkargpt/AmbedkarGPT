@@ -8,8 +8,6 @@ import { expect, test } from '@playwright/test';
  */
 // The radio's audio is a detached new Audio(); record every one made.
 const playing = (page) => page.evaluate(() => (window.__audios || []).some((a) => !a.paused && a.currentTime > 0));
-// The strip tests are skipped while the strip is off (SHOW_RADIO_STRIP in
-// layouts/MainLayout.jsx). Turn them back on with it.
 test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     sessionStorage.setItem('skip-splash', '1');
@@ -19,13 +17,13 @@ test.beforeEach(async ({ page }) => {
     window.Audio.prototype = A.prototype;
   });
 });
-test.skip('strip Listen now starts the radio', async ({ page }) => {
+test('strip Listen now starts the radio', async ({ page }) => {
   await page.goto('/');
   await page.locator('.radio-live-strip').getByRole('button', { name: /listen now|अभी सुनिए/i }).click();
   await expect(page).toHaveURL(/\/bhimradio/);
   await expect.poll(() => playing(page), { timeout: 15000 }).toBe(true);
 });
-test.skip('a click before the station has loaded still starts it', async ({ page }) => {
+test('a click before the station has loaded still starts it', async ({ page }) => {
   await page.route('**/latest.json', async (r) => { await new Promise((x) => setTimeout(x, 2500)); await r.continue(); });
   await page.goto('/');
   await page.locator('.radio-live-strip').getByRole('button', { name: /listen now|अभी सुनिए/i }).click();
@@ -40,7 +38,7 @@ test('beacon Listen here starts it on the landing page', async ({ page }) => {
   await expect.poll(() => playing(page), { timeout: 15000 }).toBe(true);
   await expect(page).toHaveURL(/\/$/);
 });
-test.skip('on a phone the strip only opens the station, it does not start the sound', async ({ page }) => {
+test('on a phone the strip only opens the station, it does not start the sound', async ({ page }) => {
   // People tapped it by mistake while scrolling and could not find how to stop it.
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/');
@@ -49,7 +47,7 @@ test.skip('on a phone the strip only opens the station, it does not start the so
   await page.waitForTimeout(3000);
   expect(await playing(page)).toBe(false);
 });
-test.skip('while the radio plays, the same strip button stops it', async ({ page }) => {
+test('while the radio plays, the same strip button stops it', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
   await page.mouse.move(700, 500); await page.mouse.wheel(0, 1400);

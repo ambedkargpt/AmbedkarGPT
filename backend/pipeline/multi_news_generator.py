@@ -174,9 +174,12 @@ def extract_stories(
     for story in raw_stories:
         if not isinstance(story, dict):
             continue
-        headline = str(story.get("headline", "")).strip()
-        subheadline = str(story.get("subheadline", "")).strip()
-        summary = str(story.get("summary", "")).strip()
+        from backend.pipeline.generator import _strip_ai_tells
+
+        # The em dash habit, removed here as it is from posts (see _strip_ai_tells).
+        headline = _strip_ai_tells(str(story.get("headline", "")).strip())
+        subheadline = _strip_ai_tells(str(story.get("subheadline", "")).strip())
+        summary = _strip_ai_tells(str(story.get("summary", "")).strip())
         if not headline or not summary:
             continue
         # Guard against the model repeating one story under different wording.

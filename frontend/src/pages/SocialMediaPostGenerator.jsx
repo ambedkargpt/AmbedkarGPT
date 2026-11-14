@@ -160,6 +160,7 @@ export default function SocialMediaPostGenerator() {
   // editable hashtag list and a "next angle" button instead of Refine.
   const [topicFrame,      setTopicFrame]      = useState(null);
   const [postHashtags,    setPostHashtags]    = useState([]);
+  const [tagSuggestions,  setTagSuggestions]  = useState([]);
   const [tagsSaving,      setTagsSaving]      = useState(false);
   const [tagsError,       setTagsError]       = useState('');
   function showToast(text) {
@@ -666,6 +667,7 @@ export default function SocialMediaPostGenerator() {
   function applyTopicState(post) {
     setTopicFrame(post?.generation_meta?.narrative_frame || null);
     setPostHashtags(post?.hashtags || []);
+    setTagSuggestions(post?.generation_meta?.post_parts?.suggested_hashtags || []);
     setTagsError('');
   }
 
@@ -1473,7 +1475,7 @@ export default function SocialMediaPostGenerator() {
                 )}
 
                 {ready && selectedPostId && topicFrame && !postFailed && !showTranslated && (
-                  <HashtagEditor tags={postHashtags} onChange={saveHashtags} saving={tagsSaving} error={tagsError} />
+                  <HashtagEditor tags={postHashtags} onChange={saveHashtags} suggestions={tagSuggestions} saving={tagsSaving} error={tagsError} />
                 )}
 
                 {ready && (

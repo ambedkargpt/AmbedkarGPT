@@ -8,10 +8,14 @@ JSON_4. No user profile, no preferences, no web search, no corpus passages.
 Generate post on a card takes the frames in order: the first post uses
 frame 1, the next frame 2, and after the last frame it starts again at 1.
 
-The answer (JSON_5) is a couplet, a post of at most 40 words and one hashtag.
-The saved post text is those three, separated by blank lines, so copy, share
-and the post preview handle it like any other post; the hashtag is also kept
-in the post's ``hashtags`` field, which the hashtag editor changes.
+The answer (JSON_5) is a couplet, a post of at most 40 words, one hashtag
+about the event, and a few more hashtags the writer may add.
+The post goes out with three hashtags: the event's, then the party's two
+standing ones (DEFAULT_HASHTAGS). The model's extra hashtags and the party's
+other common ones are offered as suggestions in the hashtag editor. The saved
+post text is couplet, post and hashtags, separated by blank lines, so copy,
+share and the post preview handle it like any other post; the hashtags are
+also kept in the post's ``hashtags`` field, which the editor changes.
 
 Prompt text: prompts/inc_topic_post_system.txt, sir's Prompt 2.2 with the web
 search taken out.
@@ -24,6 +28,11 @@ from pathlib import Path
 from typing import Any
 
 SYSTEM_PROMPT_NAME = "inc_topic_post_system.txt"
+# Every INC post carries these after the event's hashtag: three in all.
+DEFAULT_HASHTAGS = ["#कांग्रेस", "#राहुल_गांधी"]
+# Offered in the hashtag editor, after the model's suggestions for the topic.
+PARTY_SUGGESTIONS = ["#INC", "#मल्लिकार्जुन_खड़गे", "#संविधान_बचाओ", "#लोकतंत्र_बचाओ", "#भारत_जोड़ो"]
+_MAX_SUGGESTIONS = 10
 PROMPT_VERSION = "inc_topics_v1|inc_topic_post_system.txt"
 
 
@@ -57,12 +66,38 @@ def parse_answer(raw: str) -> dict[str, Any] | None:
         data = data["JSON_5"]
     if not isinstance(data, dict):
         return None
-    couplet = str(data.get("couplet") or "").strip()
-    post = str(data.get("post") or "").strip()
+    from backend.pipeline.generator import _strip_ai_tells
+
+    # The em dash habit, removed as it is from every other post.
+    couplet = _strip_ai_tells(str(data.get("couplet") or "").strip())
+    post = _strip_ai_tells(str(data.get("post") or "").strip())
     hashtag = clean_hashtag(data.get("hashtag") or "")
+    more = data.get("more_hashtags") if isinstance(data.get("more_hashtags"), list) else []
     if not couplet or not post:
         return None
-    return {"couplet": couplet, "post": post, "hashtag": hashtag}
+    return {"couplet": couplet, "post": post, "hashtag": hashtag,
+            "more_hashtags": [t for t in (clean_hashtag(x) for x in more) if t]}
+
+
+def starting_hashtags(parts: dict[str, Any]) -> list[str]:
+    """The post's hashtags as it is first shown: the event's, then the party's two."""
+    return _unique([parts.get("hashtag") or "", *DEFAULT_HASHTAGS])
+
+
+def suggested_hashtags(parts: dict[str, Any]) -> list[str]:
+    """
+    What the editor can offer: the model's ideas for the topic, then the party's standing and common ones. The
+    editor shows those not already on the post, so a default someone removed is offered back.
+    """
+    return _unique([*(parts.get("more_hashtags") or []), *DEFAULT_HASHTAGS, *PARTY_SUGGESTIONS])[:_MAX_SUGGESTIONS]
+
+
+def _unique(tags: list[str]) -> list[str]:
+    out: list[str] = []
+    for tag in tags:
+        if tag and tag.lower() not in {t.lower() for t in out}:
+            out.append(tag)
+    return out
 
 
 def compose(parts: dict[str, Any], hashtags: list[str] | None = None) -> str:

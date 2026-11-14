@@ -164,7 +164,7 @@ def test_only_the_lines_and_the_frame_go_to_the_model():
     client = _Client(json.dumps({"JSON_5": {"couplet": "c", "post": "p", "hashtag": "h"}}))
     out = itp.write_post(client=client, model="deepseek-chat", prompts_dir=PROMPTS,
                          lines=["पंक्ति एक"], frame="फ्रेम दो")
-    assert out == {"couplet": "c", "post": "p", "hashtag": "#h"}
+    assert out == {"couplet": "c", "post": "p", "hashtag": "#h", "more_hashtags": []}
     system, user = client.calls[0]["messages"]
     assert "search" not in system["content"].lower()
     assert json.loads(user["content"].split("\n", 1)[1]) == {"JSON_3": ["पंक्ति एक"], "JSON_4": "फ्रेम दो"}
@@ -194,13 +194,17 @@ def _service(monkeypatch, *replies, written=0, test_account=False):
 NEWS_ID = ObjectId()
 NEWS_DOC = {"_id": NEWS_ID, "tenant_slug": "congress",
             "topic_flow": {"version": "inc_topics_v1", "transcript_lines": ["पंक्ति"], "narrative_frames": ["पहला", "दूसरा"]}}
-ANSWER = json.dumps({"JSON_5": {"couplet": "दोहा", "post": "पोस्ट", "hashtag": "#टैग"}}, ensure_ascii=False)
+ANSWER = json.dumps({"JSON_5": {"couplet": "दोहा", "post": "पोस्ट", "hashtag": "#टैग", "more_hashtags": ["एक", "#दो"]}},
+                    ensure_ascii=False)
 
 
 def test_generate_writes_from_the_next_frame_and_saves_the_parts(monkeypatch):
     svc, client = _service(monkeypatch, ANSWER, written=1)
     out = svc._generate_topic_post(user_id=USER, news_id=str(NEWS_ID), news_doc=NEWS_DOC, platform="WhatsApp")
-    assert out.post.content == "दोहा\n\nपोस्ट\n\n#टैग" and out.post.hashtags == ["#टैग"]
+    assert out.post.hashtags == ["#टैग", "#कांग्रेस", "#राहुल_गांधी"]                  # three by default
+    assert out.post.content == "दोहा\n\nपोस्ट\n\n#टैग #कांग्रेस #राहुल_गांधी"
+    offered = out.post.generation_meta["post_parts"]["suggested_hashtags"]
+    assert offered[:4] == ["#एक", "#दो", "#कांग्रेस", "#राहुल_गांधी"] and "#INC" in offered
     meta = out.post.generation_meta
     assert meta["narrative_frame"] == {"index": 2, "of": 2, "text": "दूसरा"}
     assert meta["profile_used"] == {"target_platform": "WhatsApp"}
@@ -249,3 +253,30 @@ def test_editing_the_hashtags_rewrites_the_last_line(monkeypatch):
     assert out.content == "दोहा\n\nपोस्ट\n\n#टैग #कांग्रेस #INC"
     out = svc.update(post.id, PostUpdateRequest(hashtags=[]), current_user_id=USER)
     assert out.content == "दोहा\n\nपोस्ट"
+
+
+# ── The dash ─────────────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("raw, clean", [
+    ("2017 से लगातार ऐसी घटनाएं—56 इंच का सीना", "2017 से लगातार ऐसी घटनाएं, 56 इंच का सीना"),
+    ("पद ही नहीं — परीक्षा ही नहीं।", "पद ही नहीं, परीक्षा ही नहीं।"),
+    ("पीएससी में 110–157 पद", "पीएससी में 110-157 पद"),
+    ("आवाज़ नहीं दबेगी —\nलड़ाई लड़ी जाएगी।", "आवाज़ नहीं दबेगी\nलड़ाई लड़ी जाएगी।"),
+])
+def test_the_dash_is_taken_out_and_lines_and_ranges_survive(raw, clean):
+    from backend.pipeline.generator import _strip_ai_tells
+
+    assert _strip_ai_tells(raw) == clean
+
+
+def test_no_dash_reaches_a_post_a_card_or_a_story():
+    parts = itp.parse_answer(json.dumps({"couplet": "दोहा — एक,\nदोहा दो", "post": "पद नहीं—परीक्षा नहीं।", "hashtag": "#x"},
+                                        ensure_ascii=False))
+    assert "—" not in parts["couplet"] + parts["post"] and "\n" in parts["couplet"]
+    raw = json.dumps({"topics": [{"JSON_1": "शीर्षक—एक", "JSON_2": "सार — दो", "JSON_3": [1], "JSON_4": ["फ्रेम—तीन"]}]},
+                     ensure_ascii=False)
+    topic = it.parse_topics(raw, ["पंक्ति—अपनी"])[0]
+    assert (topic["title"], topic["content"], topic["frames"]) == ("शीर्षक, एक", "सार, दो", ["फ्रेम, तीन"])
+    assert topic["lines"] == ["पंक्ति—अपनी"]                      # the transcript's own words are left alone
+    for name in ("inc_topics_system.txt", "inc_topic_post_system.txt", "news_multi_story_system.txt"):
+        assert "Do not use the dash characters" in (PROMPTS / name).read_text(encoding="utf-8"), name

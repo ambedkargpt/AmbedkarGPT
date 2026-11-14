@@ -16,11 +16,14 @@ const TOPIC = {
 };
 const TENANTS = { tenants: [{ tenant_id: 1, slug: 'congress', name: 'Indian National Congress', is_general: false, is_opposition: false }] };
 const FRAMES = ['डर की सरकार', 'युवाओं की आवाज़'];
-const post = (n, hashtags = ['#बैरिकेडिंग_हटाओ']) => ({
+const DEFAULT_TAGS = ['#बैरिकेडिंग_हटाओ', '#कांग्रेस', '#राहुल_गांधी'];
+const SUGGESTED = ['#छात्रों_की_आवाज़', '#कांग्रेस', '#राहुल_गांधी', '#INC'];
+const post = (n, hashtags = DEFAULT_TAGS) => ({
   id: `p${n}`, user_id: 'guest-congress', news_id: 't1', status: 'draft', created_at: now(), updated_at: now(),
   content: `बैरिकेडिंग से आवाज़ नहीं दबेगी,\nसंविधान की लड़ाई लड़ी जाएगी।\n\nपोस्ट ${n} का पाठ।${hashtags.length ? `\n\n${hashtags.join(' ')}` : ''}`,
   hashtags,
-  generation_meta: { narrative_frame: { index: n, of: 2, text: FRAMES[n - 1] }, profile_used: { target_platform: 'WhatsApp' } },
+  generation_meta: { narrative_frame: { index: n, of: 2, text: FRAMES[n - 1] }, profile_used: { target_platform: 'WhatsApp' },
+    post_parts: { suggested_hashtags: SUGGESTED } },
 });
 
 async function api(page) {
@@ -65,25 +68,44 @@ async function writeFirstPost(page) {
   await page.getByRole('button', { name: /write my post|मेरी पोस्ट लिखें/i }).click();
 }
 
-test('the post shows its couplet, and its hashtag can be removed and new ones added', async ({ page }) => {
+test('the post starts with three hashtags; one can be removed and new ones typed in', async ({ page }) => {
   const sent = await api(page);
   await writeFirstPost(page);
 
   await expect(page.getByText('पोस्ट 1 का पाठ।')).toBeVisible();
   const editor = page.getByRole('region', { name: /^hashtags$|^हैशटैग$/i });
-  await expect(editor.getByText('#बैरिकेडिंग_हटाओ')).toBeVisible();
+  for (const tag of DEFAULT_TAGS) await expect(editor.getByRole('listitem').filter({ hasText: tag })).toBeVisible();
 
   await editor.getByRole('textbox').fill('संविधान बचाओ');
   await editor.getByRole('button', { name: /^add$|^जोड़ें$/i }).click();
   await expect.poll(() => sent.patches.length).toBe(1);
-  expect(sent.patches[0].hashtags).toEqual(['#बैरिकेडिंग_हटाओ', '#संविधान_बचाओ']);
-  // The post text now ends with both.
+  expect(sent.patches[0].hashtags).toEqual([...DEFAULT_TAGS, '#संविधान_बचाओ']);
+  // The post text now ends with it.
   await expect(page.getByText('#संविधान_बचाओ').first()).toBeVisible();
 
   await editor.getByRole('button', { name: /remove #बैरिकेडिंग_हटाओ|#बैरिकेडिंग_हटाओ हटाएँ/i }).click();
   await expect.poll(() => sent.patches.length).toBe(2);
-  expect(sent.patches[1].hashtags).toEqual(['#संविधान_बचाओ']);
-  await expect(editor.getByText('#बैरिकेडिंग_हटाओ')).toHaveCount(0);
+  expect(sent.patches[1].hashtags).toEqual(['#कांग्रेस', '#राहुल_गांधी', '#संविधान_बचाओ']);
+});
+
+test('suggestions add with one tap, and a removed default is offered back', async ({ page }) => {
+  const sent = await api(page);
+  await writeFirstPost(page);
+  const editor = page.getByRole('region', { name: /^hashtags$|^हैशटैग$/i });
+
+  // Only what is not on the post yet is offered.
+  const offer = (tag) => editor.getByRole('button', { name: new RegExp(`^(add ${tag}|${tag} जोड़ें)$`, 'i') });
+  await expect(offer('#छात्रों_की_आवाज़')).toBeVisible();
+  await expect(offer('#INC')).toBeVisible();
+  await expect(offer('#कांग्रेस')).toHaveCount(0);
+
+  await offer('#INC').click();
+  await expect.poll(() => sent.patches.length).toBe(1);
+  expect(sent.patches[0].hashtags).toEqual([...DEFAULT_TAGS, '#INC']);
+  await expect(offer('#INC')).toHaveCount(0);
+
+  await editor.getByRole('button', { name: /remove #कांग्रेस|#कांग्रेस हटाएँ/i }).click();
+  await expect(offer('#कांग्रेस')).toBeVisible();
 });
 
 test('"next angle" writes the next post, from the next frame, with no Refine box', async ({ page }) => {

@@ -370,8 +370,13 @@ def _strip_ai_tells(text: str) -> str:
     """
     if not text:
         return text
-    # " word — word "  ->  " word, word "
-    out = re.sub(r"\s*[—–]\s*", ", ", text)
+    # A range between numbers is a hyphen, not a pause: "110–157" stays a range.
+    out = re.sub(r"(?<=\d)[ \t]*[—–][ \t]*(?=\d)", "-", text)
+    # A dash at the start or end of a line has nothing to join: it just goes.
+    out = re.sub(r"(?m)^[ \t]*[—–][ \t]*|[ \t]*[—–][ \t]*$", "", out)
+    # " word — word "  ->  " word, word ". Spaces and tabs only around the dash:
+    # \s would swallow a line break and weld two lines of a couplet together.
+    out = re.sub(r"[ \t]*[—–][ \t]*", ", ", out)
     # Tidy the artefacts that substitution can create.
     out = re.sub(r",\s*,", ",", out)
     out = re.sub(r"\s+,", ",", out)

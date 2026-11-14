@@ -531,7 +531,8 @@ class PostsService:
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Post generation returned empty content. Please try again.",
             )
-        hashtags = [parts["hashtag"]] if parts["hashtag"] else []
+        hashtags = itp.starting_hashtags(parts)
+        parts["suggested_hashtags"] = itp.suggested_hashtags(parts)
         snapshot_id = f"rs_{uuid4().hex}"
         generation_meta = {
             "pipeline_version": itp.PROMPT_VERSION.split("|")[0],

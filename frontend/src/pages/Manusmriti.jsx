@@ -133,6 +133,7 @@ export default function Manusmriti() {
             <p className="mt-10 max-w-3xl text-[14px] leading-6 text-[#8aa4d6]">
               {t('msm.note')}
               {data.translation ? ` ${t('msm.translation', { name: data.translation })}` : ''}
+              {lang === 'hi' ? ` ${t('msm.hindiNote')}` : ''}
             </p>
           </>
         )}

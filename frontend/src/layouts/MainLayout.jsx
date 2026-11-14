@@ -4,15 +4,12 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import RadioLiveStrip from '../components/RadioLiveStrip';
 import NewsTicker from '../components/NewsTicker';
+import { NEWS_TICKER_ENABLED } from '../data/features';
 import RadioBeacon from '../components/radio/RadioBeacon';
 
 // Tailwind needs these spellings present in the source to emit the classes,
 // so they are a lookup rather than a computed `md:pt-${n}`.
 const PINNED_PAD = ['md:pt-20', 'md:pt-[128px]'];
-// The red Bhim Radio strip under the navbar. Off for now (Nov 2026); set to
-// true to bring it back. The radio itself, the navbar link and the landing
-// page's floating radio card are not affected.
-const SHOW_RADIO_STRIP = false;
 
 /**
  * `bare` leaves out the radio strip. A page that is itself the thing being
@@ -24,8 +21,8 @@ export default function MainLayout({ children, bare = false, noNav = false }) {
   const { pathname, hash } = useLocation();
   // Not on the landing page: a visitor being told what the product is should
   // not be reading today's politics crawl past the pitch.
-  const showTicker = pathname !== '/';
-  const showStrips = SHOW_RADIO_STRIP && !bare;
+  const showTicker = NEWS_TICKER_ENABLED && pathname !== '/';
+  const showStrips = !bare;
 
   // Scroll to #section after a route change. Nothing did this, so a link from
   // another page to "/#contact" landed at the top of the home page and the

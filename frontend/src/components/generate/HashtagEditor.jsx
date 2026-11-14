@@ -17,9 +17,12 @@ function tidyTag(raw) {
   return text ? `#${text}` : '';
 }
 
-export default function HashtagEditor({ tags, onChange, saving = false, error = '', max = 10 }) {
+export default function HashtagEditor({ tags, onChange, suggestions = [], saving = false, error = '', max = 10 }) {
   const { t } = useI18n();
   const [draft, setDraft] = useState('');
+  // Offered with one tap: the topic's and the party's, less those already on the post (so a default that was
+  // removed comes back here).
+  const offered = suggestions.filter((s) => !tags.some((x) => x.toLowerCase() === s.toLowerCase()));
 
   function add() {
     const tag = tidyTag(draft);
@@ -85,6 +88,28 @@ export default function HashtagEditor({ tags, onChange, saving = false, error = 
           {t('tags.add')}
         </button>
       </form>
+
+      {offered.length > 0 && (
+        <div className="mt-3.5">
+          <p className="text-[13px] font-semibold text-[#9aa8cc]">{t('tags.suggested')}</p>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {offered.map((tag) => (
+              <li key={tag}>
+                <button
+                  type="button"
+                  onClick={() => tags.length < max && onChange([...tags, tag])}
+                  disabled={tags.length >= max}
+                  aria-label={t('tags.addOne', { tag })}
+                  className="font-hindi inline-flex h-9 items-center gap-1 rounded-full border border-dashed border-white/25 px-3 text-[14px] font-medium text-[#cfd8f0] transition hover:border-[#6e8cff] hover:bg-[#4f7dff]/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <Plus size={13} strokeWidth={2.6} aria-hidden="true" />
+                  {tag}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </section>
   );
 }

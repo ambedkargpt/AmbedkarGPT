@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  ALL, PAGE_SIZE, copyText, isThread, pageNumbers, paginate, postsForTopic, sectionQuery, topicFromQuery, xComposeUrl,
+  ALL, PAGE_SIZE, copyText, isThread, localize, pageNumbers, paginate, postsForTopic, sectionQuery, topicFromQuery, verseText, xComposeUrl,
 } from './manusmriti';
 
 const SINGLE = { id: 'a', topic: 'punishment', parts: ['Same insult. Different price.\n\nIs this justice?'] };
@@ -105,5 +105,27 @@ describe('sectionQuery', () => {
     expect(sectionQuery('sudras', 1)).toEqual({ topic: 'sudras' });
     expect(sectionQuery(ALL, 3)).toEqual({ page: '3' });
     expect(sectionQuery('sudras', 2)).toEqual({ topic: 'sudras', page: '2' });
+  });
+});
+
+describe('localize', () => {
+  const POST = { id: 'a', headline: 'Same insult', says: 'S', critique: 'C', fair_note: 'F', parts: ['English post'],
+    hi: { headline: 'वही अपमान', says: 'स', critique: 'आ', fair_note: 'ध', parts: ['हिंदी पोस्ट'] } };
+  it('gives the Hindi under Hindi, and Copy and X send it', () => {
+    const p = localize(POST, 'hi');
+    expect(p.inHindi).toBe(true);
+    expect(p.headline).toBe('वही अपमान');
+    expect(copyText(p)).toBe('हिंदी पोस्ट');
+    expect(xComposeUrl(p)).toContain(encodeURIComponent('हिंदी पोस्ट'));
+  });
+  it('keeps the English under English, and where there is no Hindi', () => {
+    expect(localize(POST, 'en')).toMatchObject({ headline: 'Same insult', inHindi: false });
+    expect(localize({ ...POST, hi: undefined }, 'hi')).toMatchObject({ parts: ['English post'], inHindi: false });
+  });
+  it('gives a verse in Hindi only when it has one', () => {
+    expect(verseText({ text: 'E', text_hi: 'ह' }, 'hi')).toEqual({ text: 'ह', inHindi: true });
+    expect(verseText({ text: 'E' }, 'hi')).toEqual({ text: 'E', inHindi: false });
+    expect(verseText({ text: 'E', text_hi: 'ह' }, 'en')).toEqual({ text: 'E', inHindi: false });
+    expect(verseText(undefined, 'hi')).toEqual({ text: '', inHindi: false });
   });
 });

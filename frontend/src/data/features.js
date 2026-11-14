@@ -15,6 +15,13 @@ export const DASHBOARD_ENABLED = false;
  */
 export const PREFERENCES_ENABLED = false;
 
+/**
+ * The red and yellow headline crawl along the bottom of the screen (components/NewsTicker.jsx), on the
+ * public pages and inside the app. Off since Nov 2026; set to true to bring it back. The radio strip under
+ * the navbar is separate and stays.
+ */
+export const NEWS_TICKER_ENABLED = false;
+
 /** Where "home" is for a signed-in user: the news feed to write from. */
 export const HOME_ROUTE = '/generate/social-media';
 

@@ -8,6 +8,7 @@ import { labelForId } from '../utils/partyRoles';
 import { ShellContext } from './dashboardShellContext';
 import OnboardingStrip from '../components/onboarding/OnboardingStrip';
 import NewsTicker from '../components/NewsTicker';
+import { NEWS_TICKER_ENABLED } from '../data/features';
 
 /**
  * The frame every signed-in working screen sits in: the navigation on the
@@ -112,7 +113,7 @@ export default function DashboardShell({ children, background, active: activePro
         </div>
         {/* The last row of the screen-high column: the bottom of the screen,
             the way a channel runs its crawl. */}
-        <NewsTicker className="shrink-0" onOpen={openRadio} />
+        {NEWS_TICKER_ENABLED && <NewsTicker className="shrink-0" onOpen={openRadio} />}
         </div>
       </div>
     </ShellContext.Provider>

@@ -129,6 +129,8 @@ export default {
   'tags.none': 'कोई हैशटैग नहीं।',
   'tags.placeholder': 'हैशटैग जोड़ें',
   'tags.add': 'जोड़ें',
+  'tags.suggested': 'सुझाव, जोड़ने के लिए दबाएँ',
+  'tags.addOne': '{tag} जोड़ें',
   'tags.remove': '{tag} हटाएँ',
   'gen.refine.title': 'अपने शब्दों में बदलाव कीजिए',
   'gen.refine.sub': 'बताइए क्या बदलना है, पोस्ट दोबारा लिख दी जाएगी।',
