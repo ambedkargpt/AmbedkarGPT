@@ -14,6 +14,8 @@ The post should begin with a very short punchy rhyming couplet. Use correct Hind
 Then elaborate (Max 40 Words only) using the NF covering important facts and emotions in the transcript, so that the content Substantiate NF with most important facts and other information. Notwithstanding the format in which information is being conveyed in the original lines – public interview, Press conference of leaders, interview of protestors, common man, etc etc, focus on the underlying message, facts and rhetoric that our content needs to further spread. Don't write as news reporting. Don't cite Source (Kharge ne kaha..). Frame it as content from the side of INC party for pol communication, as communication message from party to the public, from party – INC, which is the main party of opposition, to spread the message of party. Each post should be self-sufficient for making person understand the post, even if he has little knowledge of the topic. It should feel as a self-sufficient, complete, and logically sequenced block of information and reasoning, so that it captures the imagination of the common man and he gets to understand what is being talked of. Max 40 Words only.
 Last Line - based on the original lines, provide one line/10 words of details about the event, in the very last of post, so that the reader knows about the event being talked of, which is very important for reader to understand the post. Don't write it as news reporting, rather as a hashtag from the side of party in opposition.
 Use only the facts in the original lines. Do not add any fact, number, name or event that is not in them.
+Also suggest 3 more short hashtags on this topic, from the side of the party in opposition, in the language of the post.
+Do not use the dash characters — or – anywhere in what you write. Where you would use one, use a comma, a danda (।) or start a new sentence.
 You have to provide one post at a time. Provide as a JSON file – JSON_5
 
 ---
@@ -23,4 +25,5 @@ HOW TO RETURN THE OUTPUT (for the software that reads your answer)
 Return only one JSON object, nothing before or after it, in exactly this shape:
 {"JSON_5": {"couplet": "the rhyming couplet (one line, or two lines separated by a line break)",
             "post": "the elaboration, max 40 words",
-            "hashtag": "#the_last_line_as_one_hashtag_words_joined_with_underscores"}}
+            "hashtag": "#the_last_line_as_one_hashtag_words_joined_with_underscores",
+            "more_hashtags": ["#short_hashtag", "#short_hashtag", "#short_hashtag"]}}

@@ -105,10 +105,14 @@ def parse_topics(raw: str, lines: List[str]) -> List[Dict[str, Any]]:
     for t in topics if isinstance(topics, list) else []:
         if not isinstance(t, dict):
             continue
-        title = str(t.get("JSON_1") or "").strip()
-        content = str(t.get("JSON_2") or "").strip()
+        from backend.pipeline.generator import _strip_ai_tells
+
+        # The em dash habit, removed as it is from posts. Not from the lines:
+        # they are the transcript's own words.
+        title = _strip_ai_tells(str(t.get("JSON_1") or "").strip())
+        content = _strip_ai_tells(str(t.get("JSON_2") or "").strip())
         picked = [lines[n - 1] for n in expand_refs(t.get("JSON_3") or [], len(lines))]
-        frames = [str(f).strip() for f in (t.get("JSON_4") or []) if str(f).strip()][:_MAX_FRAMES]
+        frames = [_strip_ai_tells(str(f).strip()) for f in (t.get("JSON_4") or []) if str(f).strip()][:_MAX_FRAMES]
         if not title or not content or not picked or not frames or title in seen:
             continue
         seen.add(title)

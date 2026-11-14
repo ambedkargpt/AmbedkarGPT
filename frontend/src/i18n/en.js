@@ -123,6 +123,8 @@ export default {
   'tags.none': 'No hashtags.',
   'tags.placeholder': 'Add a hashtag',
   'tags.add': 'Add',
+  'tags.suggested': 'Suggested, tap to add',
+  'tags.addOne': 'Add {tag}',
   'tags.remove': 'Remove {tag}',
   'gen.refine.title': 'Change it in your own words',
   'gen.refine.sub': 'Say what to change and the post is rewritten.',
