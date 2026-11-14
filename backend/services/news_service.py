@@ -134,6 +134,7 @@ class NewsService:
             content_type=str(doc.get("content_type") or "news"),
             legacy_source=doc.get("legacy_source"),
             original_sort_timestamp=doc.get("original_sort_timestamp"),
+            post_flow=(doc.get("topic_flow") or {}).get("version"),
             created_at=doc["created_at"],
             updated_at=doc["updated_at"],
         )

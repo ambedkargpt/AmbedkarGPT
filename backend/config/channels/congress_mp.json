@@ -20,7 +20,7 @@
   "video_summaries_path": "data/video_summaries_congress_mp.json",
   "generated_news_path": "outputs/generated_news_congress_mp.json",
   "generated_news_legacy_path": "outputs/generated_news_legacy_congress_mp.json",
-  "news_mode": "multi",
+  "news_mode": "topics",
   "stories_per_video": 1,
   "stories_per_stream": 4,
   "rebuild_rag": false,

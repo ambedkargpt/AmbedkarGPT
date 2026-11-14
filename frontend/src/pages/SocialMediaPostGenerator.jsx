@@ -15,6 +15,7 @@ import {
 
 import PreferencesPanel from '../components/generate/PreferencesPanel';
 import PostContent from '../components/generate/PostContent';
+import HashtagEditor from '../components/generate/HashtagEditor';
 import AgMark from '../components/brand/AgMark';
 import { useAuth } from '../context/AuthContext';
 import { getNews, getNewsById, getNewsByStoryId, getTenants } from '../api/news';
@@ -154,6 +155,13 @@ export default function SocialMediaPostGenerator() {
   const [storyPosts,      setStoryPosts]      = useState([]);
   // Thumbs up or down on the post on screen.
   const [postFeedback,    setPostFeedback]    = useState(null);
+  // A post from the INC topic flow: which narrative frame wrote it
+  // ({index, of, text}), or null for every other post. Such a post has an
+  // editable hashtag list and a "next angle" button instead of Refine.
+  const [topicFrame,      setTopicFrame]      = useState(null);
+  const [postHashtags,    setPostHashtags]    = useState([]);
+  const [tagsSaving,      setTagsSaving]      = useState(false);
+  const [tagsError,       setTagsError]       = useState('');
   function showToast(text) {
     setToast(text);
     clearTimeout(toastTimer.current);
@@ -526,6 +534,7 @@ export default function SocialMediaPostGenerator() {
       setRefinementNote('');
       setRefineHint('');
       applyVersionState(response?.post);
+      applyTopicState(response?.post);
       setTranslatedPost(response?.post?.translations?.[siteLang] || '');
       setShowTranslated(false);
     } catch (err) {
@@ -641,6 +650,7 @@ export default function SocialMediaPostGenerator() {
     setPostStatus(post.status || 'draft');
     setPostFeedback(post.feedback ?? null);
     applyVersionState(post);
+    applyTopicState(post);
     setTranslatedPost(post.translations?.[siteLang] || '');
     setShowTranslated(false);
     goView('generated');
@@ -651,6 +661,32 @@ export default function SocialMediaPostGenerator() {
     tap();
     setPostFeedback(value);
     try { await updatePost(selectedPostId, { feedback: value }); } catch { /* the thanks still shows; it is a signal, not a task */ }
+  }
+
+  function applyTopicState(post) {
+    setTopicFrame(post?.generation_meta?.narrative_frame || null);
+    setPostHashtags(post?.hashtags || []);
+    setTagsError('');
+  }
+
+  // The hashtag list changed: save it, and show the post text the server
+  // rewrote to end with it (copy and share send that text).
+  async function saveHashtags(next) {
+    if (!selectedPostId) return;
+    const before = postHashtags;
+    setPostHashtags(next);
+    setTagsSaving(true);
+    setTagsError('');
+    try {
+      const post = await updatePost(selectedPostId, { hashtags: next });
+      setPostHashtags(post?.hashtags || next);
+      if (post?.content) setGeneratedPost(post.content);
+    } catch {
+      setPostHashtags(before);
+      setTagsError(t('tags.saveFailed'));
+    } finally {
+      setTagsSaving(false);
+    }
   }
 
   function applyVersionState(post) {
@@ -1436,6 +1472,10 @@ export default function SocialMediaPostGenerator() {
                   </div>
                 )}
 
+                {ready && selectedPostId && topicFrame && !postFailed && !showTranslated && (
+                  <HashtagEditor tags={postHashtags} onChange={saveHashtags} saving={tagsSaving} error={tagsError} />
+                )}
+
                 {ready && (
                   <div className="mt-4 grid grid-cols-3 gap-3">
                     <div
@@ -1578,7 +1618,31 @@ export default function SocialMediaPostGenerator() {
             {/* Change it in your own words: in the app's own blues now, and
                 the button always looks pressable. Pressed with nothing written,
                 it says what to write rather than sitting there disabled. */}
-            {ready && selectedPostId && !refinedAt && !guestAccount && (
+            {/* A topic-flow post: the next post is written from the story's
+                next narrative frame, looping back to the first after the last. */}
+            {ready && selectedPostId && topicFrame && (
+              <div
+                className="rounded-[20px] border p-5 sm:p-6"
+                style={{ borderColor: 'rgba(110,140,255,0.4)', background: 'radial-gradient(90% 120% at 0% 0%, rgba(79,125,255,0.22) 0%, transparent 60%), linear-gradient(165deg, #151d48 0%, #0d1335 60%, #0a0e27 100%)' }}
+              >
+                <p className="text-[13px] font-semibold uppercase tracking-[0.06em] text-[#9aa8cc]">
+                  {t('gen.angle.now', { n: topicFrame.index, of: topicFrame.of })}
+                </p>
+                <p className="font-hindi mt-1.5 text-[16px] leading-relaxed text-[#dbe4fb]">{topicFrame.text}</p>
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[14px] text-[17px] font-bold text-white transition hover:brightness-110"
+                  style={{ background: 'linear-gradient(120deg, #1a5fff 0%, #4f7dff 50%, #5b7cff 100%)', boxShadow: '0 12px 30px rgba(60,90,255,0.35)' }}
+                >
+                  <RefreshCw size={17} strokeWidth={2.4} />
+                  {t('gen.angle.button')}
+                </button>
+                <p className="mt-2.5 text-[13px] text-[#9aa8cc]">{t('gen.angle.loop')}</p>
+              </div>
+            )}
+
+            {ready && selectedPostId && !topicFrame && !refinedAt && !guestAccount && (
               <div
                 className="rounded-[20px] border p-5 sm:p-6"
                 style={{ borderColor: 'rgba(110,140,255,0.4)', background: 'radial-gradient(90% 120% at 0% 0%, rgba(79,125,255,0.22) 0%, transparent 60%), linear-gradient(165deg, #151d48 0%, #0d1335 60%, #0a0e27 100%)' }}

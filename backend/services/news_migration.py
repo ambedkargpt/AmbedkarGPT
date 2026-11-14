@@ -128,7 +128,7 @@ def _normalize_item(
         sort_ts = float(sort_ts) if sort_ts is not None else 0.0
     except Exception:
         sort_ts = 0.0
-    return {
+    doc = {
         "source_url": source_url,
         "headline": headline,
         "description": description,
@@ -151,6 +151,11 @@ def _normalize_item(
         "legacy_source": source,
         "original_sort_timestamp": sort_ts,
     }
+    # The INC topic flow's transcript lines and narrative frames, for the post
+    # step (pipeline/inc_topics.py). Absent on every other story.
+    if isinstance(item.get("topic_flow"), dict):
+        doc["topic_flow"] = item["topic_flow"]
+    return doc
 
 
 def load_and_dedupe_news(

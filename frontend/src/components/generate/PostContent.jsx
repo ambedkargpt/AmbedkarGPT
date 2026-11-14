@@ -46,7 +46,7 @@ export default function PostContent({ content, className = '', lang = 'hi', anim
   return (
     <div key={animate ? content : undefined} className={`space-y-5 ${className}`} style={{ fontFamily: "'Mangal', 'Noto Sans Devanagari Variable', 'Noto Sans Devanagari', serif" }}>
       {headline && (
-        <p className={`${size.head} font-bold leading-[1.35] text-white ${arrive(0).className}`} style={arrive(0).style}>
+        <p className={`${size.head} whitespace-pre-line font-bold leading-[1.35] text-white ${arrive(0).className}`} style={arrive(0).style}>
           {headline}
         </p>
       )}
