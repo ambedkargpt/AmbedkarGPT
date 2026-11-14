@@ -283,11 +283,44 @@ def run_video_summaries(context: PipelineContext) -> StageResult:
     )
 
 
+def _run_topic_generation(context: PipelineContext) -> StageResult:
+    """
+    The INC topic flow: each new video becomes one card per topic, with the
+    topic's transcript lines and narrative frames stored for the post step.
+    See pipeline/inc_topics.py.
+    """
+    from backend.pipeline.inc_topics import build_topic_rows
+
+    entries = context.runtime.get("newly_fetched_entries") or []
+    if not entries:
+        return StageResult("news_generation", "skipped", warnings=["no-new-transcripts"])
+    rows = build_topic_rows(context.settings, entries, show_progress=True)
+    if not rows:
+        return StageResult("news_generation", "skipped", warnings=["no-topics-extracted"])
+    stats = update_generated_news_rolling(
+        context.settings,
+        rows,
+        show_progress=True,
+        generated_news_path=context.channel.generated_news_path,
+        generated_news_legacy_path=context.channel.generated_news_legacy_path,
+        pregenerated=True,
+    )
+    return StageResult(
+        "news_generation",
+        "success",
+        metrics={**stats, "source_videos": len(entries), "topics_built": len(rows), "news_mode": "topics"},
+        artifacts_written=[str(context.channel.generated_news_path), str(context.channel.generated_news_legacy_path)],
+    )
+
+
 def run_news_generation(context: PipelineContext) -> StageResult:
     if not context.channel.run_news_generator:
         return StageResult("news_generation", "skipped", warnings=["disabled-by-channel-config"])
     if context.dry_run:
         return StageResult("news_generation", "skipped", warnings=["dry-run"])
+
+    if context.channel.news_mode == "topics":
+        return _run_topic_generation(context)
 
     multi = context.channel.news_mode == "multi"
     if multi:

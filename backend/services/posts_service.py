@@ -112,6 +112,14 @@ class PostsService:
         updates = payload.model_dump(exclude_unset=True)
         if "hashtags" in updates and updates["hashtags"] is not None:
             updates["hashtags"] = self._normalize_hashtags(updates["hashtags"])
+            # A topic-flow post shows its hashtags as the last line of the
+            # text, so an edit to them rewrites that line too: copy and share
+            # use the text.
+            parts = (existing.get("generation_meta") or {}).get("post_parts")
+            if parts and "content" not in updates:
+                from backend.services.inc_topic_posts import compose
+
+                updates["content"] = compose(parts, updates["hashtags"])
         is_publishing = (
             updates.get("status") == "published"
             and existing.get("status") != "published"
@@ -309,6 +317,14 @@ class PostsService:
             article.get("source_url") or "(no source_url on this news item)",
         )
 
+        # A card from the INC topic flow is written from its own narrative
+        # frames alone: no profile, retrieval or research (inc_topic_posts.py).
+        if (news_doc.get("topic_flow") or {}).get("version"):
+            return self._generate_topic_post(
+                user_id=user_id, news_id=news_id, news_doc=news_doc,
+                platform=str((profile_overrides or {}).get("target_platform") or ""),
+            )
+
         query_text = self._query_from_article(article)
         profile, raw_settings = self._profile_for_user(
             user_id, tone=tone, profile_overrides=profile_overrides
@@ -479,6 +495,84 @@ class PostsService:
                     ),
                 },
             )
+
+    def _generate_topic_post(self, *, user_id: str, news_id: str, news_doc: dict, platform: str) -> PostGenerateResponse:
+        """
+        One post from a topic-flow card: the next narrative frame (looping back
+        to the first after the last) and the topic's transcript lines. The
+        same limits as any post: five per story, and the guest day limit.
+        """
+        from backend.services import inc_topic_posts as itp
+
+        flow = news_doc.get("topic_flow") or {}
+        lines = [str(x) for x in flow.get("transcript_lines") or [] if str(x).strip()]
+        frames = [str(x) for x in flow.get("narrative_frames") or [] if str(x).strip()]
+        if not lines or not frames:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="This story has no material to write from. Please pick another story.",
+            )
+        unrestricted = self._is_test_account(user_id)
+        story_slot = None
+        if not unrestricted:
+            story_slot = self._next_story_slot(user_id, news_id)
+            self._check_guest_limit(user_id)
+        frame_index, frame = itp.frame_for(frames, self.repo.count_any_for_story(user_id, news_id))
+
+        model = self._current_generation_model()
+        client = OpenAI(api_key=settings.deepseek_api_key, base_url=settings.deepseek_base_url)
+        parts = None
+        for _ in range(2):  # one retry for an answer that is not the JSON asked for
+            parts = itp.write_post(client=client, model=model, prompts_dir=settings.prompts_dir, lines=lines, frame=frame)
+            if parts:
+                break
+        if not parts:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Post generation returned empty content. Please try again.",
+            )
+        hashtags = [parts["hashtag"]] if parts["hashtag"] else []
+        snapshot_id = f"rs_{uuid4().hex}"
+        generation_meta = {
+            "pipeline_version": itp.PROMPT_VERSION.split("|")[0],
+            "model": model,
+            "prompt_version": itp.PROMPT_VERSION,
+            # Kept under profile_used because the activity report reads the
+            # platform from there; nothing else from the profile is used.
+            "profile_used": {"target_platform": platform},
+            "narrative_frame": {"index": frame_index + 1, "of": len(frames), "text": frame},
+            "post_parts": parts,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "retrieval_snapshot": {"snapshot_id": snapshot_id, "chunks": []},
+        }
+        try:
+            doc = self.repo.create(
+                {
+                    "user_id": user_id,
+                    "news_id": news_id,
+                    "content": itp.compose(parts, hashtags),
+                    "hashtags": hashtags,
+                    "status": "draft",
+                    "generation_meta": generation_meta,
+                    "origin": "test" if unrestricted else "generate",
+                    "created_day": today_day_key(),
+                    "story_slot": story_slot,
+                }
+            )
+        except DuplicateKeyError:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "error": "story_busy",
+                    "message": "Another post for this story was being written at the same time. Please try again.",
+                },
+            )
+        return PostGenerateResponse(
+            post=self._to_response(doc),
+            references=[],
+            retrieval_snapshot_id=snapshot_id,
+            retrieval_reused=False,
+        )
 
     def _next_story_slot(self, user_id: str, news_id: str) -> int:
         """
@@ -819,7 +913,19 @@ class PostsService:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid {field_name}.")
 
     def _normalize_hashtags(self, hashtags: list[str]) -> list[str]:
-        return sorted({h.strip().lower() for h in hashtags if h and h.strip()})
+        """
+        Each a single "#words_joined" tag, in the order the writer put them,
+        once each, at most ten. Order is kept because it is the order the tags
+        appear in the post; case is kept because "#INC" is not "#inc" to a reader.
+        """
+        from backend.services.inc_topic_posts import clean_hashtag
+
+        out: list[str] = []
+        for raw in hashtags:
+            tag = clean_hashtag(raw)
+            if tag and tag.lower() not in {t.lower() for t in out}:
+                out.append(tag)
+        return out[:10]
 
     def _validate_status_transition(self, old_status: str, new_status: str) -> None:
         allowed = {

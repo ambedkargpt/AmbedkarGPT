@@ -33,7 +33,8 @@ MIN_PER_PARTY = 10
 
 # Fields a listing leaves behind. A story's research brief is for writing a
 # post about it, not for showing it in a list.
-LIST_PROJECTION = {"research": 0}
+# The topic flow's lines and frames likewise: a list needs only its version.
+LIST_PROJECTION = {"research": 0, "topic_flow.transcript_lines": 0, "topic_flow.narrative_frames": 0}
 
 
 def _scope_clause(scope: str) -> dict:
@@ -245,6 +246,7 @@ class NewsRepository:
             "content_type": doc.get("content_type", "news"),
             "legacy_source": doc.get("legacy_source"),
             "original_sort_timestamp": doc.get("original_sort_timestamp"),
+            "topic_flow": doc.get("topic_flow"),
             "updated_at": now,
         }
         payload = {k: v for k, v in payload.items() if v is not None}

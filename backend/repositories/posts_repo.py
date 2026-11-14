@@ -68,6 +68,10 @@ class PostsRepository:
             {"user_id": ObjectId(user_id), "news_id": ObjectId(news_id), "origin": "generate"}
         )
 
+    def count_any_for_story(self, user_id: str, news_id: str) -> int:
+        """Every post this user has from this story, test posts included."""
+        return self.collection.count_documents({"user_id": ObjectId(user_id), "news_id": ObjectId(news_id)})
+
     def refine_in_place(
         self,
         post_id: str,

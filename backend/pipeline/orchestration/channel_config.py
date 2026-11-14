@@ -22,6 +22,12 @@ def _required(payload: dict[str, Any], key: str) -> str:
     return value
 
 
+def _news_mode(value) -> str:
+    """"single", "multi", or "topics" (the INC topic flow, pipeline/inc_topics.py)."""
+    mode = str(value or "single").strip().lower()
+    return mode if mode in {"single", "multi", "topics"} else "single"
+
+
 def load_channel_config(project_root: Path, channel: str) -> ChannelConfig:
     config_path = project_root / "config" / "channels" / f"{channel}.json"
     if not config_path.is_file():
@@ -75,7 +81,7 @@ def load_channel_config(project_root: Path, channel: str) -> ChannelConfig:
         scope=(str(payload.get("scope") or "national").strip().lower()),
         region=(str(payload.get("region") or "").strip() or None),
         source_name=(str(payload.get("source_name") or "").strip() or None),
-        news_mode=("multi" if str(payload.get("news_mode") or "single").strip().lower() == "multi" else "single"),
+        news_mode=_news_mode(payload.get("news_mode")),
         stories_per_video=int(payload.get("stories_per_video") or 1),
         stories_per_stream=int(
             payload.get("stories_per_stream")

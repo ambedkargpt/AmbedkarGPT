@@ -55,5 +55,8 @@ class NewsResponse(BaseModel):
     content_type: str = "news"
     legacy_source: Optional[str] = None
     original_sort_timestamp: Optional[float] = None
+    # "inc_topics_v1" for a card made by the INC topic flow, whose posts are
+    # written from its narrative frames; None for every other story.
+    post_flow: Optional[str] = None
     created_at: datetime
     updated_at: datetime

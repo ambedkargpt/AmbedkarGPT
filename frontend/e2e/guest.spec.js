@@ -38,7 +38,8 @@ async function api(page, { generate = 'ok' } = {}) {
     const req = route.request();
     const url = req.url();
     const json = (body, status = 200) => route.fulfill({ status, contentType: 'application/json', body: JSON.stringify(body) });
-    if (req.method() !== 'GET') sent.writes.push(`${req.method()} ${url}`);
+    // The visit beacon (analytics/visitBeacon.js) is not a write by the visitor.
+    if (req.method() !== 'GET' && !url.includes('/track/visit')) sent.writes.push(`${req.method()} ${url}`);
     if (url.includes('/auth/guest')) {
       const body = req.postDataJSON();
       sent.guest.push(body);
