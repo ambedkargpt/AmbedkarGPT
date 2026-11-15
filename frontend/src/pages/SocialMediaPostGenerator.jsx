@@ -20,7 +20,7 @@ import AgMark from '../components/brand/AgMark';
 import { useAuth } from '../context/AuthContext';
 import { getNews, getNewsById, getNewsByStoryId, getTenants } from '../api/news';
 import { adaptNews, resolveTenantForUser } from '../utils/newsTenants';
-import { generatePostForNews, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion, updatePost, warmGenerator, getPosts } from '../api/posts';
+import { generatePostForNews, regeneratePostFromSnapshot, translatePost, getDailyQuota, togglePostVersion, updatePost, warmGenerator, getPosts, getPost } from '../api/posts';
 import CountTo from '../components/generate/CountTo';
 import { getPartyQuestions } from '../api/questions';
 import { getProfileAnswers, saveProfileAnswers } from '../api/profile';
@@ -696,6 +696,26 @@ export default function SocialMediaPostGenerator() {
     setHasOtherVersion(Boolean(post?.previous_content));
     setRefinedIsLive(post?.refined_is_live !== false);
   }
+
+  // A post opened from post history: /generate/social-media?post=<id> shows it
+  // in the same view a freshly written post has, with its story beside it, as a
+  // page of its own (so it survives a refresh and the back button leaves it).
+  const openedPost = useRef(null);
+  useEffect(() => {
+    const postId = new URLSearchParams(location.search).get('post');
+    if (!postId || openedPost.current === postId || !currentUser?.id) return;
+    openedPost.current = postId;
+    getPost(postId)
+      .then(async (post) => {
+        const item = await getNewsById(post.news_id).catch(() => null);
+        if (item) setSelectedArticle(adaptNews(item));
+        const label = post.generation_meta?.profile_used?.target_platform;
+        const match = PLATFORMS.find((p) => p.label === label || p.id === String(label || '').toLowerCase());
+        if (match) setPlatform(match.id);
+        openExistingPost(post);
+      })
+      .catch(() => {});
+  }, [location.search, currentUser?.id]);
 
   async function handleTranslate() {
     if (guestAccount) return;   // see utils/guestAccess.js

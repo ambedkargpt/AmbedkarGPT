@@ -113,3 +113,9 @@ export async function deletePost(id) {
   const { data } = await client.delete(`/posts/${id}`);
   return data;
 }
+
+// GET /posts/:id - one of the user's own posts (post history opens it as a page).
+export async function getPost(id) {
+  const { data } = await client.get(`/posts/${id}`);
+  return data;
+}
