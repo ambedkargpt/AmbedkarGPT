@@ -205,7 +205,16 @@ function PostCard({ post, view, index, onOpen, onCopy, onPublish, onArchive, onT
         className="min-w-0 flex-1 text-left"
         aria-label={t('hist.read')}
       >
-        <p className={`whitespace-pre-line text-[16px] leading-[1.65] text-[#d5def0] ${list ? 'line-clamp-2' : 'line-clamp-4'}`} {...(guest ? noCopyProps : {})}>
+        {/* The post is Hindi whatever the interface language is, so it is set in the Devanagari face the post page
+            uses, not the interface's Latin one: under English the browser fell back to a system Devanagari font at
+            Latin line height, and line-clamp's clipping cut the tops off the matras. The taller line and the small
+            top padding keep them inside the clipped box. */}
+        <p
+          lang="hi"
+          className={`whitespace-pre-line pt-1 text-[17px] font-medium leading-[1.85] text-[#eef3fc] ${list ? 'line-clamp-2' : 'line-clamp-4'}`}
+          style={{ fontFamily: 'var(--font-hindi)' }}
+          {...(guest ? noCopyProps : {})}
+        >
           {content}
         </p>
       </button>
