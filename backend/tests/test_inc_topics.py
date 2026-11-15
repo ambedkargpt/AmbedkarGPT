@@ -80,7 +80,8 @@ def test_each_topic_becomes_a_row_with_its_flow():
                                            "upload_date": "20261113", "source_tab": "streams"}], client=client)
     assert [r["video_link"] for r in rows] == ["https://youtu.be/abc#topic-1", "https://youtu.be/abc#topic-2"]
     assert rows[0]["headline"] == "राजधानी को जेल बनाया" and rows[0]["summary_text"] == "सामग्री एक"
-    assert rows[1]["topic_flow"] == {"version": "inc_topics_v1", "transcript_lines": ["दूसरी बात किसानों की है।", "धान का दाम नहीं मिला।"],
+    assert rows[1]["topic_flow"] == {"version": "inc_topics_v1", "stance": "support",
+                                     "transcript_lines": ["दूसरी बात किसानों की है।", "धान का दाम नहीं मिला।"],
                                      "narrative_frames": ["c"]}
     assert rows[0]["upload_date"] == "20261113" and rows[0]["source_tab"] == "streams"
     # Sir's Prompt 1 is the system message; the numbered transcript is the user message.
@@ -98,14 +99,46 @@ def test_a_failing_video_is_skipped_not_fatal():
     assert it.build_topic_rows(settings, [{"title": "t", "url": "u", "transcript": TRANSCRIPT}], client=Broken()) == []
 
 
-def test_the_congress_channels_use_the_topic_flow_and_others_do_not():
+def test_the_congress_and_bjp_channels_use_the_topic_flow_and_others_do_not():
     from backend.pipeline.orchestration.channel_config import load_channel_config
 
-    for name in ("congress", "congress_mp", "congress_up"):
-        assert load_channel_config(BACKEND, name).news_mode == "topics"
+    for name in ("congress", "congress_mp", "congress_up", "bjp", "bjp_mp", "bjp_up"):
+        assert load_channel_config(BACKEND, name).news_mode == "topics", name
     for path in (BACKEND / "config" / "channels").glob("*.json"):
-        if not path.stem.startswith("congress"):
+        if not path.stem.startswith(("congress", "bjp")):
             assert load_channel_config(BACKEND, path.stem).news_mode != "topics", path.stem
+
+
+def test_the_bjp_channel_is_opposed_and_the_party_channel_supported(monkeypatch):
+    """The stage picks the stance from the tenant; Prompt 1 follows it, and it is stored on the card."""
+    from backend.pipeline.orchestration import stages
+    from backend.pipeline.orchestration.channel_config import load_channel_config
+
+    seen = []
+    monkeypatch.setattr(it, "build_topic_rows", lambda settings, entries, show_progress=False, stance="support": seen.append(stance) or [])
+    for name in ("bjp", "congress"):
+        ctx = SimpleNamespace(channel=load_channel_config(BACKEND, name), settings=None,
+                              runtime={"newly_fetched_entries": [{"title": "t", "url": "u", "transcript": "x"}]})
+        stages._run_topic_generation(ctx)
+    assert seen == ["oppose", "support"]
+
+    client = _Client(json.dumps({"topics": [{"JSON_1": "शीर्षक", "JSON_2": "सार", "JSON_3": [1], "JSON_4": ["फ्रेम"]}]}, ensure_ascii=False))
+    monkeypatch.undo()  # the real build_topic_rows from here
+    rows = it.build_topic_rows(SimpleNamespace(prompts_dir=PROMPTS), [{"title": "t", "url": "u", "transcript": TRANSCRIPT}],
+                               client=client, stance="oppose")
+    assert rows[0]["topic_flow"]["stance"] == "oppose"
+    assert "oppose and criticize the BJP" in client.calls[0]["messages"][0]["content"]
+
+
+def test_opposition_posts_attack_the_bjp_for_the_writers_own_party():
+    sp = itp.system_prompt(PROMPTS, "oppose", "samajwadi")
+    assert "Samajwadi Party (SP)" in sp and "{party_name}" not in sp and "oppose and criticize the BJP" in sp
+    assert "Indian National Congress (INC)" in itp.system_prompt(PROMPTS, "oppose", None)
+    assert itp.system_prompt(PROMPTS, "support", "samajwadi").startswith("Role:You are an Expert Political Communication Strategist and Social Media Copywriter for the Indian National Congress")
+    parts = {"hashtag": "#टैग", "more_hashtags": []}
+    assert itp.starting_hashtags(parts, "samajwadi") == ["#टैग", "#समाजवादी_पार्टी", "#अखिलेश_यादव"]
+    assert "#PDA" in itp.suggested_hashtags(parts, "samajwadi") and "#INC" not in itp.suggested_hashtags(parts, "samajwadi")
+    assert itp.starting_hashtags(parts, "unknown") == ["#टैग", "#कांग्रेस", "#राहुल_गांधी"]
 
 
 def test_the_flow_reaches_mongo_and_lists_leave_its_lines_behind():
@@ -175,7 +208,7 @@ def test_only_the_lines_and_the_frame_go_to_the_model():
 USER = "64b000000000000000000001"
 
 
-def _service(monkeypatch, *replies, written=0, test_account=False):
+def _service(monkeypatch, *replies, written=0, test_account=False, party="congress"):
     from backend.repositories.posts_repo import PostsRepository
     from backend.services import posts_service as ps
 
@@ -186,6 +219,7 @@ def _service(monkeypatch, *replies, written=0, test_account=False):
         svc.repo.collection.insert_one({"user_id": ObjectId(USER), "news_id": NEWS_ID, "origin": "generate"})
     svc._is_test_account = lambda user_id: test_account
     svc._check_guest_limit = lambda user_id: None
+    svc._writer_party = lambda user_id: party
     client = _Client(*replies)
     monkeypatch.setattr(ps, "OpenAI", lambda **kw: client)
     return svc, client
@@ -212,6 +246,18 @@ def test_generate_writes_from_the_next_frame_and_saves_the_parts(monkeypatch):
     assert '"JSON_4": "दूसरा"' in client.calls[0]["messages"][1]["content"]
     saved = svc.repo.collection.find_one({"story_slot": 2})
     assert saved["origin"] == "generate"
+
+
+def test_an_sp_writer_on_a_bjp_card_gets_the_opposition_prompt_and_sp_hashtags(monkeypatch):
+    svc, client = _service(monkeypatch, ANSWER, party="samajwadi")
+    bjp_card = {**NEWS_DOC, "tenant_slug": "bjp", "topic_flow": {**NEWS_DOC["topic_flow"], "stance": "oppose"}}
+    out = svc._generate_topic_post(user_id=USER, news_id=str(NEWS_ID), news_doc=bjp_card, platform="")
+    system = client.calls[0]["messages"][0]["content"]
+    assert "Samajwadi Party (SP)" in system and "oppose and criticize the BJP" in system
+    assert out.post.hashtags == ["#टैग", "#समाजवादी_पार्टी", "#अखिलेश_यादव"]
+    meta = out.post.generation_meta
+    assert (meta["stance"], meta["writer_party"]) == ("oppose", "samajwadi")
+    assert meta["prompt_version"].endswith("opposition_topic_post_system.txt")
 
 
 def test_after_the_last_frame_it_starts_again(monkeypatch):
