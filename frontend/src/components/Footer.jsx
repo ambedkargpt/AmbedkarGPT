@@ -79,7 +79,7 @@ export default function Footer() {
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgba(63,159,255,0.45),transparent)]" />
       <div className="pointer-events-none absolute -top-40 left-1/2 h-72 w-[65%] -translate-x-1/2 rounded-full bg-[#2d7dfb]/10 blur-[120px]" />
 
-      <div className="relative mx-auto max-w-[1280px] px-5 py-12 sm:px-6 sm:py-14 md:py-16">
+      <div className="relative mx-auto max-w-[1600px] px-5 py-12 sm:px-6 md:px-10 sm:py-14 md:py-16">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr] lg:gap-14">
 
           {/* Brand */}

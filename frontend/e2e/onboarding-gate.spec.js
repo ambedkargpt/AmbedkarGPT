@@ -118,7 +118,8 @@ test('an account that has done both gets in', async ({ page }) => {
   await expect(page.getByRole('heading', { name: /set up your profile first|पहले अपनी प्रोफ़ाइल/i })).toHaveCount(0);
 });
 
-test('the ON AIR strip in the app frame opens the station and signs out', async ({ page }) => {
+// Skipped while Bhim Radio is switched off (RADIO_ENABLED in src/data/features.js).
+test.skip('the ON AIR strip in the app frame opens the station and signs out', async ({ page }) => {
   await signedIn(page, { political_party: INC, party_position: 'national_vice_president' },
     { party: false, position: false, profile: false });
   await page.goto('/posts');

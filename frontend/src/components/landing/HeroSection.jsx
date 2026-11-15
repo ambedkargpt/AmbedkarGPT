@@ -138,7 +138,7 @@ export default function HeroSection({ splashDone = true }) {
       </div>
 
       {/* ── Main content ── */}
-      <div className="relative z-10 mx-auto grid max-w-7xl items-stretch gap-8 px-6 pb-6 pt-4 md:grid-cols-[1fr_auto] md:pb-10 md:pt-8">
+      <div className="relative z-10 mx-auto grid max-w-[1600px] items-stretch gap-8 px-6 md:px-10 pb-6 pt-4 md:grid-cols-[1fr_auto] md:pb-10 md:pt-8">
 
         {/* LEFT: text */}
         {/* No bottom padding. The grid is items-stretch, so both columns are the

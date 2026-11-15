@@ -246,7 +246,7 @@ export default function DalitHistoryMakers() {
   return (
     <section className="relative py-10 md:py-14">
 
-      <div className="mx-auto max-w-7xl px-6">
+      <div className="mx-auto max-w-[1600px] px-6 md:px-10">
         <SectionLabel>{t('makers.label')}</SectionLabel>
 
         <h2 className="mx-auto mt-8 max-w-[900px] text-center font-display text-[clamp(31px,8.4vw,52px)] font-bold leading-[1.05] text-white md:text-[72px]">

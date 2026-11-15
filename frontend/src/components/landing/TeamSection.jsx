@@ -275,7 +275,7 @@ export default function TeamSection() {
   return (
     <section id="charity" className="relative py-8 md:py-10">
 
-      <div className="mx-auto max-w-7xl px-6">
+      <div className="mx-auto max-w-[1600px] px-6 md:px-10">
         <SectionLabel>{t('team.label')}</SectionLabel>
 
         <h2 className="mx-auto mt-8 max-w-[820px] text-center font-display text-[clamp(30px,8vw,46px)] font-bold leading-[1.05] text-white md:text-[62px]">

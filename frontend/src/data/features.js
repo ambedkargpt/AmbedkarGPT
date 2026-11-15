@@ -22,6 +22,13 @@ export const PREFERENCES_ENABLED = false;
  */
 export const NEWS_TICKER_ENABLED = false;
 
+/**
+ * Bhim Radio, everywhere: the navbar and sidebar links, the strip under the navbar, the landing page's
+ * floating card and tool card, the now-playing bar, and the /bhimradio page (which sends visitors home).
+ * Off since Nov 2026 until there are enough users; its code stays, and true brings all of it back.
+ */
+export const RADIO_ENABLED = false;
+
 /** Where "home" is for a signed-in user: the news feed to write from. */
 export const HOME_ROUTE = '/generate/social-media';
 

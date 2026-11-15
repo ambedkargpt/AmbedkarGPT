@@ -144,7 +144,7 @@ export default function ContactSection() {
       {/* Closing word of the page, behind the manifesto. */}
       <span className="bg-word top-24 hidden sm:block" aria-hidden="true">MOVEMENT</span>
 
-      <div className="relative mx-auto max-w-7xl px-6">
+      <div className="relative mx-auto max-w-[1600px] px-6 md:px-10">
         {/* ══════════ Top: Work With Us CTA strip ══════════ */}
         <SectionLabel>{t('landing.connectWithUs')}</SectionLabel>
 

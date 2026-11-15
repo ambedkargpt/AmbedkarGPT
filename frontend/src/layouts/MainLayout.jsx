@@ -6,6 +6,7 @@ import RadioLiveStrip from '../components/RadioLiveStrip';
 import NewsTicker from '../components/NewsTicker';
 import { NEWS_TICKER_ENABLED } from '../data/features';
 import RadioBeacon from '../components/radio/RadioBeacon';
+import { RADIO_ENABLED } from '../data/features';
 
 // Tailwind needs these spellings present in the source to emit the classes,
 // so they are a lookup rather than a computed `md:pt-${n}`.
@@ -22,7 +23,7 @@ export default function MainLayout({ children, bare = false, noNav = false }) {
   // Not on the landing page: a visitor being told what the product is should
   // not be reading today's politics crawl past the pitch.
   const showTicker = NEWS_TICKER_ENABLED && pathname !== '/';
-  const showStrips = !bare;
+  const showStrips = RADIO_ENABLED && !bare;
 
   // Scroll to #section after a route change. Nothing did this, so a link from
   // another page to "/#contact" landed at the top of the home page and the
@@ -86,7 +87,7 @@ export default function MainLayout({ children, bare = false, noNav = false }) {
       </main>
       {/* The landing page's floating on-air card: rises once the hero has
           scrolled away, and shrinks to a pulsing button when closed. */}
-      {pathname === '/' && !bare && <RadioBeacon />}
+      {RADIO_ENABLED && pathname === '/' && !bare && <RadioBeacon />}
     </>
   );
 }

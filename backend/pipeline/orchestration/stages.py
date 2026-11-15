@@ -294,7 +294,13 @@ def _run_topic_generation(context: PipelineContext) -> StageResult:
     entries = context.runtime.get("newly_fetched_entries") or []
     if not entries:
         return StageResult("news_generation", "skipped", warnings=["no-new-transcripts"])
-    rows = build_topic_rows(context.settings, entries, show_progress=True)
+    # The opposition's own channel is answered, not relayed: its cards and
+    # posts oppose and criticize it (prompts/opposition_topic*_system.txt).
+    from backend.tenants import get_tenant
+
+    tenant = get_tenant(context.channel.tenant_slug)
+    stance = "oppose" if tenant is not None and tenant.is_opposition else "support"
+    rows = build_topic_rows(context.settings, entries, show_progress=True, stance=stance)
     if not rows:
         return StageResult("news_generation", "skipped", warnings=["no-topics-extracted"])
     stats = update_generated_news_rolling(

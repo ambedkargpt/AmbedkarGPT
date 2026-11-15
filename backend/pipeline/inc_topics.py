@@ -34,7 +34,10 @@ if TYPE_CHECKING:
 _log = logging.getLogger(__name__)
 
 FLOW_VERSION = "inc_topics_v1"
-SYSTEM_PROMPT_NAME = "inc_topics_system.txt"
+# "support": the writer's own party's channel (sir's Prompt 1). "oppose": the
+# BJP's own channel, the same prompt turned to oppose and criticize the BJP.
+SYSTEM_PROMPTS = {"support": "inc_topics_system.txt", "oppose": "opposition_topics_system.txt"}
+SYSTEM_PROMPT_NAME = SYSTEM_PROMPTS["support"]
 
 # Prompt 1 should see the whole conversation: "cover entire transcript". A
 # long press conference runs past the 24,000 characters the old story splitter
@@ -120,8 +123,8 @@ def parse_topics(raw: str, lines: List[str]) -> List[Dict[str, Any]]:
     return out[:_MAX_TOPICS]
 
 
-def load_system_prompt(settings: "Settings") -> str:
-    path = settings.prompts_dir / SYSTEM_PROMPT_NAME
+def load_system_prompt(settings: "Settings", stance: str = "support") -> str:
+    path = settings.prompts_dir / SYSTEM_PROMPTS.get(stance, SYSTEM_PROMPT_NAME)
     return path.read_text(encoding="utf-8").strip()
 
 
@@ -157,9 +160,12 @@ def build_topic_rows(
     *,
     show_progress: bool = False,
     client=None,
+    stance: str = "support",
 ) -> List[Dict[str, Any]]:
     """
-    Fetched transcript entries -> news rows, one per topic. Same shape as
+    Fetched transcript entries -> news rows, one per topic. ``stance`` is
+    "oppose" for the BJP's channel and "support" otherwise; it picks Prompt 1
+    here, and is stored so the post step picks the matching Prompt 2. Same shape as
     multi_news_generator.build_story_rows, plus ``topic_flow``, so the rolling
     file and the publish step treat them like any pre-generated story.
     """
@@ -169,7 +175,7 @@ def build_topic_rows(
         from backend.pipeline.video_summarizer import deepseek_chat_client
 
         client = deepseek_chat_client(settings)
-    system_msg = load_system_prompt(settings)
+    system_msg = load_system_prompt(settings, stance)
     rows: List[Dict[str, Any]] = []
     for item in entries:
         title = str(item.get("title") or item.get("video_title") or "").strip()
@@ -198,6 +204,7 @@ def build_topic_rows(
                 "summary_text": topic["content"],
                 "topic_flow": {
                     "version": FLOW_VERSION,
+                    "stance": stance,
                     "transcript_lines": topic["lines"],
                     "narrative_frames": topic["frames"],
                 },

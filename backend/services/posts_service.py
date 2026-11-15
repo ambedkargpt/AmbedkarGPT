@@ -476,6 +476,16 @@ class PostsService:
             return False
         return bool((user or {}).get("is_test_account"))
 
+    def _writer_party(self, user_id: str) -> str:
+        """The writer's party as a tenant slug ("congress", "samajwadi"); Congress when unknown."""
+        from backend.pipeline.generator import _own_party_slug
+
+        try:
+            user = db["users"].find_one({"_id": ObjectId(user_id)}, {"political_party": 1}) or {}
+        except Exception:
+            user = {}
+        return _own_party_slug({"political_party": user.get("political_party") or ""}) or "congress"
+
     def _check_guest_limit(self, user_id: str) -> None:
         """A 429 when a guest account has written its posts for today."""
         try:
@@ -518,12 +528,15 @@ class PostsService:
             story_slot = self._next_story_slot(user_id, news_id)
             self._check_guest_limit(user_id)
         frame_index, frame = itp.frame_for(frames, self.repo.count_any_for_story(user_id, news_id))
+        stance = flow.get("stance") or "support"
+        party = self._writer_party(user_id)
 
         model = self._current_generation_model()
         client = OpenAI(api_key=settings.deepseek_api_key, base_url=settings.deepseek_base_url)
         parts = None
         for _ in range(2):  # one retry for an answer that is not the JSON asked for
-            parts = itp.write_post(client=client, model=model, prompts_dir=settings.prompts_dir, lines=lines, frame=frame)
+            parts = itp.write_post(client=client, model=model, prompts_dir=settings.prompts_dir, lines=lines, frame=frame,
+                                   stance=stance, party=party)
             if parts:
                 break
         if not parts:
@@ -531,17 +544,19 @@ class PostsService:
                 status_code=status.HTTP_502_BAD_GATEWAY,
                 detail="Post generation returned empty content. Please try again.",
             )
-        hashtags = itp.starting_hashtags(parts)
-        parts["suggested_hashtags"] = itp.suggested_hashtags(parts)
+        hashtags = itp.starting_hashtags(parts, party)
+        parts["suggested_hashtags"] = itp.suggested_hashtags(parts, party)
         snapshot_id = f"rs_{uuid4().hex}"
         generation_meta = {
             "pipeline_version": itp.PROMPT_VERSION.split("|")[0],
             "model": model,
-            "prompt_version": itp.PROMPT_VERSION,
+            "prompt_version": f"inc_topics_v1|{itp.SYSTEM_PROMPTS.get(stance, itp.SYSTEM_PROMPT_NAME)}",
             # Kept under profile_used because the activity report reads the
             # platform from there; nothing else from the profile is used.
             "profile_used": {"target_platform": platform},
             "narrative_frame": {"index": frame_index + 1, "of": len(frames), "text": frame},
+            "stance": stance,
+            "writer_party": party,
             "post_parts": parts,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "retrieval_snapshot": {"snapshot_id": snapshot_id, "chunks": []},

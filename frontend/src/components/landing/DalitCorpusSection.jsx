@@ -36,7 +36,7 @@ export default function DalitCorpusSection() {
           rather than behind it. */}
       <span className="bg-word top-16 hidden sm:block" aria-hidden="true">CORPUS</span>
 
-      <div className="relative mx-auto max-w-7xl px-6">
+      <div className="relative mx-auto max-w-[1600px] px-6 md:px-10">
         <div className="flex justify-center">
           <SectionLabel size="lg">{t('landing.dalitCorpus')}</SectionLabel>
         </div>

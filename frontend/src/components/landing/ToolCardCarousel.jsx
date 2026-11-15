@@ -3,6 +3,7 @@ import { Edit3, Bot, Radio, Music, Headphones, Mic2, Video, ArrowRight, Check } 
 import PeekCarousel from './PeekCarousel';
 import { useAuth } from '../../context/AuthContext';
 import { RADIO_REQUIRES_LOGIN } from '../../data/radioAccess';
+import { RADIO_ENABLED } from '../../data/features';
 import { useI18n } from '../../i18n/index.jsx';
 
 /*
@@ -16,7 +17,7 @@ import { useI18n } from '../../i18n/index.jsx';
  * visitor to the home page, not to login, so the card does what the hero's
  * old buttons did: remember the target and go to login itself.
  */
-const TOOLS = [
+const ALL_TOOLS = [
   {
     id: 'social', icon: Edit3, color: '#ff4f8a', gradient: 'from-[#ff4f8a] to-[#d43a68]',
     live: true, route: '/generate/social-media', auth: true,
@@ -50,6 +51,8 @@ const TOOLS = [
     live: false, title: 'svc.video.title', sub: 'svc.video.sub', f: 'svc.video.f',
   },
 ];
+// The radio's card goes while the radio is off (data/features.js).
+const TOOLS = ALL_TOOLS.filter((tool) => tool.id !== 'radio' || RADIO_ENABLED);
 
 function ToolCard({ tool, index, onTry }) {
   const { t } = useI18n();

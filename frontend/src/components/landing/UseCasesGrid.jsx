@@ -72,7 +72,7 @@ export default function UseCasesGrid() {
   return (
     <section id="bheem" className="relative py-8 md:py-10">
 
-      <div className="relative mx-auto max-w-7xl px-6">
+      <div className="relative mx-auto max-w-[1600px] px-6 md:px-10">
         <SectionLabel>{t('uc.label')}</SectionLabel>
 
         <h2 className="mx-auto mt-8 max-w-[900px] text-center font-display text-[clamp(26px,7.2vw,38px)] font-bold leading-[1.2] text-white md:text-[52px]">

@@ -7,7 +7,7 @@ export default function TrustedByStrip() {
   return (
     <section className="relative py-4 pb-6 md:py-6 md:pb-8">
 
-      <div className="relative mx-auto max-w-7xl px-6">
+      <div className="relative mx-auto max-w-[1600px] px-6 md:px-10">
         <div className="flex flex-col items-center gap-10 md:flex-row md:justify-evenly">
           <Sparkle size={32} color="#ffffff" className="hidden md:inline-flex" />
 

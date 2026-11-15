@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   Archive, Check, Copy, FileText, LayoutGrid, Languages, List, Maximize2, MoreHorizontal,
@@ -92,101 +91,6 @@ function PlatformLabel({ id }) {
     </span>
   );
 }
-
-// ── Reader ───────────────────────────────────────────────────────────────────
-
-function PostReader({ post, onClose, onCopy, copiedId }) {
-  const { t, lang } = useI18n();
-  // A guest account reads its posts; copying, listening and translating are locked.
-  const guest = useIsGuest();
-  const [translating, setTranslating] = useState(false);
-  const [translated, setTranslated] = useState('');
-  const [showTranslated, setShowTranslated] = useState(false);
-  const content = showTranslated && translated ? translated : (post?.content ?? '');
-  const contentLang = showTranslated && translated ? 'en' : 'hi';
-
-  useEffect(() => {
-    function onKey(e) { if (e.key === 'Escape') onClose(); }
-    window.addEventListener('keydown', onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
-  }, [onClose]);
-
-  async function toggleTranslate() {
-    if (showTranslated) { setShowTranslated(false); return; }
-    if (translated) { setShowTranslated(true); return; }
-    setTranslating(true);
-    try {
-      const res = await translatePost(post.id, 'en');
-      setTranslated(res.translated_content ?? '');
-      setShowTranslated(true);
-    } catch { /* stays on the original */ } finally { setTranslating(false); }
-  }
-
-  const when = post.created_at
-    ? new Date(post.created_at).toLocaleString(lang === 'hi' ? 'hi-IN' : 'en-IN', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })
-    : '';
-
-  // Into document.body: a transformed ancestor would otherwise pin the dialog
-  // inside the page instead of the viewport.
-  return createPortal(
-    <div
-      className="fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-[#030611]/85 p-4 backdrop-blur-sm md:p-8"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label={t('hist.read')}
-    >
-      <div
-        className="hist-pop relative my-auto flex max-h-[calc(100vh-4rem)] w-full max-w-[820px] flex-col overflow-hidden rounded-3xl border border-[#1e3260] bg-[#0a1130] shadow-[0_30px_80px_rgba(0,0,0,0.6)]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-[#1a2c55]/80 px-5 py-4 md:px-7">
-          <PlatformLabel id={platformOf(post)} />
-          <StatusBadge status={post.status} />
-          <span className="text-[13.5px] text-[#7d89ad]">{when}</span>
-          <div className="ml-auto flex items-center gap-2">
-            {guest ? <GuestLock compact /> : (<>
-            <SpeakButton content={content} lang={contentLang} />
-            <button
-              type="button"
-              onClick={toggleTranslate}
-              disabled={translating}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[#1e3a6e] bg-[#0d1840] px-3.5 text-[14px] font-semibold text-[#9cc3ff] transition hover:text-white disabled:opacity-50"
-            >
-              <Languages size={15} strokeWidth={2} />
-              {translating ? t('hist.translating') : showTranslated ? t('hist.original') : t('hist.translate')}
-            </button>
-            <button
-              type="button"
-              onClick={() => onCopy(post.id, content)}
-              className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-[#1e3260] px-3.5 text-[14px] font-semibold text-[#c5d0e8] transition hover:text-white"
-            >
-              {copiedId === post.id ? <Check size={15} strokeWidth={2.6} className="text-[#4ade80]" /> : <Copy size={15} strokeWidth={2} />}
-              {copiedId === post.id ? t('hist.copied') : t('hist.copy')}
-            </button>
-            </>)}
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={t('hist.close')}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#1e3260] text-[#8b94b8] transition hover:text-white"
-            >
-              <X size={17} strokeWidth={2} />
-            </button>
-          </div>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-7 md:px-9" {...(guest ? noCopyProps : {})}>
-          <PostContent content={content} lang={contentLang} />
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
-}
-
-// ── Card ─────────────────────────────────────────────────────────────────────
 
 function CardMenu({ post, translated, translating, onRead, onTranslate, onToggleVersion, onArchive, onCopy }) {
   const { t } = useI18n();
@@ -367,7 +271,6 @@ export default function PostHistory() {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [copiedId, setCopied] = useState(null);
-  const [openPost, setOpenPost] = useState(null);
   const [view, setView] = useState(readView);
 
   useEffect(() => {
@@ -574,7 +477,7 @@ export default function PostHistory() {
                         post={post}
                         view={view}
                         index={running++}
-                        onOpen={setOpenPost}
+                        onOpen={(post) => navigate(`/generate/social-media?post=${post.id}`)}
                         onCopy={handleCopy}
                         onPublish={handlePublish}
                         onArchive={handleArchive}
@@ -592,10 +495,6 @@ export default function PostHistory() {
           )}
         </main>
       </div>
-
-      {openPost && (
-        <PostReader post={openPost} onClose={() => setOpenPost(null)} onCopy={handleCopy} copiedId={copiedId} />
-      )}
 
       {publishing && (
         <PublishSheet
