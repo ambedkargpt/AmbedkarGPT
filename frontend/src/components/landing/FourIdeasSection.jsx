@@ -88,7 +88,7 @@ export default function FourIdeasSection() {
   return (
     <section className="relative pt-6 pb-10 sm:pb-20 md:pt-8 md:pb-28">
 
-      <div className="relative mx-auto max-w-7xl px-6">
+      <div className="relative mx-auto max-w-[1600px] px-6 md:px-10">
         <div className="flex flex-col items-center text-center">
           <SectionLabel>{t('ideas.label')}</SectionLabel>
 

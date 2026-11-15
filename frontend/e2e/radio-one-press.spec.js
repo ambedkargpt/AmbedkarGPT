@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
 
+// Bhim Radio is switched off (RADIO_ENABLED in src/data/features.js); these come back with it.
+test.skip(true, 'Bhim Radio is switched off');
+
 /**
  * One press of "Listen now" (the ON AIR bar) or "Listen right here" (the
  * landing page's radio card) starts the sound. Before, the bar only opened

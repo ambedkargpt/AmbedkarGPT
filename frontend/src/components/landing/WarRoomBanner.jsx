@@ -1,19 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Bot, Megaphone, Radar, Zap } from 'lucide-react';
+import { ArrowRight, Bot, Megaphone, PenLine, Search, Target } from 'lucide-react';
 
 import { useI18n } from '../../i18n/index.jsx';
 import { PLATFORM_ICON } from '../generate/platformIcons';
+import WarRoomContact from './WarRoomContact';
 
 /**
- * The war room, on the landing page.
+ * The war room, on the landing page, in the words RSS-GPT uses for it.
  *
- * Every campaign runs one: a room where the news is watched, the other side's
- * moves are answered, and the message goes out to every worker the same hour.
- * The banner says AmbedkarGPT is that room, with AI doing the watching and the
- * writing. Everything it promises is something the product does today: news
- * by level for the party and the opposition, a post in the party's voice in a
- * minute, four platforms, and BhimBot's arguments from the corpus.
+ * What a senior leader says is decided first in a war room: former IAS and IPS
+ * officers, strategists and graduates of the top institutions choose what to
+ * say and in which words. AmbedkarGPT gives that war room as AI agents
+ * (research, strategy, words, platform). "Open your war room" opens a dialog
+ * with the team's number to call or message on WhatsApp (WarRoomContact).
  *
  * Its strings live here rather than in en.js / hi.js: one self-contained
  * section, dropped onto one page.
@@ -23,19 +23,19 @@ const COPY = {
   hi: {
     eyebrow: 'AI वॉर रूम',
     live: 'लाइव',
-    title1: 'आपका चुनावी वॉर रूम,',
-    title2: 'अब AI के साथ।',
-    sub: 'ख़बरों पर 24×7 नज़र, विपक्ष को तुरंत जवाब, और हर कार्यकर्ता तक एक ही संदेश। जो काम पूरी टीम करती थी, अब एक स्क्रीन से।',
+    title1: 'हर बड़े भाषण के पीछे',
+    title2: 'एक वॉर रूम होता है।',
+    sub: 'बड़े नेता जो बोलते हैं, वह पहले वॉर रूम में तय होता है: पूर्व IAS-IPS अफ़सर, रणनीतिकार और देश के टॉप संस्थानों से पढ़े लोग मिलकर चुनते हैं कि क्या कहना है और किन शब्दों में। इतना तामझाम हर किसी के बस का नहीं। AmbedkarGPT वही वॉर रूम आपको AI एजेंट्स के रूप में देता है।',
     features: [
-      ['watch', 'हर ख़बर पर नज़र', 'आपकी पार्टी और विपक्ष की ख़बरें, देश से राज्य तक, एक जगह।'],
-      ['reply', 'मिनटों में जवाब', 'विपक्ष के बयान पर पार्टी की आवाज़ में तैयार पोस्ट।'],
-      ['reach', 'हर प्लेटफ़ॉर्म तक', 'WhatsApp, X, Facebook और Reddit के लिए अलग-अलग लिखी हुई।'],
-      ['argue', 'तर्क जो टिके', 'बाबासाहेब के लेखन से जवाब, स्रोत के साथ।'],
+      ['research', 'शोध एजेंट', 'ख़बर के पीछे के तथ्य, आँकड़े और पुराना रिकॉर्ड खोजता है।'],
+      ['strategy', 'रणनीति एजेंट', 'तय करता है कि मुद्दे को किस कोण से उठाना है और सरकार को कहाँ घेरना है।'],
+      ['words', 'शब्द एजेंट', 'आपके पद की आवाज़ में, हर शब्द तौलकर, हिंदी में लिखता है।'],
+      ['platform', 'मंच एजेंट', 'वही बात WhatsApp, Facebook, Reddit और X के नाप में ढालता है।'],
     ],
-    cta: 'अपना वॉर रूम शुरू करें',
+    cta: 'अपना वॉर रूम खोलें',
     cta2: 'भीमबॉट से पूछें',
-    note: 'मुफ़्त शुरू करें · हिंदी और अंग्रेज़ी में',
-    console: 'वॉर रूम · आज',
+    note: 'हमसे सीधे बात करें · हम आपका वॉर रूम तैयार करेंगे',
+    console: 'वॉर रूम · एजेंट',
     radar: 'ख़बरों की निगरानी',
     party: 'कांग्रेस',
     opp: 'भाजपा',
@@ -44,27 +44,35 @@ const COPY = {
       ['party', 'संसद में कृषि मूल्य विधेयक पर मतदान की माँग', '9 मिनट पहले'],
       ['opp', 'केंद्र ने MSP पर अपना रुख़ दोहराया', '14 मिनट पहले'],
     ],
-    replyReady: 'जवाब तैयार',
+    replyReady: 'पोस्ट तैयार',
     replyText: 'आरक्षण संविधान का वादा है, किसी की मेहरबानी नहीं। बाबासाहेब ने…',
     seconds: '42 सेकंड में',
     sample: 'नमूना',
+    contactTitle: 'अपना वॉर रूम शुरू करें',
+    contactBody: 'अपने वॉर रूम के लिए सीधे बात करें। कॉल करें या WhatsApp पर संदेश भेजें।',
+    contactCall: 'कॉल करें',
+    contactWhatsapp: 'WhatsApp पर संदेश',
+    contactCopy: 'नंबर कॉपी करें',
+    contactCopied: 'कॉपी हो गया',
+    contactClose: 'बंद करें',
+    contactMessage: 'नमस्ते, मुझे AmbedkarGPT का वॉर रूम शुरू करना है।',
   },
   en: {
     eyebrow: 'AI war room',
     live: 'Live',
-    title1: 'Your campaign war room,',
-    title2: 'now run with AI.',
-    sub: 'Watch the news around the clock, answer the other side at once, and send one message to every worker. What took a whole team now runs from one screen.',
+    title1: 'Behind every big speech',
+    title2: 'there is a war room.',
+    sub: 'What a senior leader says is decided first in a war room: former IAS and IPS officers, strategists and graduates of the country’s top institutions choose what to say and in which words. Few can afford that set-up. AmbedkarGPT gives you that war room as AI agents.',
     features: [
-      ['watch', 'Every story, watched', 'Your party’s and the opposition’s news, national to state, in one place.'],
-      ['reply', 'Answers in minutes', 'A post in your party’s voice, ready the moment the other side speaks.'],
-      ['reach', 'On every platform', 'Written separately for WhatsApp, X, Facebook and Reddit.'],
-      ['argue', 'Arguments that hold', 'Answers from Babasaheb’s own writing, with sources.'],
+      ['research', 'Research agent', 'Finds the facts, figures and past record behind the story.'],
+      ['strategy', 'Strategy agent', 'Decides the angle to take and where to corner the government.'],
+      ['words', 'Words agent', 'Writes in your role’s voice, every word weighed, in Hindi.'],
+      ['platform', 'Platform agent', 'Fits the same message to WhatsApp, Facebook, Reddit and X.'],
     ],
-    cta: 'Start your war room',
+    cta: 'Open your war room',
     cta2: 'Ask BhimBot',
-    note: 'Free to start · Hindi and English',
-    console: 'War room · today',
+    note: 'Talk to us directly · we will set up your war room',
+    console: 'War room · agents',
     radar: 'News watch',
     party: 'Congress',
     opp: 'BJP',
@@ -73,14 +81,22 @@ const COPY = {
       ['party', 'Opposition demands a vote on the farm-price bill', '9 min ago'],
       ['opp', 'Centre repeats its stand on MSP', '14 min ago'],
     ],
-    replyReady: 'Reply ready',
+    replyReady: 'Post ready',
     replyText: 'Reservation is the Constitution’s promise, not anyone’s favour. Babasaheb…',
     seconds: 'in 42 seconds',
     sample: 'Sample',
+    contactTitle: 'Start your war room',
+    contactBody: 'Talk to us directly about your war room. Call, or send a message on WhatsApp.',
+    contactCall: 'Call',
+    contactWhatsapp: 'Message on WhatsApp',
+    contactCopy: 'Copy number',
+    contactCopied: 'Copied',
+    contactClose: 'Close',
+    contactMessage: 'Hello, I would like to start an AmbedkarGPT war room.',
   },
 };
 
-const FEATURE_ICON = { watch: Radar, reply: Zap, reach: Megaphone, argue: Bot };
+const FEATURE_ICON = { research: Search, strategy: Target, words: PenLine, platform: Megaphone };
 const SIDE = {
   party: { color: '#3f9fff', tint: 'rgba(63,159,255,0.14)' },
   opp:   { color: '#ff6b70', tint: 'rgba(229,72,77,0.14)' },
@@ -108,10 +124,11 @@ export default function WarRoomBanner() {
   const { lang } = useI18n();
   const c = COPY[lang] ?? COPY.hi;
   const active = useTicker(c.feed.length);
+  const [contactOpen, setContactOpen] = useState(false);
 
   return (
     <section id="war-room" aria-labelledby="war-room-title" className="relative py-14 md:py-20">
-      <div className="mx-auto max-w-7xl px-6">
+      <div className="mx-auto max-w-[1600px] px-6 md:px-10">
         <div className="wr-frame relative overflow-hidden rounded-[28px] border border-[#1e3260] bg-[#070c22] md:rounded-[36px]">
           {/* Ground: a war-room grid and a slow scan line. Decorative only. */}
           <div aria-hidden="true" className="wr-grid absolute inset-0 opacity-60" />
@@ -156,13 +173,15 @@ export default function WarRoomBanner() {
               </ul>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
-                <Link
-                  to="/signup"
+                <button
+                  type="button"
+                  onClick={() => setContactOpen(true)}
+                  aria-haspopup="dialog"
                   className="btn-gradient group inline-flex min-h-[54px] w-full items-center justify-center gap-2.5 sm:w-auto rounded-2xl px-7 text-[17px] font-semibold text-white shadow-[0_14px_36px_rgba(37,99,235,0.45)]"
                 >
                   {c.cta}
                   <ArrowRight size={18} strokeWidth={2.4} className="transition-transform duration-200 group-hover:translate-x-1" />
-                </Link>
+                </button>
                 <Link
                   to="/bhimbot"
                   className="inline-flex min-h-[54px] w-full items-center justify-center gap-2 rounded-2xl border border-[#2a4a85] sm:w-auto bg-[#0a1130]/70 px-6 text-[17px] font-semibold text-[#cfe0ff] transition hover:border-[#3f9fff] hover:text-white"
@@ -171,6 +190,7 @@ export default function WarRoomBanner() {
                 </Link>
               </div>
               <p className="mt-3 text-[14px] text-[#7d89ad]">{c.note}</p>
+              <WarRoomContact open={contactOpen} onClose={() => setContactOpen(false)} copy={c} />
             </div>
 
             {/* ── Console ── a sample of the screen, not live data */}

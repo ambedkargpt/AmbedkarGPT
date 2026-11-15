@@ -26,7 +26,7 @@ import { useAuth } from '../../context/AuthContext';
 import { RADIO_REQUIRES_LOGIN } from '../../data/radioAccess';
 import AdminNavLink from './AdminNavLink';
 import useSlidingPill, { pillStyle } from '../generate/useSlidingPill';
-import { DASHBOARD_ENABLED, HOME_ROUTE, PREFERENCES_ENABLED } from '../../data/features';
+import { DASHBOARD_ENABLED, HOME_ROUTE, PREFERENCES_ENABLED, RADIO_ENABLED } from '../../data/features';
 
 // Generating a post is the product's primary action, so it leads the nav and is
 // styled as a call to action rather than another list item.
@@ -52,7 +52,7 @@ const ALL_NAV = [
 // Also left out: anything not built yet (a row that only says "soon" is
 // noise to someone who came to write a post), and the dashboard and the
 // preferences while they are switched off (data/features.js).
-const NAV = ALL_NAV.filter((item) => (item.id !== 'radio' || RADIO_REQUIRES_LOGIN)
+const NAV = ALL_NAV.filter((item) => (item.id !== 'radio' || (RADIO_ENABLED && RADIO_REQUIRES_LOGIN))
   && !item.soon
   && (item.id !== 'dashboard' || DASHBOARD_ENABLED)
   && (item.id !== 'prefs' || PREFERENCES_ENABLED));
@@ -354,7 +354,7 @@ function SidebarContent({ active, onSelect, onClose, onLogout, collapsed = false
       {/* Bhim Radio, in reach on every screen: the wide rail had an empty
           stretch here. Amber is the radio's colour, the dot pulses while it
           is on air, and one press plays it in place. */}
-      {large && radioOn !== false && (
+      {large && RADIO_ENABLED && radioOn !== false && (
         // The same 12px above as below, so it sits evenly between the last
         // nav row and the language toggle.
         <div className="px-4 pt-3">

@@ -240,7 +240,7 @@ function PinnedServices() {
   }
 
   return (
-    <div ref={wrapRef} className="mx-auto max-w-7xl px-6 py-6">
+    <div ref={wrapRef} className="mx-auto max-w-[1600px] px-6 md:px-10 py-6">
       <div className="grid items-center gap-10 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
         <ul ref={listRef} className="relative space-y-1.5" role="tablist" aria-label={t('landing.ourServices')}>
           <span
@@ -298,7 +298,7 @@ export default function KnowledgeSection() {
   return (
     <section id="services" className="relative py-8 md:py-10">
 
-      <div className="relative mx-auto max-w-7xl px-6">
+      <div className="relative mx-auto max-w-[1600px] px-6 md:px-10">
         <SectionLabel>{t('landing.ourServices')}</SectionLabel>
 
         <h2 className="mx-auto mt-5 max-w-[820px] md:mt-8 text-center font-display text-[clamp(30px,8vw,46px)] font-bold leading-[1.05] text-white md:text-[62px]">
@@ -321,7 +321,7 @@ export default function KnowledgeSection() {
       </div>
 
       {/* Tablets: the services as plain cards, two across, no pinning. */}
-      <div className="mx-auto mt-10 hidden max-w-7xl gap-4 px-6 md:grid md:grid-cols-2 lg:hidden">
+      <div className="mx-auto mt-10 hidden max-w-[1600px] gap-4 px-6 md:px-10 md:grid md:grid-cols-2 lg:hidden">
         {SERVICES.map((s) => (
           <div key={s.id} data-card className="flex rounded-2xl">
             <ServiceCard service={s} compact />

@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { CurtainProvider } from './context/CurtainContext';
 import { RadioProvider } from './context/RadioContext';
 import RadioNowPlayingBar from './components/radio/RadioNowPlayingBar';
+import { RADIO_ENABLED } from './data/features';
 import MainLayout from './layouts/MainLayout';
 import { RADIO_REQUIRES_LOGIN } from './data/radioAccess';
 import { usePageViews } from './analytics/usePageViews';
@@ -183,8 +184,12 @@ export default function App() {
                 promotional strips, which on this page would be a milestone
                 bar and an announcement of the thing they are already
                 looking at. */}
+            {/* Off (RADIO_ENABLED): the address goes home instead of to a station nobody is shown. */}
             {!RADIO_REQUIRES_LOGIN && (
-              <Route path="/bhimradio" element={<MainLayout bare noNav><BhimRadio /></MainLayout>} />
+              <Route
+                path="/bhimradio"
+                element={RADIO_ENABLED ? <MainLayout bare noNav><BhimRadio /></MainLayout> : <Navigate to="/" replace />}
+              />
             )}
 
             {/* protected */}
@@ -238,7 +243,7 @@ export default function App() {
           </PageTransition>
           {/* Shown where the panel is not, so sound is never coming out of a
               page with no visible way to stop it. */}
-          <RadioNowPlayingBar />
+          {RADIO_ENABLED && <RadioNowPlayingBar />}
         </RadioProvider>
         </AuthProvider>
         </CurtainProvider>

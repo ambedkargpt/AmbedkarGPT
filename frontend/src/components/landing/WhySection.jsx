@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { RADIO_ENABLED } from '../../data/features';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check, Quote } from 'lucide-react';
 import { useI18n } from '../../i18n/index.jsx';
@@ -167,10 +168,10 @@ export default function WhySection() {
     <section className="relative px-3 py-6 sm:px-5" aria-labelledby="why-title">
       <div
         data-sheet
-        className="relative mx-auto max-w-[1400px] overflow-clip rounded-[32px] border border-white/[0.08] md:rounded-[48px]"
+        className="relative mx-auto max-w-[1600px] overflow-clip rounded-[32px] border border-white/[0.08] md:rounded-[48px]"
         style={{ background: 'radial-gradient(70% 50% at 0% 0%, rgba(26,95,255,0.18) 0%, transparent 60%), radial-gradient(60% 40% at 100% 100%, rgba(58,159,255,0.12) 0%, transparent 60%), linear-gradient(180deg, #0e1638 0%, #0a1030 100%)' }}
       >
-        <div className="mx-auto max-w-7xl px-6 py-14 md:px-10 md:py-24">
+        <div className="mx-auto max-w-[1600px] px-6 py-14 md:px-10 md:py-24">
           <p className="flex items-center gap-2 text-[14px] font-semibold text-[#8fb0ff]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#3f9fff]" />
             <span className={lang === 'hi' ? '' : 'font-count uppercase tracking-[0.18em]'}>{c.eyebrow}</span>
@@ -216,7 +217,7 @@ export default function WhySection() {
           <div className="mt-20 grid gap-x-10 border-t border-white/10 pt-10 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
             <p className="mb-6 font-display text-[24px] font-bold text-white md:mb-0">{c.linksTitle}</p>
             <ul className="grid gap-x-8 sm:grid-cols-2">
-              {c.links.map(([to, label]) => (
+              {c.links.filter(([to]) => to !== '/bhimradio' || RADIO_ENABLED).map(([to, label]) => (
                 <li key={to}>
                   <Link to={to} className="group flex items-center justify-between border-b border-white/10 py-4 text-[19px] font-semibold text-[#dbe4fb] transition-colors hover:text-white">
                     {label}

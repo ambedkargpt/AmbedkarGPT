@@ -7,6 +7,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import { SITE_LANGUAGES } from '../utils/siteLanguage';
 import { useI18n } from '../i18n/index.jsx';
 import { RADIO_REQUIRES_LOGIN } from '../data/radioAccess';
+import { RADIO_ENABLED } from '../data/features';
 import { MANUSMRITI_SECTION_ENABLED } from '../data/features';
 
 // action: 'scroll' (default) | 'bheembot' | 'dashboard' | 'radio' | 'manusmriti' | 'section:<id>'
@@ -15,7 +16,7 @@ const navItems = [
   { key: 'nav.corpusCaps',   sectionId: 'ambedkarverse' },
   { key: 'nav.servicesCaps', sectionId: 'services' },
   { key: 'nav.bheemCaps',    sectionId: 'bheem',   action: 'bheembot' },
-  { key: 'nav.radioCaps',    sectionId: 'radio',   action: 'radio' },
+  ...(RADIO_ENABLED ? [{ key: 'nav.radioCaps', sectionId: 'radio', action: 'radio' }] : []),
   ...(MANUSMRITI_SECTION_ENABLED ? [{ key: 'nav.manusmritiCaps', sectionId: 'manusmriti', action: 'manusmriti' }] : []),
   { key: 'nav.contactCaps',  sectionId: 'contact' },
 ];
@@ -161,7 +162,7 @@ export default function Navbar() {
         menuOpen ? 'bg-[#060a18]' : 'nav-glass bg-[rgba(6,10,24,0.55)] backdrop-blur-xl'
       }`}
     >
-      <div className="mx-auto flex h-[72px] w-full max-w-[1440px] items-center justify-between gap-2 px-4 sm:px-6 md:h-[80px] md:gap-3 md:px-10">
+      <div className="mx-auto flex h-[72px] w-full max-w-[1600px] items-center justify-between gap-2 px-4 sm:px-6 md:h-[80px] md:gap-3 md:px-10">
 
         {/* ── Logo ─────────────────────────────── */}
         <Link
@@ -246,7 +247,7 @@ export default function Navbar() {
           className="absolute inset-x-0 top-full z-10 max-h-[calc(100dvh-72px)] overflow-y-auto border-b border-[#1a2c55]/50 bg-[#050814] xl:hidden"
           style={{ animation: 'nav-dropdown 160ms ease-out both' }}
         >
-          <nav className="mx-auto w-full max-w-[1440px] px-4 py-2">
+          <nav className="mx-auto w-full max-w-[1600px] px-4 py-2">
             {navItems.map((item) => {
               const isActive = current === item.sectionId;
               return (
