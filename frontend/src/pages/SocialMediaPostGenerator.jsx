@@ -16,6 +16,8 @@ import {
 import PreferencesPanel from '../components/generate/PreferencesPanel';
 import PostContent from '../components/generate/PostContent';
 import HashtagEditor from '../components/generate/HashtagEditor';
+import PostImagePanel from '../components/generate/PostImagePanel';
+import usePostImage from '../hooks/usePostImage';
 import AgMark from '../components/brand/AgMark';
 import { useAuth } from '../context/AuthContext';
 import { getNews, getNewsById, getNewsByStoryId, getTenants } from '../api/news';
@@ -163,6 +165,12 @@ export default function SocialMediaPostGenerator() {
   const [tagSuggestions,  setTagSuggestions]  = useState([]);
   const [tagsSaving,      setTagsSaving]      = useState(false);
   const [tagsError,       setTagsError]       = useState('');
+  // "Make an image": the post shown as its image card in place of the text,
+  // with the image's options beside it (components/generate/PostImagePanel).
+  const [imageMode,       setImageMode]       = useState(false);
+  const [imageLook,       setImageLook]       = useState('dark');
+  // The image card's extra words from the post's generation, when it has them.
+  const [topicCard,       setTopicCard]       = useState(null);
   function showToast(text) {
     setToast(text);
     clearTimeout(toastTimer.current);
@@ -669,6 +677,8 @@ export default function SocialMediaPostGenerator() {
   function applyTopicState(post) {
     setTopicFrame(post?.generation_meta?.narrative_frame || null);
     setPostHashtags(post?.hashtags || []);
+    setTopicCard(post?.generation_meta?.post_parts?.card || null);
+    setImageMode(false);
     setTagSuggestions(post?.generation_meta?.post_parts?.suggested_hashtags || []);
     setTagsError('');
   }
@@ -837,6 +847,10 @@ export default function SocialMediaPostGenerator() {
     : (guestAccount ? t('guest.name') : t('guest.visitor'));
   const welcomeLead = currentUser && !guestAccount ? t('dash.welcomeBack') : t('guest.welcome');
   const roleName = labelForId(currentUser?.party_position || '', currentUser?.political_party || '', lang);
+  const postImage = usePostImage({
+    active: imageMode, content: generatedPost, card: topicCard, politicalParty: currentUser?.political_party,
+    look: imageLook, author: authorName, role: roleName, name: `ambedkargpt-post-${selectedPostId || 'new'}`,
+  });
 
 
 
@@ -1489,6 +1503,16 @@ export default function SocialMediaPostGenerator() {
                     <AlertTriangle size={20} strokeWidth={1.9} className="mt-0.5 shrink-0 text-[#f0b877]" />
                     <p className="text-[17px] leading-relaxed text-[#f0d9b8]">{generatedPost}</p>
                   </div>
+                ) : imageMode ? (
+                  // The post as its image card, in place of the text.
+                  <div className="ag-swap relative mx-auto aspect-square w-full max-w-[680px] overflow-hidden rounded-[20px] border border-white/10 bg-[#050a1c] shadow-[0_30px_70px_rgba(2,6,20,0.5)]">
+                    <canvas ref={postImage.canvasRef} aria-label={t('img.preview')} className="block h-full w-full" />
+                    {!postImage.file && (
+                      <div className="absolute inset-0 grid place-items-center text-[#9aa8cc]">
+                        <RefreshCw size={24} className="animate-spin" aria-hidden="true" />
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   // Keyed on the words: a refined post or the other version
                   // arrives from a blur rather than snapping in.
@@ -1593,7 +1617,17 @@ export default function SocialMediaPostGenerator() {
                   </div>
                 )}
 
-                {ready && (
+                {ready && imageMode && (
+                  <PostImagePanel
+                    file={postImage.file}
+                    text={generatedPost}
+                    look={imageLook}
+                    onLook={setImageLook}
+                    onBack={() => setImageMode(false)}
+                  />
+                )}
+
+                {ready && !imageMode && (
                   <div
                     className="relative overflow-hidden rounded-[20px] border border-white/[0.09] p-5 sm:p-6"
                     style={{ background: 'linear-gradient(170deg, #17204b 0%, #0e1435 50%, #0a0e27 100%)', boxShadow: '0 30px 70px rgba(2,6,20,0.5)' }}
@@ -1641,8 +1675,8 @@ export default function SocialMediaPostGenerator() {
                     {selectedPostId && !postFailed && (
                       <button
                         type="button"
-                        // The image has a page of its own (pages/PostImage.jsx).
-                        onClick={() => navigate(`/generate/social-media/image/${selectedPostId}`)}
+                        // The image takes the post's place on this page.
+                        onClick={() => { setImageMode(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                         className="relative mt-2.5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[14px] border border-[#6e8cff]/45 bg-[#4f7dff]/15 text-[15px] font-semibold text-white transition hover:bg-[#4f7dff]/25"
                       >
                         <ImageIcon size={17} />
