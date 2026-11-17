@@ -348,7 +348,9 @@ export async function drawPostImage(canvas, { headline, body, hashtags = [], par
       const h = (leader.height / leader.width) * w;
       ctx.drawImage(fadedFoot(leader, w, h), ax + (460 - w) / 2, P.leaderBox.top, w, h);
     } else if (leader) {
-      const s = Math.min(800 / leader.height, 520 / leader.width);
+      // Inside the arch with room above the head and at the sides, standing
+      // on the footer: taller or wider and the arch crops the head and arms.
+      const s = Math.min(660 / leader.height, 430 / leader.width);
       const w = leader.width * s;
       const h = leader.height * s;
       ctx.drawImage(leader, ax + (460 - w) / 2, FOOT_Y - h, w, h);
