@@ -33,7 +33,12 @@ from backend.core.auth_constants import AUTH_PROVIDER_GUEST
 from backend.core.config import settings
 
 GUEST_ACCOUNTS_PER_IP_PER_DAY = 5
-GUEST_POSITION = "national_spokesperson"
+# Every guest account writes as this one person: a district secretary ("Zila
+# Mantri" is not a role of its own; District Secretary is the nearest - DCC
+# Secretary for Congress, Zila Sachiv for Samajwadi). The name is the one the
+# team chose; the frontend shows it in Devanagari (i18n "guest.name").
+GUEST_POSITION = "district_secretary"
+GUEST_NAME = "Maha Aryaman Jatav"
 
 # The party names the app stores (frontend/src/utils/politicalParties.js).
 GUEST_PARTIES = {
@@ -55,10 +60,11 @@ def _digest(value: str) -> str:
     return hmac.new(key, value.encode("utf-8"), hashlib.sha256).hexdigest()
 
 
-# What a guest account cannot do with a post, by the name the app shows it.
-# Copy and listening happen in the browser and are only hidden there; these
-# are the ones the server does, so it refuses them too.
-GUEST_LOCKED = ("publish", "translate", "edit")
+# What a guest account cannot do with a post, by the name the app shows it
+# ("publish", "translate", "edit"). Empty since Nov 2026: a guest may do
+# everything with the one post it can write (posts_service.GUEST_POST_LIMIT);
+# list a feature here to lock it again.
+GUEST_LOCKED: tuple[str, ...] = ()
 
 
 def is_guest_account(user_id: str) -> bool:
@@ -75,8 +81,8 @@ def is_guest_account(user_id: str) -> bool:
 
 
 def refuse_guest(user_id: str, feature: str) -> None:
-    """A 403 when a guest account asks for something only a signed-up account can do."""
-    if is_guest_account(user_id):
+    """A 403 when a guest account asks for a feature GUEST_LOCKED keeps for signed-up accounts."""
+    if feature in GUEST_LOCKED and is_guest_account(user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={
@@ -112,6 +118,12 @@ class GuestService:
             "is_guest": True, "guest_device": device, "political_party": political_party,
         })
         if existing:
+            # Accounts made before the guest's name and position were set take
+            # them on the next time they are used.
+            if existing.get("full_name") != GUEST_NAME or existing.get("party_position") != GUEST_POSITION:
+                self.users.update_one({"_id": existing["_id"]},
+                                      {"$set": {"full_name": GUEST_NAME, "party_position": GUEST_POSITION}})
+                existing = {**existing, "full_name": GUEST_NAME, "party_position": GUEST_POSITION}
             return existing
 
         address = _digest(f"ip:{ip or 'unknown'}")
@@ -134,7 +146,7 @@ class GuestService:
             "password_hash": None,
             "email": None,
             "phone": None,
-            "full_name": "Guest",
+            "full_name": GUEST_NAME,
             "political_party": political_party,
             "party_position": GUEST_POSITION,
             "state": None,

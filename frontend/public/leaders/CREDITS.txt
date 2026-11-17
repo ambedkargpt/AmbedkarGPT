@@ -1,0 +1,17 @@
+Leader photos used on the post image template (src/utils/postImage.js). Cut out or cropped.
+
+The two main photos were supplied by the team (backgrounds removed):
+congress/rahul-gandhi.webp
+samajwadi/akhilesh-yadav.webp
+
+The round photos are from Wikimedia Commons, under licences that allow reuse:
+congress/sonia-gandhi.jpg        "Sonia Gandhi (cropped).jpg", public domain
+                                 https://commons.wikimedia.org/wiki/File:Sonia_Gandhi_(cropped).jpg
+congress/mallikarjun-kharge.jpg  "The Lok Sabha Mallikarjun Kharge (cropped).jpg", Government Open Data Licence - India (GODL)
+                                 https://commons.wikimedia.org/wiki/File:The_Lok_Sabha_Mallikarjun_Kharge_(cropped).jpg
+congress/priyanka-gandhi.jpg     "Priyanka Gandhi Vadra (8).jpg" by The Times of India, CC BY 3.0
+                                 https://commons.wikimedia.org/wiki/File:Priyanka_Gandhi_Vadra_(8).jpg
+congress/jairam-ramesh.jpg       "Jairam Ramesh.jpg" by the US State Department, public domain
+                                 https://commons.wikimedia.org/wiki/File:Jairam_Ramesh.jpg
+samajwadi/dimple-yadav.jpg       "Dimple Yadav.img.jpg" by HarshY17, CC0
+                                 https://commons.wikimedia.org/wiki/File:Dimple_Yadav.img.jpg

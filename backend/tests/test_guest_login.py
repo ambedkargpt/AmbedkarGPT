@@ -44,7 +44,8 @@ def test_a_congress_guest_is_set_up_to_write_posts(users):
 
     assert user["is_guest"] is True
     assert user["political_party"] == "Indian National Congress (INC)"
-    assert user["party_position"] == "national_spokesperson"
+    assert user["party_position"] == "district_secretary"
+    assert user["full_name"] == "Maha Aryaman Jatav"
     assert user["auth_providers"] == ["guest"]
     # Neither the device id nor the address is stored as it came.
     assert "device-abc-123" not in str(user) and "1.2.3.4" not in str(user)
@@ -128,34 +129,31 @@ def test_the_public_user_says_it_is_a_guest():
     assert svc._to_user_public(base).is_guest is False
 
 
-def test_a_guest_can_write_only_a_few_posts_a_day(monkeypatch):
+def test_a_guest_can_write_one_post_per_browser(monkeypatch):
     import backend.services.posts_service as ps
 
     db = mongomock.MongoClient().db
     monkeypatch.setattr(ps, "db", db)
-    guest_id = db["users"].insert_one({"is_guest": True}).inserted_id
-    member_id = db["users"].insert_one({}).inserted_id
-
-    class Repo:
-        today = 0
-
-        def count_today(self, user_id):
-            return self.today
+    con = db["users"].insert_one({"is_guest": True, "guest_device": "d1", "political_party": "INC"}).inserted_id
+    sp = db["users"].insert_one({"is_guest": True, "guest_device": "d1", "political_party": "SP"}).inserted_id
+    other = db["users"].insert_one({"is_guest": True, "guest_device": "d2"}).inserted_id
+    member = db["users"].insert_one({}).inserted_id
 
     svc = ps.PostsService.__new__(ps.PostsService)
-    svc.repo = Repo()
+    svc.repo = type("Repo", (), {"collection": db["posts"]})()
 
-    svc.repo.today = ps.GUEST_POSTS_PER_DAY - 1
-    svc._check_guest_limit(str(guest_id))            # one left: allowed
-
-    svc.repo.today = ps.GUEST_POSTS_PER_DAY
-    with pytest.raises(HTTPException) as err:
-        svc._check_guest_limit(str(guest_id))
-    assert err.value.status_code == 429
-    assert err.value.detail["error"] == "guest_limit"
-
-    svc._check_guest_limit(str(member_id))           # a real account: no cap here
-
+    assert ps.GUEST_POST_LIMIT == 1
+    svc._check_guest_limit(str(con))                    # none yet: allowed
+    db["posts"].insert_one({"user_id": con})
+    for guest in (con, sp):                             # the other party's guest on the same browser too
+        with pytest.raises(HTTPException) as err:
+            svc._check_guest_limit(str(guest))
+        assert err.value.status_code == 429
+        assert err.value.detail["error"] == "guest_limit"
+        assert "one post" in err.value.detail["message"]
+    svc._check_guest_limit(str(other))                  # another browser: its own one post
+    db["posts"].insert_many([{"user_id": member} for _ in range(3)])
+    svc._check_guest_limit(str(member))                 # a real account: no cap here
 
 # ── What a guest account cannot do with a post ──────────────────────────────
 
@@ -177,47 +175,34 @@ def accounts(monkeypatch):
     return guest, member
 
 
-def test_refuse_guest_stops_a_guest_and_no_one_else(accounts):
+def test_a_guest_may_do_everything_unless_a_feature_is_locked_again(accounts, monkeypatch):
     guest, member = accounts
+    assert gs.GUEST_LOCKED == ()
+    for feature in ("publish", "translate", "edit"):
+        gs.refuse_guest(guest, feature)                 # unlocked: no refusal
+    monkeypatch.setattr(gs, "GUEST_LOCKED", ("publish",))
     with pytest.raises(HTTPException) as err:
         gs.refuse_guest(guest, "publish")
     assert err.value.status_code == 403
     assert err.value.detail["code"] == "guest_locked"
-    gs.refuse_guest(member, "publish")
+    gs.refuse_guest(guest, "translate")                 # not listed: allowed
+    gs.refuse_guest(member, "publish")                  # a real account is never refused
     gs.refuse_guest("not-an-object-id", "publish")
 
 
-def test_the_post_endpoints_refuse_a_guest_before_doing_anything(accounts, monkeypatch):
+def test_the_post_endpoints_let_a_guest_through(accounts, monkeypatch):
     from backend.api.v1 import posts as api
-    from backend.schemas.integrations import PublishToRedditRequest
     from backend.schemas.posts import PostRegenerateRequest, PostTranslateRequest, PostUpdateRequest
 
-    guest, member = accounts
-
-    def must_not_run(*a, **k):
-        raise AssertionError("the service was reached for a guest")
-
-    for name in ("translate_post", "regenerate_from_snapshot", "update", "publish_to_reddit"):
-        monkeypatch.setattr(api.service, name, must_not_run)
-    monkeypatch.setattr(api.service, "get", lambda post_id: {"user_id": guest})
-
-    calls = [
-        lambda: api.translate_post("p1", PostTranslateRequest(target_language="en"), current_user_id=guest),
-        lambda: api.regenerate_post("p1", PostRegenerateRequest(refinement_note="sharper"), current_user_id=guest),
-        lambda: api.update_post("p1", PostUpdateRequest(status="published"), current_user_id=guest),
-        lambda: api.publish_post_to_reddit("p1", PublishToRedditRequest(title="t", body="b"), current_user_id=guest),
-    ]
-    for call in calls:
-        with pytest.raises(HTTPException) as err:
-            call()
-        assert err.value.status_code == 403
-        assert err.value.detail["code"] == "guest_locked"
-
-    # Thumbs up / down is still a guest's to give: only publishing is refused.
+    guest, _ = accounts
     reached = []
-    monkeypatch.setattr(api.service, "update", lambda *a, **k: reached.append(1) or {"ok": True})
-    api.update_post("p1", PostUpdateRequest(feedback="up"), current_user_id=guest)
-    assert reached == [1]
+    for name in ("translate_post", "regenerate_from_snapshot", "update"):
+        monkeypatch.setattr(api.service, name, lambda *a, _n=name, **k: reached.append(_n) or {"ok": True})
+    monkeypatch.setattr(api.service, "get", lambda post_id: {"user_id": guest})
+    api.translate_post("p1", PostTranslateRequest(target_language="en"), current_user_id=guest)
+    api.regenerate_post("p1", PostRegenerateRequest(refinement_note="sharper"), current_user_id=guest)
+    api.update_post("p1", PostUpdateRequest(status="published"), current_user_id=guest)
+    assert reached == ["translate_post", "regenerate_from_snapshot", "update"]
 
 
 def test_a_signed_up_account_still_reaches_the_service(accounts, monkeypatch):
@@ -232,3 +217,14 @@ def test_a_signed_up_account_still_reaches_the_service(accounts, monkeypatch):
     api.translate_post("p1", PostTranslateRequest(target_language="en"), current_user_id=member)
     api.update_post("p1", PostUpdateRequest(status="published"), current_user_id=member)
     assert reached == ["translate", "update"]
+
+
+def test_an_older_guest_account_takes_the_guest_name_and_position(users):
+    svc = _svc(users)
+    user = svc.find_or_create("samajwadi", "device-old", "5.6.7.8")
+    users.update_one({"_id": user["_id"]}, {"$set": {"full_name": "Guest", "party_position": "national_spokesperson"}})
+    again = svc.find_or_create("samajwadi", "device-old", "5.6.7.8")
+    assert again["_id"] == user["_id"]
+    assert (again["full_name"], again["party_position"]) == ("Maha Aryaman Jatav", "district_secretary")
+    stored = users.find_one({"_id": user["_id"]})
+    assert (stored["full_name"], stored["party_position"]) == ("Maha Aryaman Jatav", "district_secretary")

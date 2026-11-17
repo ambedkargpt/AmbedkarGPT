@@ -7,7 +7,7 @@ import {
 
 import SpeakButton from '../components/generate/SpeakButton';
 import GuestLock from '../components/onboarding/GuestLock';
-import { noCopyProps, useIsGuest } from '../utils/guestAccess';
+import { noCopyProps, useGuestLocked } from '../utils/guestAccess';
 import PublishSheet from '../components/publish/PublishSheet';
 import Topbar from '../components/dashboard/Topbar';
 import PostContent from '../components/generate/PostContent';
@@ -94,7 +94,7 @@ function PlatformLabel({ id }) {
 
 function CardMenu({ post, translated, translating, onRead, onTranslate, onToggleVersion, onArchive, onCopy }) {
   const { t } = useI18n();
-  const guest = useIsGuest();
+  const guest = useGuestLocked();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
 
@@ -162,7 +162,7 @@ function CardMenu({ post, translated, translating, onRead, onTranslate, onToggle
 
 function PostCard({ post, view, index, onOpen, onCopy, onPublish, onArchive, onToggleVersion, copiedId }) {
   const { t, lang } = useI18n();
-  const guest = useIsGuest();
+  const guest = useGuestLocked();
   const [translating, setTranslating] = useState(false);
   const [translated, setTranslated] = useState('');
   const [showTranslated, setShowTranslated] = useState(false);

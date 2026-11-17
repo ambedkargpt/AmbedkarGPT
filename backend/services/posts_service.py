@@ -62,7 +62,10 @@ MAX_POSTS_PER_STORY = 5
 # How many posts a guest account ("Continue as guest") can generate in a day.
 # A guest needs no sign-up, so without this a script could spend model calls
 # without limit; the same as the daily publish limit a real account has.
-GUEST_POSTS_PER_DAY = 5
+# A guest writes one post, ever, per browser: every guest account made on the
+# same device (one per party) counts towards it. With everything unlocked for
+# that post, it is a full trial, and the next one asks them to sign up.
+GUEST_POST_LIMIT = 1
 
 
 def _apply_platform_length(profile: dict[str, Any]) -> None:
@@ -487,22 +490,26 @@ class PostsService:
         return _own_party_slug({"political_party": user.get("political_party") or ""}) or "congress"
 
     def _check_guest_limit(self, user_id: str) -> None:
-        """A 429 when a guest account has written its posts for today."""
+        """
+        A 429 when a guest has written its one post (GUEST_POST_LIMIT). Counted
+        over every guest account made on the same browser, so taking the other
+        party's guest account does not reset it.
+        """
         try:
-            user = db["users"].find_one({"_id": ObjectId(user_id)}, {"is_guest": 1})
+            user = db["users"].find_one({"_id": ObjectId(user_id)}, {"is_guest": 1, "guest_device": 1})
         except Exception:
             return
         if not (user or {}).get("is_guest"):
             return
-        if self.repo.count_today(user_id) >= GUEST_POSTS_PER_DAY:
+        ids = [user["_id"]]
+        if user.get("guest_device"):
+            ids = [u["_id"] for u in db["users"].find({"is_guest": True, "guest_device": user["guest_device"]}, {"_id": 1})] or ids
+        if self.repo.collection.count_documents({"user_id": {"$in": ids}}) >= GUEST_POST_LIMIT:
             raise HTTPException(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 detail={
                     "error": "guest_limit",
-                    "message": (
-                        f"A guest can write {GUEST_POSTS_PER_DAY} posts a day. "
-                        "Sign up free to write more."
-                    ),
+                    "message": "As a guest you can write one post. Sign up free to write as many as you like.",
                 },
             )
 

@@ -16,6 +16,11 @@ Last Line - based on the original lines, provide one line/10 words of details ab
 Use only the facts in the original lines. Do not add any fact, number, name or event that is not in them.
 Also suggest 3 more short hashtags on this topic, from the side of the party in opposition, in the language of the post.
 Do not use the dash characters — or – anywhere in what you write. Where you would use one, use a comma, a danda (।) or start a new sentence.
+Also give the words for the post's image card, in the language of the post:
+- kicker: a 2–3 word label for the issue, like a newspaper tag ("सवाल देश का").
+- sub: one supporting line of at most 30 characters.
+- chips: 0 to 2 pairs of short facts from the original lines shown as "A → B" (places, dates, numbers, before and after); an empty list when nothing fits.
+- highlight: the 2–5 word phrase of the post to set in colour, copied exactly from the post.
 You have to provide one post at a time. Provide as a JSON file – JSON_5
 
 ---
@@ -26,4 +31,5 @@ Return only one JSON object, nothing before or after it, in exactly this shape:
 {"JSON_5": {"couplet": "the rhyming couplet (one line, or two lines separated by a line break)",
             "post": "the elaboration, max 40 words",
             "hashtag": "#the_last_line_as_one_hashtag_words_joined_with_underscores",
-            "more_hashtags": ["#short_hashtag", "#short_hashtag", "#short_hashtag"]}}
+            "more_hashtags": ["#short_hashtag", "#short_hashtag", "#short_hashtag"],
+            "card": {"kicker": "2-3 words", "sub": "one short line", "chips": [["A", "B"]], "highlight": "phrase from the post"}}}
