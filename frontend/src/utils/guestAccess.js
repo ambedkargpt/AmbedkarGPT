@@ -12,6 +12,21 @@ import { useAuth } from '../context/AuthContext';
  * the ones it serves (publish, translate, edit) as well; copy and listening
  * happen in the browser, so they are only hidden.
  */
+/**
+ * Whether a guest's post is locked (copy, publish/share, listen, translate,
+ * edit). Off since Nov 2026: a guest can do everything with the one post it may
+ * write (the server allows a guest one post per browser), and is asked to sign
+ * up for the next. Set to true to lock them again (and list the features in
+ * backend/services/guest_service.py GUEST_LOCKED).
+ */
+export const GUEST_LOCKED = false;
+
+/** A guest account whose post is locked: GUEST_LOCKED and a guest. */
+export function useGuestLocked() {
+  const { currentUser } = useAuth();
+  return GUEST_LOCKED && Boolean(currentUser?.is_guest);
+}
+
 export function useIsGuest() {
   const { currentUser } = useAuth();
   return Boolean(currentUser?.is_guest);

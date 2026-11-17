@@ -55,7 +55,7 @@ async function api(page, { generate = 'ok' } = {}) {
     if (url.includes('/posts/generate')) {
       sent.generate += 1;
       if (generate === 'limit') {
-        return json({ detail: { error: 'guest_limit', message: 'A guest can write 5 posts a day. Sign up free to write more.' } }, 429);
+        return json({ detail: { error: 'guest_limit', message: 'As a guest you can write one post. Sign up free to write as many as you like.' } }, 429);
       }
       return json({ post: { id: 'p1', content: 'नई पोस्ट\nदूसरी पंक्ति\n\nपोस्ट का पाठ।', status: 'draft' } });
     }
@@ -130,13 +130,13 @@ test('an SP guest sees SP news in the state row; a Congress guest does not', asy
   await expect(page.getByRole('region', { name: /state news|राज्य की ख़बरें/i }).getByText(SP_STORY.headline)).toHaveCount(0);
 });
 
-test('a guest who has used up the day is told so, in the page language', async ({ page }) => {
+test('a guest who has written their one post is asked to sign up, in the page language', async ({ page }) => {
   await api(page, { generate: 'limit' });
   await page.goto('/signup');
   await page.getByRole('button', { name: AS_CONGRESS }).click();
   await page.getByText(INC_STORY.headline).first().click();
   await page.getByRole('button', { name: /write my post|मेरी पोस्ट लिखें/i }).click();
-  await expect(page.getByText(/a guest can write 5 posts a day|गेस्ट दिन में 5 पोस्ट बना सकते हैं/i).first()).toBeVisible();
+  await expect(page.getByText(/as a guest you can write one post|गेस्ट के रूप में आप एक पोस्ट बना सकते हैं/i).first()).toBeVisible();
 });
 
 test('with no account at all, the button on a story asks to sign up and writes nothing', async ({ page }) => {
@@ -163,26 +163,25 @@ test('pages that need an account still send someone with no account away', async
 });
 
 
-test('a post written as a guest can be read but not copied, published or listened to', async ({ page }) => {
+test('a guest can do everything with their post: share, copy, listen, make the image', async ({ page }) => {
   await api(page);
   await page.goto('/signup');
   await page.getByRole('button', { name: AS_CONGRESS }).click();
   await page.getByText(INC_STORY.headline).first().click();
   await page.getByRole('button', { name: /write my post|मेरी पोस्ट लिखें/i }).click();
 
-  await expect(page.getByText(/guest preview|गेस्ट प्रीव्यू/i).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: /sign up free to use this post|इस्तेमाल करने के लिए मुफ़्त साइन अप/i })).toBeVisible();
-  await expect(page.getByRole('button', { name: /share on whatsapp|whatsapp पर भेजें/i })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^(copy|कॉपी करें)$/i })).toHaveCount(0);
-  await expect(page.getByTitle(/^(listen|सुनें)$/i)).toHaveCount(0);
+  await expect(page.getByText(/guest preview|गेस्ट प्रीव्यू/i)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /share on whatsapp|whatsapp पर भेजें/i }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /^(copy|कॉपी करें)$/i }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /make an image|इमेज बनाएँ/i })).toBeVisible();
 });
 
-test('in my posts, a guest gets a sign-up button instead of publish and copy', async ({ page }) => {
+test('in my posts, a guest can publish and copy like anyone else', async ({ page }) => {
   await api(page);
   await page.goto('/signup');
   await page.getByRole('button', { name: AS_CONGRESS }).click();
   await expect(page).toHaveURL(/\/generate\/social-media$/);
   await page.goto('/posts');
-  await expect(page.getByRole('button', { name: /sign up to copy and publish|कॉपी और पब्लिश के लिए साइन अप/i }).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: /^(publish|प्रकाशित करें)$/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^(publish|प्रकाशित करें)$/i }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: /sign up to copy and publish|कॉपी और पब्लिश के लिए साइन अप/i })).toHaveCount(0);
 });
