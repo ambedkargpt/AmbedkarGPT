@@ -31,7 +31,6 @@ const Questionnaire = lazy(() => import('./pages/Questionnaire'));
 const SignupDetails = lazy(() => import('./pages/SignupDetails'));
 const ServiceSelection = lazy(() => import('./pages/ServiceSelection'));
 const SocialMediaPostGenerator = lazy(() => import('./pages/SocialMediaPostGenerator'));
-const PostImage = lazy(() => import('./pages/PostImage'));
 const MusicGeneration = lazy(() => import('./pages/MusicGeneration'));
 const MusicGenerationStudio = lazy(() => import('./pages/MusicGenerationStudio'));
 const Settings = lazy(() => import('./pages/Settings'));
@@ -223,9 +222,6 @@ export default function App() {
             </Route>
             <Route path="/generate/social-media" element={
               <ProtectedRoute allowGuest><OnboardingGate><SocialMediaPostGenerator /></OnboardingGate></ProtectedRoute>
-            } />
-            <Route path="/generate/social-media/image/:postId" element={
-              <ProtectedRoute allowGuest><PostImage /></ProtectedRoute>
             } />
             <Route path="/generate/music" element={
               <ProtectedRoute><MusicGeneration /></ProtectedRoute>
