@@ -197,7 +197,8 @@ def test_only_the_lines_and_the_frame_go_to_the_model():
     client = _Client(json.dumps({"JSON_5": {"couplet": "c", "post": "p", "hashtag": "h"}}))
     out = itp.write_post(client=client, model="deepseek-chat", prompts_dir=PROMPTS,
                          lines=["पंक्ति एक"], frame="फ्रेम दो")
-    assert out == {"couplet": "c", "post": "p", "hashtag": "#h", "more_hashtags": []}
+    assert out == {"couplet": "c", "post": "p", "hashtag": "#h", "more_hashtags": [],
+                   "card": {"kicker": "", "sub": "", "chips": [], "highlight": ""}}
     system, user = client.calls[0]["messages"]
     assert "search" not in system["content"].lower()
     assert json.loads(user["content"].split("\n", 1)[1]) == {"JSON_3": ["पंक्ति एक"], "JSON_4": "फ्रेम दो"}
@@ -326,3 +327,18 @@ def test_no_dash_reaches_a_post_a_card_or_a_story():
     assert topic["lines"] == ["पंक्ति—अपनी"]                      # the transcript's own words are left alone
     for name in ("inc_topics_system.txt", "inc_topic_post_system.txt", "news_multi_story_system.txt"):
         assert "Do not use the dash characters" in (PROMPTS / name).read_text(encoding="utf-8"), name
+
+
+def test_the_image_card_words_are_read_and_checked():
+    raw = json.dumps({"JSON_5": {"couplet": "दोहा", "post": "56 इंच का सीना दिखता नहीं।", "hashtag": "#x",
+                                  "card": {"kicker": "सवाल देश का", "sub": "सीमा पर सन्नाटा — देश की धुकधुकी",
+                                           "chips": [["सिक्किम", "अरुणाचल"], ["एक"], ["डोकलाम", "लद्दाख"], ["a", "b"]],
+                                           "highlight": "56 इंच का सीना"}}}, ensure_ascii=False)
+    card = itp.parse_answer(raw)["card"]
+    assert card == {"kicker": "सवाल देश का", "sub": "सीमा पर सन्नाटा, देश की धुकधुकी",
+                    "chips": [["सिक्किम", "अरुणाचल"], ["डोकलाम", "लद्दाख"]], "highlight": "56 इंच का सीना"}
+    # A highlight that is not in the post is dropped; a missing card is empty, not an error.
+    assert itp.parse_card({"highlight": "कहीं और"}, "पोस्ट")["highlight"] == ""
+    assert itp.parse_card(None, "पोस्ट") == {"kicker": "", "sub": "", "chips": [], "highlight": ""}
+    for name in ("inc_topic_post_system.txt", "opposition_topic_post_system.txt"):
+        assert '"card": {"kicker"' in (PROMPTS / name).read_text(encoding="utf-8"), name

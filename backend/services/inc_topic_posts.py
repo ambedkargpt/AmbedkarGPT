@@ -93,7 +93,31 @@ def parse_answer(raw: str) -> dict[str, Any] | None:
     if not couplet or not post:
         return None
     return {"couplet": couplet, "post": post, "hashtag": hashtag,
-            "more_hashtags": [t for t in (clean_hashtag(x) for x in more) if t]}
+            "more_hashtags": [t for t in (clean_hashtag(x) for x in more) if t],
+            "card": parse_card(data.get("card"), post)}
+
+
+def parse_card(raw: Any, post: str) -> dict[str, Any]:
+    """
+    The image card's extra words (frontend utils/postImage.js): a kicker, a
+    supporting line, up to two "A -> B" chips and the phrase to colour. Each is
+    optional; anything malformed is dropped rather than failing the post. The
+    highlight is kept only if it really is in the post.
+    """
+    from backend.pipeline.generator import _strip_ai_tells
+
+    card = raw if isinstance(raw, dict) else {}
+    chips = []
+    for pair in card.get("chips") if isinstance(card.get("chips"), list) else []:
+        if isinstance(pair, (list, tuple)) and len(pair) == 2 and all(str(x).strip() for x in pair):
+            chips.append([str(pair[0]).strip()[:24], str(pair[1]).strip()[:24]])
+    highlight = str(card.get("highlight") or "").strip()
+    return {
+        "kicker": _strip_ai_tells(str(card.get("kicker") or "").strip())[:28],
+        "sub": _strip_ai_tells(str(card.get("sub") or "").strip())[:60],
+        "chips": chips[:2],
+        "highlight": highlight if highlight and highlight in post else "",
+    }
 
 
 def starting_hashtags(parts: dict[str, Any], party: str | None = None) -> list[str]:
