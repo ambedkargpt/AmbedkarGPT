@@ -16,7 +16,6 @@ import {
 import PreferencesPanel from '../components/generate/PreferencesPanel';
 import PostContent from '../components/generate/PostContent';
 import HashtagEditor from '../components/generate/HashtagEditor';
-import PostImageDialog from '../components/generate/PostImageDialog';
 import AgMark from '../components/brand/AgMark';
 import { useAuth } from '../context/AuthContext';
 import { getNews, getNewsById, getNewsByStoryId, getTenants } from '../api/news';
@@ -164,10 +163,6 @@ export default function SocialMediaPostGenerator() {
   const [tagSuggestions,  setTagSuggestions]  = useState([]);
   const [tagsSaving,      setTagsSaving]      = useState(false);
   const [tagsError,       setTagsError]       = useState('');
-  // The post on the image template (components/generate/PostImageDialog).
-  const [imageOpen,       setImageOpen]       = useState(false);
-  // The image card's extra words from the post's generation, when it has them.
-  const [topicCard,       setTopicCard]       = useState(null);
   function showToast(text) {
     setToast(text);
     clearTimeout(toastTimer.current);
@@ -674,7 +669,6 @@ export default function SocialMediaPostGenerator() {
   function applyTopicState(post) {
     setTopicFrame(post?.generation_meta?.narrative_frame || null);
     setPostHashtags(post?.hashtags || []);
-    setTopicCard(post?.generation_meta?.post_parts?.card || null);
     setTagSuggestions(post?.generation_meta?.post_parts?.suggested_hashtags || []);
     setTagsError('');
   }
@@ -1647,23 +1641,14 @@ export default function SocialMediaPostGenerator() {
                     {selectedPostId && !postFailed && (
                       <button
                         type="button"
-                        onClick={() => setImageOpen(true)}
-                        aria-haspopup="dialog"
+                        // The image has a page of its own (pages/PostImage.jsx).
+                        onClick={() => navigate(`/generate/social-media/image/${selectedPostId}`)}
                         className="relative mt-2.5 inline-flex h-12 w-full items-center justify-center gap-2 rounded-[14px] border border-[#6e8cff]/45 bg-[#4f7dff]/15 text-[15px] font-semibold text-white transition hover:bg-[#4f7dff]/25"
                       >
                         <ImageIcon size={17} />
                         {t('img.make')}
                       </button>
                     )}
-                    <PostImageDialog
-                      open={imageOpen}
-                      onClose={() => setImageOpen(false)}
-                      content={generatedPost}
-                      politicalParty={currentUser?.political_party}
-                      card={topicCard}
-                      author={authorName}
-                      role={roleName}
-                    />
                     </>)}
                   </div>
                 )}
